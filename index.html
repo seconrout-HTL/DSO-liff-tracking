@@ -3,82 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tracking & Dashboard</title>
+    <title>HaadThip Tracking</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'ht-red': '#E41E2B',  /* Coca-Cola Red */
+                        'ht-green': '#007A33', /* HaadThip Green */
+                        'ht-gray': '#F4F4F4',
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #F3F4F6; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #F8F9FA; -webkit-tap-highlight-color: transparent; }
         .hidden-page { display: none; }
-        .active-tab { color: #2563EB; border-bottom: 3px solid #2563EB; }
-        .status-line { position: absolute; left: 19px; top: 25px; bottom: 0; width: 2px; background: #E5E7EB; z-index: 0; }
-        .status-dot { z-index: 10; position: relative; }
-        .skeleton { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; background: #E5E7EB; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        
+        /* Tabs Customization */
+        .tab-btn { position: relative; color: #9CA3AF; transition: all 0.3s ease; }
+        .tab-btn.active-tab { color: #E41E2B; font-weight: 700; }
+        .tab-btn.active-tab::after {
+            content: ''; position: absolute; bottom: 0; left: 20%; width: 60%; height: 3px;
+            background-color: #E41E2B; border-radius: 10px 10px 0 0;
+        }
+
+        /* Timeline Logic */
+        .timeline-line { position: absolute; left: 0; right: 0; top: 28px; height: 2px; background: #E5E7EB; z-index: 0; }
+        .timeline-progress { position: absolute; left: 0; top: 28px; height: 2px; background: #007A33; z-index: 1; transition: width 0.5s ease; }
+        
+        /* Loading Animation */
+        .spin-slow { animation: spin 2s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
-<body class="pb-20">
+<body class="pb-24">
 
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="px-4 py-4 flex justify-between items-center">
+    <header class="bg-ht-red text-white shadow-lg sticky top-0 z-50 rounded-b-3xl">
+        <div class="px-5 py-6 flex justify-between items-center">
             <div>
-                <h1 class="text-xl font-bold text-gray-800">ระบบติดตามงาน</h1>
-                <p id="user-display" class="text-xs text-gray-500">Guest User</p>
+                <h1 class="text-2xl font-bold tracking-wide">Tracking Info</h1>
+                <p id="user-display" class="text-xs text-red-100 opacity-90 mt-1 font-light">Guest User</p>
             </div>
-            <button onclick="fetchData()" class="text-blue-600 hover:bg-blue-50 p-2 rounded-full transition">
-                <i class="fas fa-sync-alt"></i>
-            </button>
+            <div class="relative">
+                <button onclick="manualRefresh()" class="text-white bg-white/20 hover:bg-white/30 p-2.5 rounded-full backdrop-blur-sm transition active:scale-95 shadow-inner">
+                    <i id="refresh-icon" class="fas fa-sync-alt text-sm"></i>
+                </button>
+                <span id="live-indicator" class="absolute top-0 right-0 w-3 h-3 bg-green-400 border-2 border-ht-red rounded-full animate-pulse"></span>
+            </div>
         </div>
         
-        <div class="flex text-center bg-white mt-2">
-            <div onclick="switchTab('tracking')" id="tab-tracking" class="flex-1 py-3 text-sm font-bold text-gray-500 cursor-pointer active-tab transition">
-                รายการล่าสุด
-            </div>
-            <div onclick="switchTab('dashboard')" id="tab-dashboard" class="flex-1 py-3 text-sm font-bold text-gray-500 cursor-pointer transition">
-                ภาพรวมวันนี้
+        <div class="px-5 -mb-6">
+            <div class="relative shadow-md rounded-2xl bg-white overflow-hidden">
+                <input type="text" id="search-input" onkeyup="filterList()" placeholder="ค้นหาเลข DO หรือ สาขา..." 
+                    class="w-full pl-12 pr-4 py-3.5 text-gray-700 border-none outline-none text-sm placeholder-gray-400">
+                <div class="absolute left-4 top-3.5 text-gray-400">
+                    <i class="fas fa-search text-lg"></i>
+                </div>
             </div>
         </div>
     </header>
 
-    <div id="page-tracking" class="p-4 space-y-4">
-        <div class="relative">
-            <input type="text" id="search-input" onkeyup="filterList()" placeholder="ค้นหาเลข DO หรือ สาขา..." class="w-full pl-10 pr-4 py-3 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-blue-500 outline-none">
-            <i class="fas fa-search absolute left-4 top-3.5 text-gray-400"></i>
+    <div class="mt-10 px-4 mb-2">
+        <div class="flex text-center border-b border-gray-200">
+            <div onclick="switchTab('tracking')" id="tab-tracking" class="flex-1 py-3 cursor-pointer tab-btn active-tab">
+                รายการล่าสุด
+            </div>
+            <div onclick="switchTab('dashboard')" id="tab-dashboard" class="flex-1 py-3 cursor-pointer tab-btn">
+                ภาพรวมวันนี้
+            </div>
         </div>
+    </div>
 
-        <div id="loading" class="space-y-3">
-            <div class="h-32 bg-white rounded-xl shadow-sm p-4 skeleton"></div>
-            <div class="h-32 bg-white rounded-xl shadow-sm p-4 skeleton"></div>
+    <div id="page-tracking" class="p-4 pt-2 space-y-5 min-h-[60vh]">
+        <div id="first-load-skeleton" class="space-y-4">
+            <div class="h-36 bg-white rounded-2xl shadow-sm p-4 skeleton"></div>
+            <div class="h-36 bg-white rounded-2xl shadow-sm p-4 skeleton"></div>
         </div>
 
         <div id="tracking-list" class="space-y-4 pb-10"></div>
     </div>
 
-    <div id="page-dashboard" class="p-4 space-y-4 hidden-page">
+    <div id="page-dashboard" class="p-4 pt-2 space-y-5 hidden-page">
         <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white p-4 rounded-xl shadow-sm text-center border-l-4 border-blue-500">
-                <p class="text-xs text-gray-500">ยอดงานทั้งหมด</p>
-                <h2 id="dash-total" class="text-3xl font-bold text-gray-800 mt-1">-</h2>
+            <div class="bg-white p-5 rounded-2xl shadow-sm relative overflow-hidden group">
+                <div class="absolute right-0 top-0 w-16 h-16 bg-ht-red/5 rounded-bl-full -mr-2 -mt-2"></div>
+                <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">งานทั้งหมด</p>
+                <h2 id="dash-total" class="text-4xl font-bold text-gray-800 mt-2">-</h2>
             </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm text-center border-l-4 border-orange-500">
-                <p class="text-xs text-gray-500">รอจัดส่ง</p>
-                <h2 id="dash-waiting" class="text-3xl font-bold text-orange-600 mt-1">-</h2>
+            <div class="bg-white p-5 rounded-2xl shadow-sm relative overflow-hidden border border-orange-100">
+                 <div class="absolute right-0 top-0 w-16 h-16 bg-orange-50 rounded-bl-full -mr-2 -mt-2"></div>
+                <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">รอจัดส่ง</p>
+                <h2 id="dash-waiting" class="text-4xl font-bold text-orange-500 mt-2">-</h2>
             </div>
         </div>
         
-        <div class="bg-gradient-to-r from-green-500 to-green-600 p-5 rounded-xl shadow-lg text-white flex justify-between items-center">
-            <div>
-                <p class="text-green-100 text-sm">จัดส่งสำเร็จแล้ว</p>
-                <h2 id="dash-shipped" class="text-4xl font-bold mt-1">-</h2>
+        <div class="bg-gradient-to-br from-ht-green to-[#005c26] p-6 rounded-2xl shadow-lg shadow-green-200 text-white flex justify-between items-center relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 text-white opacity-10 text-9xl">
+                <i class="fas fa-check"></i>
             </div>
-            <i class="fas fa-shipping-fast text-5xl opacity-50"></i>
+            <div class="z-10">
+                <p class="text-green-100 text-sm font-medium mb-1">จัดส่งสำเร็จแล้ว</p>
+                <h2 id="dash-shipped" class="text-5xl font-bold tracking-tight">-</h2>
+                <p class="text-xs text-green-200 mt-2 bg-white/20 inline-block px-2 py-1 rounded-lg">Update Today</p>
+            </div>
+            <div class="z-10 bg-white/20 p-3 rounded-full backdrop-blur-sm">
+                <i class="fas fa-shipping-fast text-2xl"></i>
+            </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-4">
-            <h3 class="font-bold text-gray-700 mb-3"><i class="fas fa-chart-pie mr-2 text-blue-500"></i>สถานะล่าสุด</h3>
-            <div id="latest-updates" class="space-y-3 text-sm">
+        <div class="bg-white rounded-2xl shadow-sm p-5">
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+                <span class="w-1 h-5 bg-ht-red rounded-full mr-2"></span>
+                Log ล่าสุด
+            </h3>
+            <div id="latest-updates" class="space-y-4 text-sm">
                 </div>
         </div>
     </div>
@@ -91,127 +140,176 @@
         // ==========================================
 
         let globalData = [];
+        let isFirstLoad = true;
+        let autoRefreshInterval;
 
-        // เริ่มต้นทำงาน
         window.onload = async function() {
             await initLiff();
-            fetchData();
+            fetchData(); // Load immediately
+            
+            // 🔄 Auto Refresh System (Every 10 Seconds)
+            autoRefreshInterval = setInterval(() => {
+                fetchData(true); // true = silent mode
+            }, 10000); 
         };
 
         async function initLiff() {
             try {
-                // ใส่ LIFF ID ของคุณ (ถ้ามี) ถ้าไม่มีก็รันได้บน Browser ปกติ
                 // await liff.init({ liffId: "YOUR_LIFF_ID" });
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     document.getElementById('user-display').innerText = `สวัสดี, ${profile.displayName}`;
                 }
-            } catch (err) {
-                console.log('LIFF Init Error (Dev Mode):', err);
-            }
+            } catch (err) { console.log('LIFF Error:', err); }
         }
 
         function switchTab(tabName) {
-            // Update Tab Style
-            document.getElementById('tab-tracking').className = tabName === 'tracking' ? 'flex-1 py-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600 cursor-pointer transition' : 'flex-1 py-3 text-sm font-bold text-gray-500 cursor-pointer transition';
-            document.getElementById('tab-dashboard').className = tabName === 'dashboard' ? 'flex-1 py-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600 cursor-pointer transition' : 'flex-1 py-3 text-sm font-bold text-gray-500 cursor-pointer transition';
-
-            // Show/Hide Content
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active-tab'));
+            document.getElementById(`tab-${tabName}`).classList.add('active-tab');
             document.getElementById('page-tracking').style.display = tabName === 'tracking' ? 'block' : 'none';
             document.getElementById('page-dashboard').style.display = tabName === 'dashboard' ? 'block' : 'none';
         }
 
-        async function fetchData() {
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('tracking-list').innerHTML = '';
+        function manualRefresh() {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('spin-slow');
+            fetchData(false).then(() => icon.classList.remove('spin-slow'));
+        }
+
+        async function fetchData(isSilent = false) {
+            // Loading State (Only for first load or manual refresh)
+            if (!isSilent) {
+                if(isFirstLoad) document.getElementById('first-load-skeleton').style.display = 'block';
+                document.getElementById('refresh-icon').classList.add('spin-slow');
+            }
 
             try {
-                const response = await fetch(`${GAS_API_URL}?action=getTrackingData`);
+                // Add timestamp to prevent caching
+                const response = await fetch(`${GAS_API_URL}?action=getTrackingData&t=${new Date().getTime()}`);
                 const json = await response.json();
                 
                 if (json.status === 'success') {
+                    // Check if data actually changed could be done here, 
+                    // but for simplicity we re-render.
                     globalData = json.data;
                     renderTrackingList(globalData);
                     updateDashboard(json.dashboard, json.data.slice(0, 5));
                 }
             } catch (error) {
-                alert('เกิดข้อผิดพลาดในการดึงข้อมูล: ' + error);
+                console.error('Fetch Error:', error);
+                if(!isSilent) alert('การเชื่อมต่อขัดข้อง');
             } finally {
-                document.getElementById('loading').style.display = 'none';
+                if (!isSilent) {
+                    document.getElementById('first-load-skeleton').style.display = 'none';
+                    document.getElementById('refresh-icon').classList.remove('spin-slow');
+                    isFirstLoad = false;
+                }
             }
         }
 
         function renderTrackingList(data) {
             const container = document.getElementById('tracking-list');
-            container.innerHTML = '';
-
+            
             if(data.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-400 mt-10">ไม่พบข้อมูล</div>';
+                container.innerHTML = `
+                    <div class="text-center py-10 opacity-50">
+                        <i class="fas fa-box-open text-4xl mb-2 text-gray-300"></i>
+                        <p class="text-gray-400">ยังไม่มีรายการวันนี้</p>
+                    </div>`;
                 return;
             }
 
+            // Create HTML string
+            let html = '';
             data.forEach(item => {
-                // Determine Colors based on Progress
-                const step1Color = item.progress >= 1 ? 'text-blue-500' : 'text-gray-300';
-                const step2Color = item.progress >= 2 ? 'text-blue-500' : 'text-gray-300';
-                const step3Color = item.progress >= 3 ? 'text-green-500' : 'text-gray-300';
+                // Determine Colors & Progress Width
+                let progressWidth = '0%';
+                if (item.progress === 1) progressWidth = '0%';    // Dot 1 active
+                if (item.progress === 2) progressWidth = '50%';   // Dot 2 active
+                if (item.progress === 3) progressWidth = '100%';  // Dot 3 active
+
+                const activeColor = 'text-ht-green';
+                const inactiveColor = 'text-gray-300';
                 
-                const card = `
-                <div class="bg-white rounded-xl shadow-sm p-4 relative overflow-hidden">
-                    <div class="flex justify-between items-start mb-3">
+                html += `
+                <div class="bg-white rounded-2xl shadow-sm p-5 relative border border-gray-100 transition hover:shadow-md">
+                    <div class="flex justify-between items-start mb-6">
                         <div>
-                            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-md mb-1 inline-block">${item.targetDate}</span>
-                            <h3 class="font-bold text-lg text-gray-800">${item.branch}</h3>
-                            <p class="text-sm text-blue-600 font-bold">DO: ${item.doNumber}</p>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="bg-red-50 text-ht-red text-[10px] font-bold px-2 py-0.5 rounded-md border border-red-100 uppercase tracking-wide">
+                                    ${item.branch}
+                                </span>
+                                <span class="text-xs text-gray-400 font-light">${item.targetDate}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">DO ${item.doNumber}</h3>
                         </div>
                         <div class="text-right">
-                             <span class="text-xs text-gray-400">จำนวน</span>
-                             <p class="font-bold text-gray-800">${item.amount}</p>
+                             <p class="text-xs text-gray-400 mb-0.5">จำนวน (SH)</p>
+                             <p class="font-bold text-lg text-gray-800">${item.amount}</p>
                         </div>
                     </div>
                     
-                    <div class="flex justify-between items-center text-center relative mt-4">
-                        <div class="absolute top-1/2 left-0 w-full h-1 bg-gray-100 -z-0"></div>
-                        
-                        <div class="bg-white px-2 z-10 flex flex-col items-center">
-                            <i class="fas fa-file-invoice ${step1Color} text-lg mb-1"></i>
-                            <span class="text-[10px] text-gray-500">เปิดบิล</span>
-                            <span class="text-[10px] text-gray-400">${item.details.bill.time || '-'}</span>
-                        </div>
-                        
-                        <div class="bg-white px-2 z-10 flex flex-col items-center">
-                            <i class="fas fa-check-circle ${step2Color} text-lg mb-1"></i>
-                            <span class="text-[10px] text-gray-500">ยืนยัน</span>
-                            <span class="text-[10px] text-gray-400">${item.details.conf.time || '-'}</span>
-                        </div>
-                        
-                        <div class="bg-white px-2 z-10 flex flex-col items-center">
-                            <i class="fas fa-truck ${step3Color} text-lg mb-1"></i>
-                            <span class="text-[10px] text-gray-500">จัดส่ง</span>
-                            <span class="text-[10px] text-gray-400">${item.details.ship.time || '-'}</span>
+                    <div class="relative px-2">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-progress" style="width: ${progressWidth}"></div>
+
+                        <div class="flex justify-between relative z-10">
+                            <div class="flex flex-col items-center group">
+                                <div class="w-4 h-4 rounded-full bg-ht-green border-2 border-white shadow-sm mb-2"></div>
+                                <span class="text-[10px] font-bold text-gray-600">เปิดบิล</span>
+                                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded mt-0.5">${item.details.bill.time || '-'}</span>
+                            </div>
+
+                            <div class="flex flex-col items-center group">
+                                <div class="w-4 h-4 rounded-full ${item.progress >= 2 ? 'bg-ht-green' : 'bg-gray-300'} border-2 border-white shadow-sm mb-2 transition-colors duration-500"></div>
+                                <span class="text-[10px] font-bold ${item.progress >= 2 ? 'text-gray-600' : 'text-gray-300'}">ยืนยัน</span>
+                                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded mt-0.5">${item.details.conf.time || '-'}</span>
+                            </div>
+
+                            <div class="flex flex-col items-center group">
+                                <div class="w-4 h-4 rounded-full ${item.progress >= 3 ? 'bg-ht-green' : 'bg-gray-300'} border-2 border-white shadow-sm mb-2 transition-colors duration-500"></div>
+                                <span class="text-[10px] font-bold ${item.progress >= 3 ? 'text-gray-600' : 'text-gray-300'}">จัดส่ง</span>
+                                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded mt-0.5">${item.details.ship.time || '-'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>`;
-                container.insertAdjacentHTML('beforeend', card);
             });
+            
+            container.innerHTML = html;
         }
 
         function updateDashboard(summary, latestItems) {
+            // Animate Numbers (Simple effect)
             document.getElementById('dash-total').innerText = summary.total;
             document.getElementById('dash-waiting').innerText = summary.waiting;
             document.getElementById('dash-shipped').innerText = summary.shipped;
 
             const listDiv = document.getElementById('latest-updates');
             listDiv.innerHTML = '';
+            
+            if(latestItems.length === 0) {
+                listDiv.innerHTML = '<p class="text-center text-gray-300 text-xs py-2">ไม่มีความเคลื่อนไหว</p>';
+                return;
+            }
+
             latestItems.forEach(item => {
-                let icon = item.progress === 3 ? '<i class="fas fa-check text-green-500"></i>' : '<i class="fas fa-clock text-orange-500"></i>';
+                let iconClass = item.progress === 3 
+                    ? 'fa-check-circle text-ht-green bg-green-50' 
+                    : 'fa-clock text-orange-400 bg-orange-50';
+                
                 listDiv.insertAdjacentHTML('beforeend', `
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <div class="flex items-center gap-2">
-                            ${icon}
-                            <span class="text-gray-600">${item.branch} (${item.doNumber})</span>
+                    <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center ${iconClass.split(' ').slice(1).join(' ')}">
+                                <i class="fas ${iconClass.split(' ')[0]}"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-800 font-bold text-xs">${item.branch}</p>
+                                <p class="text-gray-400 text-[10px]">DO: ${item.doNumber}</p>
+                            </div>
                         </div>
-                        <span class="text-xs text-gray-400">${item.details.bill.time}</span>
+                        <span class="text-[10px] text-gray-400 font-mono">${item.details.bill.time}</span>
                     </div>
                 `);
             });
@@ -227,5 +325,4 @@
         }
     </script>
 </body>
-
 </html>
