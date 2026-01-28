@@ -4,11 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HaadThip Tracking</title>
+    
+    <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons & Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -39,16 +45,21 @@
         .timeline-line { position: absolute; left: 0; right: 0; top: 28px; height: 2px; background: #E5E7EB; z-index: 0; }
         .timeline-progress { position: absolute; left: 0; top: 28px; height: 2px; background: #007A33; z-index: 1; transition: width 0.5s ease; }
         
-        /* Loading Animation */
+        /* Animation */
         .spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
         .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* Admin Console Style */
+        .admin-console { position: fixed; bottom: 0; left: 0; width: 100%; background: #333; color: #fff; padding: 10px; z-index: 100; transform: translateY(100%); transition: transform 0.3s ease; border-top-left-radius: 15px; border-top-right-radius: 15px; }
+        .admin-console.open { transform: translateY(0); }
     </style>
 </head>
 <body class="pb-24">
 
+    <!-- Header Section -->
     <header class="bg-ht-red text-white shadow-lg sticky top-0 z-50 rounded-b-3xl">
         <div class="px-5 py-6 flex justify-between items-center">
             <div>
@@ -62,7 +73,8 @@
                 <span id="live-indicator" class="absolute top-0 right-0 w-3 h-3 bg-green-400 border-2 border-ht-red rounded-full animate-pulse"></span>
             </div>
         </div>
-        
+
+        <!-- Search Bar -->
         <div class="px-5 -mb-6">
             <div class="relative shadow-md rounded-2xl bg-white overflow-hidden">
                 <input type="text" id="search-input" onkeyup="filterList()" placeholder="ค้นหาเลข DO หรือ สาขา..." 
@@ -74,6 +86,7 @@
         </div>
     </header>
 
+    <!-- Navigation Tabs -->
     <div class="mt-10 px-4 mb-2">
         <div class="flex text-center border-b border-gray-200">
             <div onclick="switchTab('tracking')" id="tab-tracking" class="flex-1 py-3 cursor-pointer tab-btn active-tab">
@@ -85,29 +98,37 @@
         </div>
     </div>
 
+    <!-- Page: Tracking List -->
     <div id="page-tracking" class="p-4 pt-2 space-y-5 min-h-[60vh]">
+        <!-- Skeleton Loader -->
         <div id="first-load-skeleton" class="space-y-4">
             <div class="h-36 bg-white rounded-2xl shadow-sm p-4 skeleton"></div>
             <div class="h-36 bg-white rounded-2xl shadow-sm p-4 skeleton"></div>
         </div>
 
+        <!-- Data List Container -->
         <div id="tracking-list" class="space-y-4 pb-10"></div>
     </div>
 
+    <!-- Page: Dashboard -->
     <div id="page-dashboard" class="p-4 pt-2 space-y-5 hidden-page">
         <div class="grid grid-cols-2 gap-4">
+            <!-- Card: Total -->
             <div class="bg-white p-5 rounded-2xl shadow-sm relative overflow-hidden group">
                 <div class="absolute right-0 top-0 w-16 h-16 bg-ht-red/5 rounded-bl-full -mr-2 -mt-2"></div>
                 <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">งานทั้งหมด</p>
                 <h2 id="dash-total" class="text-4xl font-bold text-gray-800 mt-2">-</h2>
             </div>
+            
+            <!-- Card: Waiting -->
             <div class="bg-white p-5 rounded-2xl shadow-sm relative overflow-hidden border border-orange-100">
                  <div class="absolute right-0 top-0 w-16 h-16 bg-orange-50 rounded-bl-full -mr-2 -mt-2"></div>
                 <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">รอจัดส่ง</p>
                 <h2 id="dash-waiting" class="text-4xl font-bold text-orange-500 mt-2">-</h2>
             </div>
         </div>
-        
+
+        <!-- Card: Success (Gradient) -->
         <div class="bg-gradient-to-br from-ht-green to-[#005c26] p-6 rounded-2xl shadow-lg shadow-green-200 text-white flex justify-between items-center relative overflow-hidden">
             <div class="absolute -right-6 -bottom-6 text-white opacity-10 text-9xl">
                 <i class="fas fa-check"></i>
@@ -122,22 +143,61 @@
             </div>
         </div>
 
+        <!-- Log List -->
         <div class="bg-white rounded-2xl shadow-sm p-5">
             <h3 class="font-bold text-gray-800 mb-4 flex items-center">
                 <span class="w-1 h-5 bg-ht-red rounded-full mr-2"></span>
                 Log ล่าสุด
             </h3>
             <div id="latest-updates" class="space-y-4 text-sm">
-                </div>
+                <!-- Log items will be injected here -->
+            </div>
         </div>
     </div>
 
+    <!-- Floating Admin Button -->
+    <button onclick="toggleAdmin()" class="fixed bottom-4 right-4 bg-gray-800 text-white p-3 rounded-full shadow-lg z-50 opacity-50 hover:opacity-100 transition">
+        <i class="fas fa-terminal"></i>
+    </button>
+
+    <!-- Admin Console Panel -->
+    <div id="admin-console" class="admin-console shadow-2xl">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-mono text-green-400">Sales Admin Console (Simulation)</span>
+            <button onclick="toggleAdmin()" class="text-gray-400"><i class="fas fa-times"></i></button>
+        </div>
+        <textarea id="admin-input" rows="2" class="w-full bg-gray-900 text-white text-sm p-2 rounded border border-gray-700 font-mono mb-2" 
+            placeholder="เช่น /เพิ่ม HY 3DO ... หรือ /PP 28.01.26 DO1245"></textarea>
+        <div class="flex justify-between items-center">
+             <div class="text-[10px] text-gray-400 space-y-1">
+                <p>1. /เพิ่ม [สาขา] [จำนวน] [DO/DO]</p>
+                <p>2. /[สาขา] [วันที่] [จำนวนบิล]</p>
+             </div>
+             <button onclick="executeCommand()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm transition">
+                Execute
+            </button>
+        </div>
+        <div id="admin-log" class="mt-2 text-[10px] text-yellow-400 font-mono h-12 overflow-y-auto"></div>
+    </div>
+
     <script>
-        // ==========================================
-        // ⚙️ ตั้งค่า: ใส่ URL Web App ของคุณที่นี่
-        // ==========================================
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyaLcjLZK6_baW1gsMFNjL1aTN-Yr5gJe2eq4tz7TdbntXr1t1tOX_Goq9BqSc2Xq0/exec'; 
-        // ==========================================
+        // *** CONFIGURATION ***
+        const GAS_API_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE'; 
+        
+        // Branch Mapping
+        const BRANCH_MAP = {
+            'HY': 'หาดใหญ่',
+            'SK': 'สงขลา',
+            'PL': 'พัทลุง',
+            'TR': 'ตรัง',
+            'ST': 'สตูล',
+            'PT': 'ปัตตานี',
+            'YL': 'ยะลา',
+            'NW': 'นราธิวาส',
+            'PP': 'ภูเก็ต',
+            'KB': 'กระบี่',
+            'PN': 'พังงา'
+        };
 
         let globalData = [];
         let isFirstLoad = true;
@@ -147,27 +207,143 @@
             await initLiff();
             fetchData(); // Load immediately
             
-            // 🔄 Auto Refresh System (Every 10 Seconds)
             autoRefreshInterval = setInterval(() => {
-                fetchData(true); // true = silent mode
+                fetchData(true); 
             }, 10000); 
         };
 
         async function initLiff() {
             try {
-                // await liff.init({ liffId: "YOUR_LIFF_ID" });
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     document.getElementById('user-display').innerText = `สวัสดี, ${profile.displayName}`;
                 }
-            } catch (err) { console.log('LIFF Error:', err); }
+            } catch (err) {
+                console.log('LIFF Init Error (Dev Mode):', err);
+            }
+        }
+
+        // *** ADMIN CONSOLE LOGIC (Simulation) ***
+        function toggleAdmin() {
+            document.getElementById('admin-console').classList.toggle('open');
+        }
+
+        function executeCommand() {
+            const input = document.getElementById('admin-input').value.trim();
+            const logDiv = document.getElementById('admin-log');
+            
+            if (!input || !input.startsWith('/')) {
+                logDiv.innerText = "Error: Command must start with /";
+                return;
+            }
+
+            // Split command preserving structure
+            const parts = input.split(/\s+/);
+            const cmdType = parts[0]; // /เพิ่ม, /ลบ, or /PP etc.
+
+            const currentTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            let updatedCount = 0;
+            let addedCount = 0;
+            let deletedCount = 0;
+
+            // --- MODE 1: Add or Delete specific DOs ---
+            if (cmdType === '/เพิ่ม' || cmdType === '/ลบ') {
+                if (parts.length < 4) {
+                    logDiv.innerText = "Format: /เพิ่ม [Branch] [Amount] [DO/DO]";
+                    return;
+                }
+                const branchCode = parts[1].toUpperCase();
+                const amountStr = parts[2];
+                const doString = parts[3];
+                const branchName = BRANCH_MAP[branchCode] || branchCode;
+                const doList = doString.split('/');
+
+                if (cmdType === '/เพิ่ม') {
+                    doList.forEach(doNum => {
+                        const existingIndex = globalData.findIndex(item => item.doNumber === doNum && item.branch === branchName);
+                        if (existingIndex !== -1) {
+                            globalData[existingIndex].amount = amountStr;
+                            globalData[existingIndex].details.bill.time = currentTime;
+                            updatedCount++;
+                        } else {
+                            globalData.unshift({
+                                doNumber: doNum,
+                                branch: branchName,
+                                amount: amountStr,
+                                targetDate: new Date().toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+                                progress: 1,
+                                details: { bill: {time: currentTime}, conf: {time: ''}, ship: {time: ''} }
+                            });
+                            addedCount++;
+                        }
+                    });
+                    logDiv.innerText = `Added: ${addedCount}, Updated: ${updatedCount}`;
+
+                } else if (cmdType === '/ลบ') {
+                    const initialLength = globalData.length;
+                    globalData = globalData.filter(item => !doList.includes(item.doNumber));
+                    deletedCount = initialLength - globalData.length;
+                    logDiv.innerText = `Deleted: ${deletedCount} items`;
+                }
+            } 
+            // --- MODE 2: Update Amount by Date (e.g., /PP 28.01.26 DO1245) ---
+            else {
+                // Parse: /BRANCH DATE AMOUNT
+                if (parts.length < 3) {
+                    logDiv.innerText = "Format: /[Branch] [Date] [Amount]";
+                    return;
+                }
+                
+                const branchCode = cmdType.substring(1).toUpperCase(); // Remove /
+                const branchName = BRANCH_MAP[branchCode] || branchCode;
+                const dateInput = parts[1]; // e.g. 28.01.26
+                const amountStr = parts[2]; // e.g. DO1245
+
+                // Normalize Date: 28.01.26 -> 28/01/69 (or 26 depending on system)
+                // We try to match leniently
+                const normalizedDateSlash = dateInput.replace(/\./g, '/'); // 28/01/26
+                
+                // Helper to check date match
+                const isDateMatch = (targetDate) => {
+                    if (!targetDate) return false;
+                    // Check direct match or with year adjustment (AD vs BE)
+                    // Assumption: Input '26' implies 2026 (AD) -> 69 (BE)
+                    const [d, m, y] = normalizedDateSlash.split('/');
+                    const beYear = parseInt(y) + 43; // 26 + 43 = 69
+                    
+                    return targetDate.includes(normalizedDateSlash) || 
+                           targetDate.includes(`${d}/${m}/${beYear}`) ||
+                           targetDate.includes(`${d}/${m}/${y}`);
+                };
+
+                let found = false;
+                globalData.forEach(item => {
+                    if (item.branch === branchName && isDateMatch(item.targetDate)) {
+                        item.amount = amountStr; // Overwrite amount
+                        item.details.bill.time = currentTime; // Update timestamp
+                        updatedCount++;
+                        found = true;
+                    }
+                });
+
+                if (found) {
+                    logDiv.innerText = `Updated ${updatedCount} bills for ${branchName} on ${normalizedDateSlash}`;
+                } else {
+                    logDiv.innerText = `No records found for ${branchName} on ${normalizedDateSlash}`;
+                }
+            }
+
+            // Refresh UI
+            renderTrackingList(globalData);
+            updateDashboardWithData(globalData);
+            document.getElementById('admin-input').value = '';
         }
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active-tab'));
             document.getElementById(`tab-${tabName}`).classList.add('active-tab');
-            document.getElementById('page-tracking').style.display = tabName === 'tracking' ? 'block' : 'none';
-            document.getElementById('page-dashboard').style.display = tabName === 'dashboard' ? 'block' : 'none';
+            document.getElementById('page-tracking').classList.toggle('hidden-page', tabName !== 'tracking');
+            document.getElementById('page-dashboard').classList.toggle('hidden-page', tabName !== 'dashboard');
         }
 
         function manualRefresh() {
@@ -177,31 +353,35 @@
         }
 
         async function fetchData(isSilent = false) {
-            // Loading State (Only for first load or manual refresh)
-            if (!isSilent) {
-                if(isFirstLoad) document.getElementById('first-load-skeleton').style.display = 'block';
-                document.getElementById('refresh-icon').classList.add('spin-slow');
-            }
+            if (!isSilent && isFirstLoad) document.getElementById('first-load-skeleton').style.display = 'block';
 
             try {
-                // Add timestamp to prevent caching
-                const response = await fetch(`${GAS_API_URL}?action=getTrackingData&t=${new Date().getTime()}`);
-                const json = await response.json();
-                
-                if (json.status === 'success') {
-                    // Check if data actually changed could be done here, 
-                    // but for simplicity we re-render.
-                    globalData = json.data;
-                    renderTrackingList(globalData);
-                    updateDashboard(json.dashboard, json.data.slice(0, 5));
+                // In real usage, you'd fetch from API. 
+                // For this demo, if globalData is empty, we load mock data once.
+                if (globalData.length === 0) {
+                     const mockData = generateMockData();
+                     globalData = mockData.data;
+                     updateDashboardWithData(globalData);
                 }
+                
+                // If fetching from API, globalData would be overwritten here.
+                if(GAS_API_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                    const response = await fetch(`${GAS_API_URL}?action=getTrackingData&t=${new Date().getTime()}`);
+                    const json = await response.json();
+                    if (json.status === 'success') {
+                         globalData = json.data;
+                         updateDashboardWithData(globalData);
+                    }
+                } else {
+                    renderTrackingList(globalData);
+                }
+
             } catch (error) {
                 console.error('Fetch Error:', error);
-                if(!isSilent) alert('การเชื่อมต่อขัดข้อง');
             } finally {
                 if (!isSilent) {
                     document.getElementById('first-load-skeleton').style.display = 'none';
-                    document.getElementById('refresh-icon').classList.remove('spin-slow');
+                    document.getElementById('refresh-icon')?.classList.remove('spin-slow');
                     isFirstLoad = false;
                 }
             }
@@ -209,7 +389,8 @@
 
         function renderTrackingList(data) {
             const container = document.getElementById('tracking-list');
-            
+            container.innerHTML = '';
+
             if(data.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-10 opacity-50">
@@ -219,27 +400,21 @@
                 return;
             }
 
-            // Create HTML string
             let html = '';
             data.forEach(item => {
-                // Determine Colors & Progress Width
                 let progressWidth = '0%';
-                if (item.progress === 1) progressWidth = '0%';    // Dot 1 active
-                if (item.progress === 2) progressWidth = '50%';   // Dot 2 active
-                if (item.progress === 3) progressWidth = '100%';  // Dot 3 active
+                if (item.progress === 2) progressWidth = '50%';
+                if (item.progress === 3) progressWidth = '100%';
 
-                const activeColor = 'text-ht-green';
-                const inactiveColor = 'text-gray-300';
-                
-                html += `
+                const card = `
                 <div class="bg-white rounded-2xl shadow-sm p-5 relative border border-gray-100 transition hover:shadow-md">
                     <div class="flex justify-between items-start mb-6">
                         <div>
+                            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-md mb-1 inline-block">${item.targetDate || 'วันนี้'}</span>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="bg-red-50 text-ht-red text-[10px] font-bold px-2 py-0.5 rounded-md border border-red-100 uppercase tracking-wide">
                                     ${item.branch}
                                 </span>
-                                <span class="text-xs text-gray-400 font-light">${item.targetDate}</span>
                             </div>
                             <h3 class="text-xl font-bold text-gray-800">DO ${item.doNumber}</h3>
                         </div>
@@ -249,38 +424,44 @@
                         </div>
                     </div>
                     
-                    <div class="relative px-2">
+                    <div class="flex justify-between items-center text-center relative mt-4">
                         <div class="timeline-line"></div>
                         <div class="timeline-progress" style="width: ${progressWidth}"></div>
 
-                        <div class="flex justify-between relative z-10">
-                            <div class="flex flex-col items-center group">
-                                <div class="w-4 h-4 rounded-full bg-ht-green border-2 border-white shadow-sm mb-2"></div>
-                                <span class="text-[10px] font-bold text-gray-600">เปิดบิล</span>
-                                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded mt-0.5">${item.details.bill.time || '-'}</span>
-                            </div>
+                        <div class="flex flex-col items-center group relative z-10">
+                            <div class="w-4 h-4 rounded-full bg-ht-green border-2 border-white shadow-sm mb-2"></div>
+                            <span class="text-[10px] font-bold text-gray-600">เปิดบิล</span>
+                            <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded mt-0.5">${item.details.bill.time || '-'}</span>
+                        </div>
 
-                            <div class="flex flex-col items-center group">
-                                <div class="w-4 h-4 rounded-full ${item.progress >= 2 ? 'bg-ht-green' : 'bg-gray-300'} border-2 border-white shadow-sm mb-2 transition-colors duration-500"></div>
-                                <span class="text-[10px] font-bold ${item.progress >= 2 ? 'text-gray-600' : 'text-gray-300'}">ยืนยัน</span>
-                                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded mt-0.5">${item.details.conf.time || '-'}</span>
-                            </div>
+                        <div class="flex flex-col items-center group relative z-10">
+                            <div class="w-4 h-4 rounded-full ${item.progress >= 2 ? 'bg-ht-green' : 'bg-gray-300'} border-2 border-white shadow-sm mb-2 transition-colors duration-500"></div>
+                            <span class="text-[10px] font-bold ${item.progress >= 2 ? 'text-gray-600' : 'text-gray-300'}">ยืนยัน</span>
+                            <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded mt-0.5">${item.details.conf.time || '-'}</span>
+                        </div>
 
-                            <div class="flex flex-col items-center group">
-                                <div class="w-4 h-4 rounded-full ${item.progress >= 3 ? 'bg-ht-green' : 'bg-gray-300'} border-2 border-white shadow-sm mb-2 transition-colors duration-500"></div>
-                                <span class="text-[10px] font-bold ${item.progress >= 3 ? 'text-gray-600' : 'text-gray-300'}">จัดส่ง</span>
-                                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded mt-0.5">${item.details.ship.time || '-'}</span>
-                            </div>
+                        <div class="flex flex-col items-center group relative z-10">
+                            <div class="w-4 h-4 rounded-full ${item.progress >= 3 ? 'bg-ht-green' : 'bg-gray-300'} border-2 border-white shadow-sm mb-2 transition-colors duration-500"></div>
+                            <span class="text-[10px] font-bold ${item.progress >= 3 ? 'text-gray-600' : 'text-gray-300'}">จัดส่ง</span>
+                            <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded mt-0.5">${item.details.ship.time || '-'}</span>
                         </div>
                     </div>
                 </div>`;
+                html += card;
             });
-            
             container.innerHTML = html;
         }
 
+        // Helper to calculate dashboard stats on the fly based on current globalData
+        function updateDashboardWithData(data) {
+            const total = data.length;
+            const shipped = data.filter(i => i.progress === 3).length;
+            const waiting = total - shipped;
+            
+            updateDashboard({total, waiting, shipped}, data.slice(0, 5));
+        }
+
         function updateDashboard(summary, latestItems) {
-            // Animate Numbers (Simple effect)
             document.getElementById('dash-total').innerText = summary.total;
             document.getElementById('dash-waiting').innerText = summary.waiting;
             document.getElementById('dash-shipped').innerText = summary.shipped;
@@ -295,33 +476,59 @@
 
             latestItems.forEach(item => {
                 let iconClass = item.progress === 3 
-                    ? 'fa-check-circle text-ht-green bg-green-50' 
+                    ? 'fa-check text-ht-green bg-green-50' 
                     : 'fa-clock text-orange-400 bg-orange-50';
                 
                 listDiv.insertAdjacentHTML('beforeend', `
                     <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center ${iconClass.split(' ').slice(1).join(' ')}">
-                                <i class="fas ${iconClass.split(' ')[0]}"></i>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center ${iconClass.split(' ').slice(2).join(' ')}">
+                                <i class="fas ${iconClass.split(' ')[0]} ${iconClass.split(' ')[1]}"></i>
                             </div>
                             <div>
                                 <p class="text-gray-800 font-bold text-xs">${item.branch}</p>
                                 <p class="text-gray-400 text-[10px]">DO: ${item.doNumber}</p>
                             </div>
                         </div>
-                        <span class="text-[10px] text-gray-400 font-mono">${item.details.bill.time}</span>
+                        <span class="text-[10px] text-gray-400 font-mono">${getCurrentStepTime(item)}</span>
                     </div>
                 `);
             });
         }
 
+        function getCurrentStepTime(item) {
+            if (item.progress === 3) return item.details.ship.time;
+            if (item.progress === 2) return item.details.conf.time;
+            return item.details.bill.time;
+        }
+
         function filterList() {
-            const query = document.getElementById('search-input').value.toLowerCase();
+            const input = document.getElementById('search-input').value.toUpperCase();
             const filtered = globalData.filter(item => 
-                item.doNumber.toLowerCase().includes(query) || 
-                item.branch.toLowerCase().includes(query)
+                item.doNumber.includes(input) || item.branch.includes(input)
             );
             renderTrackingList(filtered);
+        }
+
+        function generateMockData() {
+            return {
+                status: 'success',
+                dashboard: { total: 3, waiting: 2, shipped: 1 },
+                data: [
+                    {
+                        doNumber: '80001234', branch: 'หาดใหญ่', amount: '500ลัง', targetDate: '24/06/68', progress: 3,
+                        details: { bill: {time: '08:30'}, conf: {time: '09:15'}, ship: {time: '10:45'} }
+                    },
+                    {
+                        doNumber: '80001235', branch: 'สงขลา', amount: '1200ลัง', targetDate: '24/06/68', progress: 2,
+                        details: { bill: {time: '09:00'}, conf: {time: '09:45'}, ship: {time: ''} }
+                    },
+                    {
+                        doNumber: '80001236', branch: 'พัทลุง', amount: '350ลัง', targetDate: '24/06/68', progress: 1,
+                        details: { bill: {time: '10:15'}, conf: {time: ''}, ship: {time: ''} }
+                    }
+                ]
+            };
         }
     </script>
 </body>
