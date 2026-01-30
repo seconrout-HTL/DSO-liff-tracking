@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HaadThip Tracking</title>
+    <title>HaadThip Tracking System</title>
+    
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     
@@ -27,7 +30,7 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
         
-        /* Timeline Logic */
+        /* Timeline Styles */
         .timeline-line { position: absolute; left: 0; right: 0; top: 24px; height: 2px; background: #E5E7EB; z-index: 0; }
         .timeline-progress { position: absolute; left: 0; top: 24px; height: 2px; background: #007A33; z-index: 1; transition: width 0.5s ease; }
         
@@ -35,11 +38,11 @@
         .spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        /* Mobile Specific */
+        /* Mobile Nav Styles */
         .mobile-nav-item.active { color: #E41E2B; font-weight: bold; }
         .mobile-nav-item.active i { transform: translateY(-5px); }
-
-        /* Desktop Specific */
+        
+        /* Desktop Sidebar Styles */
         .sidebar-link { transition: all 0.2s; }
         .sidebar-link:hover, .sidebar-link.active { background-color: #ffeaea; color: #E41E2B; border-right: 4px solid #E41E2B; }
     </style>
@@ -54,7 +57,7 @@
                     <h1 class="text-xl font-bold">Tracking</h1>
                     <p id="user-display-mobile" class="text-xs text-red-100 opacity-90">Guest User</p>
                 </div>
-                <button onclick="manualRefresh()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center">
+                <button onclick="manualRefresh()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition">
                     <i class="fas fa-sync-alt text-xs refresh-icon"></i>
                 </button>
             </div>
@@ -62,15 +65,21 @@
             <div class="flex gap-2">
                 <div class="flex-1 bg-white rounded-xl overflow-hidden flex items-center px-3 shadow-sm">
                     <i class="fas fa-search text-gray-400 text-xs"></i>
-                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา DO..." class="w-full p-2 text-xs outline-none">
+                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา DO..." class="w-full p-2 text-xs outline-none text-gray-700">
                 </div>
                 <div class="w-1/3 bg-white rounded-xl overflow-hidden shadow-sm">
-                    <input type="date" id="date-mobile" onchange="syncFilters('mobile')" class="w-full p-2 text-xs text-center outline-none bg-white">
+                    <input type="date" id="date-mobile" onchange="syncFilters('mobile')" class="w-full p-2 text-xs text-center outline-none bg-white text-gray-700">
                 </div>
             </div>
         </header>
 
         <main class="p-4 space-y-4">
+            
+            <div id="loading-skeleton-mobile" class="space-y-4 hidden">
+                <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
+                <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
+            </div>
+
             <div id="m-page-tracking" class="mobile-page block space-y-4">
                 <div id="m-list-container">
                     </div>
@@ -80,15 +89,15 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-red">
                         <p class="text-[10px] text-gray-400">งานทั้งหมด</p>
-                        <h2 class="text-2xl font-bold" id="m-dash-total">-</h2>
+                        <h2 class="text-2xl font-bold text-gray-800" id="m-dash-total">-</h2>
                     </div>
                     <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-green">
                         <p class="text-[10px] text-gray-400">ส่งแล้ว</p>
-                        <h2 class="text-2xl font-bold" id="m-dash-shipped">-</h2>
+                        <h2 class="text-2xl font-bold text-ht-green" id="m-dash-shipped">-</h2>
                     </div>
                 </div>
                 <div class="bg-white rounded-xl shadow-sm p-4">
-                    <h3 class="font-bold text-sm mb-3">ความเคลื่อนไหวล่าสุด</h3>
+                    <h3 class="font-bold text-sm mb-3 text-gray-800">ความเคลื่อนไหวล่าสุด</h3>
                     <div id="m-latest-updates" class="space-y-3"></div>
                 </div>
             </div>
@@ -134,7 +143,7 @@
                 <div class="flex gap-3">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา DO, สาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red">
+                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา DO, สาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
                     </div>
                     <input type="date" id="date-desktop" onchange="syncFilters('desktop')" class="border rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-ht-red">
                     <button onclick="manualRefresh()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 transition">
@@ -144,15 +153,15 @@
             </div>
 
             <div id="d-page-tracking" class="desktop-page block">
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden min-h-[400px]">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                             <tr>
-                                <th class="p-4">DO Number</th>
-                                <th class="p-4">สาขา</th>
-                                <th class="p-4">สถานะ</th>
-                                <th class="p-4">ความคืบหน้า</th>
-                                <th class="p-4 text-right">จำนวน</th>
+                                <th class="p-4 font-semibold">DO Number</th>
+                                <th class="p-4 font-semibold">สาขา</th>
+                                <th class="p-4 font-semibold">สถานะ</th>
+                                <th class="p-4 font-semibold w-1/3">ความคืบหน้า</th>
+                                <th class="p-4 text-right font-semibold">จำนวน</th>
                             </tr>
                         </thead>
                         <tbody id="d-table-body" class="text-sm divide-y divide-gray-100">
@@ -181,28 +190,35 @@
     </div>
 
     <script>
+        // ==========================================
+        // ⚙️ SETTINGS
+        // ==========================================
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
-
+        
         let globalData = [];
         let isFirstLoad = true;
-        let isDateAutoSet = false; // ตัวแปรเช็คว่าตั้งค่าวันที่อัตโนมัติไปหรือยัง
+        let isDateAutoSet = false;
 
         window.onload = async function() {
             await initLiff();
             fetchData();
-            // Auto Refresh
+            // Auto Refresh every 20 seconds
             setInterval(() => fetchData(true), 20000); 
         };
 
         async function initLiff() {
             try {
-                // if (liff.isLoggedIn()) { ... }
-                // Mock Display
-            } catch (err) { console.log(err); }
+                // await liff.init({ liffId: "YOUR_LIFF_ID" });
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    document.getElementById('user-display-mobile').innerText = profile.displayName;
+                    document.getElementById('user-display-desktop').innerText = profile.displayName;
+                }
+            } catch (err) { console.log('LIFF Error:', err); }
         }
 
         // ==========================================
-        // 🔄 DATA FETCHING & DATE LOGIC
+        // 🔄 DATA FETCHING & LOGIC
         // ==========================================
         async function fetchData(isSilent = false) {
             if (!isSilent) toggleLoading(true);
@@ -214,16 +230,13 @@
                 if (json.status === 'success') {
                     globalData = json.data;
 
-                    // 💡 สำคัญ: Logic ตั้งค่าวันที่อัตโนมัติจากข้อมูล
+                    // 📅 Auto Select Date Logic
                     if (!isDateAutoSet && globalData.length > 0) {
-                        // หาวันที่ที่มีข้อมูลล่าสุด (หรือจะเอาวันที่มีข้อมูลมากสุดก็ได้)
-                        // สมมติ: เอาวันที่จากรายการแรกสุด (ซึ่งมักจะเป็นรายการล่าสุด)
+                        // ดึงวันที่จากรายการแรก (ซึ่งมักจะล่าสุด) มาแสดง
                         const latestDate = globalData[0].targetDate; 
-                        
                         document.getElementById('date-mobile').value = latestDate;
                         document.getElementById('date-desktop').value = latestDate;
-                        
-                        isDateAutoSet = true; // ตั้งค่าแค่ครั้งแรกที่โหลดเจอข้อมูล
+                        isDateAutoSet = true;
                     } else if (globalData.length === 0 && !isDateAutoSet) {
                         // ถ้าไม่มีข้อมูลเลย ให้เป็นวันนี้
                         const today = new Date().toISOString().split('T')[0];
@@ -231,42 +244,60 @@
                         document.getElementById('date-desktop').value = today;
                     }
 
-                    // Render ทั้งสองหน้าจอ
+                    // Render Data
                     applyFilters(); 
                     updateDashboards(json.dashboard, json.data);
                 }
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Fetch Error:', error);
             } finally {
                 if (!isSilent) toggleLoading(false);
                 isFirstLoad = false;
             }
         }
 
+        function toggleLoading(isLoading) {
+            // Spin Icon
+            const icons = document.querySelectorAll('.refresh-icon');
+            icons.forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
+            
+            // Skeleton (Show only on first load mobile)
+            if(isFirstLoad) {
+                const skeleton = document.getElementById('loading-skeleton-mobile');
+                const list = document.getElementById('m-list-container');
+                if(isLoading) {
+                    skeleton.classList.remove('hidden');
+                    list.classList.add('hidden');
+                } else {
+                    skeleton.classList.add('hidden');
+                    list.classList.remove('hidden');
+                }
+            }
+        }
+
         // ==========================================
-        // 🔍 FILTER & RENDER
+        // 🔍 FILTER & SYNC (FIXED ERROR HERE)
         // ==========================================
         function syncFilters(source) {
-            // ดึงค่าจาก source ที่พิมพ์ แล้วไปใส่ให้อีกฝั่งด้วย
             const searchVal = document.getElementById(`search-${source}`).value;
             const dateVal = document.getElementById(`date-${source}`).value;
-
             const target = source === 'mobile' ? 'desktop' : 'mobile';
+            
             document.getElementById(`search-${target}`).value = searchVal;
             document.getElementById(`date-${target}`).value = dateVal;
-
             applyFilters();
         }
 
         function applyFilters() {
-            // ใช้ค่าจาก Mobile เป็นหลัก (เพราะค่าเท่ากันแล้ว)
             const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
             const dateQuery = document.getElementById('date-mobile').value;
 
             const filtered = globalData.filter(item => {
-                const matchesSearch = item.doNumber.toLowerCase().includes(searchQuery) || 
-                                    item.branch.toLowerCase().includes(searchQuery);
-                // ถ้ามี dateQuery ให้กรองตามวันที่ใน data (targetDate)
+                // 🔴 FIX: แปลงเป็น String ก่อนเรียก toLowerCase() เพื่อป้องกัน Error
+                const doStr = String(item.doNumber || '').toLowerCase(); 
+                const branchStr = String(item.branch || '').toLowerCase();
+                
+                const matchesSearch = doStr.includes(searchQuery) || branchStr.includes(searchQuery);
                 const matchesDate = !dateQuery || item.targetDate === dateQuery;
                 
                 return matchesSearch && matchesDate;
@@ -276,25 +307,27 @@
             renderDesktopTable(filtered);
         }
 
-        // 📱 Render Mobile List (Cards)
+        // ==========================================
+        // 📱 RENDER MOBILE
+        // ==========================================
         function renderMobileList(data) {
             const container = document.getElementById('m-list-container');
             if(data.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-400 py-10">ไม่พบรายการ</div>';
+                container.innerHTML = `<div class="text-center py-10 opacity-50"><i class="fas fa-box-open text-4xl mb-2 text-gray-300"></i><p class="text-gray-400 text-sm">ไม่พบรายการ</p></div>`;
                 return;
             }
             
             container.innerHTML = data.map(item => {
-                let p = item.progress; // 1-4
-                let width = p===1 ? '0%' : p===2 ? '33%' : p===3 ? '66%' : '100%';
+                let p = item.progress; 
+                let width = p===1 ? '0%' : p===2 ? '33.33%' : p===3 ? '66.66%' : '100%';
                 
                 return `
-                <div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-50 relative overflow-hidden">
+                <div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-50 relative overflow-hidden transition active:scale-[0.99]">
                     <div class="flex justify-between items-start mb-6 relative z-10">
                         <div>
-                            <span class="bg-red-50 text-ht-red text-[10px] px-2 py-0.5 rounded font-bold">${item.branch}</span>
+                            <span class="bg-red-50 text-ht-red text-[10px] px-2 py-0.5 rounded font-bold border border-red-100">${item.branch}</span>
                             <h3 class="text-lg font-bold text-gray-800 mt-1">DO ${item.doNumber}</h3>
-                            <p class="text-[10px] text-gray-400">${item.targetDate}</p>
+                            <p class="text-[10px] text-gray-400"><i class="far fa-calendar-alt mr-1"></i>${item.targetDate}</p>
                         </div>
                         <div class="text-right">
                              <p class="text-xl font-bold text-gray-800">${item.amount}</p>
@@ -306,79 +339,93 @@
                         <div class="timeline-line"></div>
                         <div class="timeline-progress" style="width: ${width}"></div>
                         <div class="flex justify-between relative z-10 text-[9px] font-bold text-center">
-                            <div class="w-1/4"><div class="w-3 h-3 mx-auto bg-ht-green rounded-full border mb-1"></div>เปิดบิล<br><span class="font-normal text-gray-400">${item.details.bill.time}</span></div>
-                            <div class="w-1/4"><div class="w-3 h-3 mx-auto ${p>=2?'bg-ht-green':'bg-gray-300'} rounded-full border mb-1"></div>ยืนยัน<br><span class="font-normal text-gray-400">${item.details.conf.time||'-'}</span></div>
-                            <div class="w-1/4"><div class="w-3 h-3 mx-auto ${p>=3?'bg-blue-500':'bg-gray-300'} rounded-full border mb-1"></div>ขึ้นของ<br><span class="font-normal text-gray-400">${item.details.load?.time||'-'}</span></div>
-                            <div class="w-1/4"><div class="w-3 h-3 mx-auto ${p>=4?'bg-ht-green':'bg-gray-300'} rounded-full border mb-1"></div>จัดส่ง<br><span class="font-normal text-gray-400">${item.details.ship.time||'-'}</span></div>
+                            ${renderStepMobile('เปิดบิล', item.details.bill.time, true)}
+                            ${renderStepMobile('ยืนยัน', item.details.conf.time, p>=2)}
+                            ${renderStepMobile('ขึ้นของ', item.details.load?.time, p>=3, 'blue')}
+                            ${renderStepMobile('จัดส่ง', item.details.ship.time, p>=4)}
                         </div>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        // 💻 Render Desktop Table
+        function renderStepMobile(label, time, isActive, color='green') {
+            const bg = isActive ? (color==='blue' ? 'bg-blue-500' : 'bg-ht-green') : 'bg-gray-300';
+            const txt = isActive ? (color==='blue' ? 'text-blue-600' : 'text-gray-600') : 'text-gray-300';
+            return `
+            <div class="w-1/4 flex flex-col items-center">
+                <div class="w-3 h-3 ${bg} rounded-full border border-white shadow-sm mb-1.5 transition-colors"></div>
+                <span class="${txt}">${label}</span>
+                <span class="font-normal text-gray-400 scale-90 block">${time||'-'}</span>
+            </div>`;
+        }
+
+        // ==========================================
+        // 💻 RENDER DESKTOP
+        // ==========================================
         function renderDesktopTable(data) {
             const tbody = document.getElementById('d-table-body');
             if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400">ไม่พบข้อมูล</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
                 return;
             }
 
             tbody.innerHTML = data.map(item => {
                 let statusBadge = '';
-                if(item.progress === 4) statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">จัดส่งแล้ว</span>';
-                else if(item.progress === 3) statusBadge = '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">กำลังขึ้นของ</span>';
-                else if(item.progress === 2) statusBadge = '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">ยืนยันแล้ว</span>';
-                else statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">เปิดบิล</span>';
+                if(item.progress === 4) statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">จัดส่งแล้ว</span>';
+                else if(item.progress === 3) statusBadge = '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">กำลังขึ้นของ</span>';
+                else if(item.progress === 2) statusBadge = '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold">ยืนยันแล้ว</span>';
+                else statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">เปิดบิล</span>';
 
                 let width = item.progress===1 ? '5%' : item.progress===2 ? '40%' : item.progress===3 ? '70%' : '100%';
                 let barColor = item.progress===3 ? 'bg-blue-500' : 'bg-ht-green';
 
+                // Safe Time Display
+                const tLoad = item.details.load ? item.details.load.time : '-';
+
                 return `
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="p-4 font-bold text-gray-700">${item.doNumber}<div class="text-xs text-gray-400 font-normal">${item.targetDate}</div></td>
+                <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                    <td class="p-4 font-bold text-gray-700">${item.doNumber}<div class="text-xs text-gray-400 font-normal mt-0.5">${item.targetDate}</div></td>
                     <td class="p-4 text-gray-600">${item.branch}</td>
                     <td class="p-4">${statusBadge}</td>
                     <td class="p-4">
-                        <div class="w-full bg-gray-200 rounded-full h-2.5">
-                            <div class="${barColor} h-2.5 rounded-full" style="width: ${width}"></div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="${barColor} h-2 rounded-full transition-all duration-500" style="width: ${width}"></div>
                         </div>
-                        <div class="text-[10px] text-gray-400 mt-1 flex justify-between">
-                            <span>เริ่ม: ${item.details.bill.time}</span>
-                            <span>ล่าสุด: ${getLastTime(item)}</span>
+                        <div class="text-[10px] text-gray-400 mt-1.5 flex justify-between font-mono">
+                            <span>B: ${item.details.bill.time}</span>
+                            <span>L: ${tLoad}</span>
+                            <span>S: ${item.details.ship.time||'-'}</span>
                         </div>
                     </td>
-                    <td class="p-4 text-right font-bold text-gray-800">${item.amount}</td>
+                    <td class="p-4 text-right font-bold text-ht-red text-lg">${item.amount}</td>
                 </tr>`;
             }).join('');
         }
 
-        function getLastTime(item) {
-            if(item.progress === 4) return item.details.ship.time;
-            if(item.progress === 3) return item.details.load.time;
-            if(item.progress === 2) return item.details.conf.time;
-            return item.details.bill.time;
-        }
-
         function updateDashboards(summary, items) {
-            // Update Mobile Dash
-            document.getElementById('m-dash-total').innerText = summary.total;
-            document.getElementById('m-dash-shipped').innerText = summary.shipped;
+            // Update Mobile
+            document.getElementById('m-dash-total').innerText = summary.total || 0;
+            document.getElementById('m-dash-shipped').innerText = summary.shipped || 0;
             
-            // Update Desktop Dash
-            document.getElementById('d-dash-total').innerText = summary.total;
-            document.getElementById('d-dash-loading').innerText = summary.loading;
-            document.getElementById('d-dash-shipped').innerText = summary.shipped;
+            // Update Desktop
+            document.getElementById('d-dash-total').innerText = summary.total || 0;
+            document.getElementById('d-dash-loading').innerText = summary.loading || 0;
+            document.getElementById('d-dash-shipped').innerText = summary.shipped || 0;
 
-            // Latest Updates (Mobile only logic for now, easy to duplicate for desktop if needed)
+            // List Updates (Mobile)
             const mList = document.getElementById('m-latest-updates');
-            mList.innerHTML = items.slice(0,5).map(i => `
-                <div class="flex items-center gap-3 text-xs border-b pb-2 last:border-0">
-                    <div class="w-2 h-2 rounded-full ${i.progress===4?'bg-green-500':'bg-red-500'}"></div>
-                    <div class="flex-1 text-gray-600">${i.doNumber} (${i.branch})</div>
-                    <div class="text-gray-400">${i.details.bill.time}</div>
-                </div>
-            `).join('');
+            mList.innerHTML = items.slice(0,5).map(i => {
+                let color = i.progress === 4 ? 'bg-green-500' : (i.progress===3 ? 'bg-blue-500' : 'bg-orange-400');
+                return `
+                <div class="flex items-center gap-3 text-xs border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                    <div class="w-2 h-2 rounded-full ${color}"></div>
+                    <div class="flex-1 text-gray-700 font-medium">
+                        ${i.doNumber} <span class="text-gray-400 font-normal">(${i.branch})</span>
+                    </div>
+                    <div class="text-gray-400 font-mono text-[10px]">${i.details.bill.time}</div>
+                </div>`;
+            }).join('');
         }
 
         // ==========================================
@@ -399,19 +446,15 @@
             document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
             document.getElementById(`d-page-${tab}`).classList.remove('hidden');
             
-            document.getElementById('desktop-page-title').innerText = tab === 'tracking' ? 'รายการงาน (Tracking)' : 'ภาพรวม (Dashboard)';
+            document.getElementById('desktop-page-title').innerText = tab === 'tracking' ? 'รายการงาน (List)' : 'ภาพรวม (Dashboard)';
         }
 
         function manualRefresh() {
-            document.querySelectorAll('.refresh-icon').forEach(icon => icon.classList.add('spin-slow'));
+            toggleLoading(true);
             fetchData(false).then(() => {
-                 document.querySelectorAll('.refresh-icon').forEach(icon => icon.classList.remove('spin-slow'));
+                // Short delay for visual feedback
+                setTimeout(() => toggleLoading(false), 500);
             });
-        }
-
-        function toggleLoading(isLoading) {
-            const icons = document.querySelectorAll('.refresh-icon');
-            icons.forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
         }
     </script>
 </body>
