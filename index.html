@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HaadThip Tracking System</title>
+    <title>HaadThip Tracking</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -25,158 +25,187 @@
     </script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; -webkit-tap-highlight-color: transparent; }
-        .hidden-page { display: none; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
         
-        /* สไตล์สำหรับ Tabs */
-        .tab-btn { position: relative; color: #9CA3AF; transition: all 0.3s ease; }
-        .tab-btn.active-tab { color: #E41E2B; font-weight: 700; }
-        .tab-btn.active-tab::after {
-            content: ''; position: absolute; bottom: 0; left: 25%; width: 50%; height: 4px;
-            background-color: #E41E2B; border-radius: 10px 10px 0 0;
-        }
-
         /* Timeline Logic */
-        .timeline-line { position: absolute; left: 0; right: 0; top: 28px; height: 2px; background: #E5E7EB; z-index: 0; }
-        .timeline-progress { position: absolute; left: 0; top: 28px; height: 2px; background: #007A33; z-index: 1; transition: width 0.5s ease; }
+        .timeline-line { position: absolute; left: 0; right: 0; top: 24px; height: 2px; background: #E5E7EB; z-index: 0; }
+        .timeline-progress { position: absolute; left: 0; top: 24px; height: 2px; background: #007A33; z-index: 1; transition: width 0.5s ease; }
         
         /* Animations */
         .spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        /* Mobile Specific */
+        .mobile-nav-item.active { color: #E41E2B; font-weight: bold; }
+        .mobile-nav-item.active i { transform: translateY(-5px); }
 
-        /* Custom Scrollbar สำหรับ Desktop */
-        @media (min-width: 768px) {
-            ::-webkit-scrollbar { width: 8px; }
-            ::-webkit-scrollbar-track { background: #f1f1f1; }
-            ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
-            ::-webkit-scrollbar-thumb:hover { background: #E41E2B; }
-        }
+        /* Desktop Specific */
+        .sidebar-link { transition: all 0.2s; }
+        .sidebar-link:hover, .sidebar-link.active { background-color: #ffeaea; color: #E41E2B; border-right: 4px solid #E41E2B; }
     </style>
 </head>
-<body class="pb-10">
+<body>
 
-    <div class="max-w-4xl mx-auto min-h-screen bg-white shadow-2xl md:my-5 md:rounded-3xl overflow-hidden">
+    <div id="mobile-view" class="md:hidden flex flex-col min-h-screen pb-20">
         
-        <header class="bg-ht-red text-white shadow-lg sticky top-0 z-50 md:rounded-b-3xl">
-            <div class="px-6 py-8 flex justify-between items-center">
+        <header class="bg-ht-red text-white p-5 rounded-b-3xl shadow-lg sticky top-0 z-50">
+            <div class="flex justify-between items-center mb-4">
                 <div>
-                    <h1 class="text-2xl md:text-3xl font-bold tracking-wide">Tracking Info</h1>
-                    <p id="user-display" class="text-sm text-red-100 opacity-90 mt-1 font-light">กำลังโหลดข้อมูลผู้ใช้...</p>
+                    <h1 class="text-xl font-bold">Tracking</h1>
+                    <p id="user-display-mobile" class="text-xs text-red-100 opacity-90">Guest User</p>
                 </div>
-                <button onclick="manualRefresh()" class="bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-md transition active:scale-95 shadow-inner">
-                    <i id="refresh-icon" class="fas fa-sync-alt text-lg"></i>
+                <button onclick="manualRefresh()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center">
+                    <i class="fas fa-sync-alt text-xs refresh-icon"></i>
                 </button>
             </div>
             
-            <div class="px-6 pb-8">
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-                    <div class="md:col-span-8 relative shadow-md rounded-2xl bg-white overflow-hidden">
-                        <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="ค้นหาด้วยเลข DO หรือ ชื่อสาขา..." 
-                            class="w-full pl-12 pr-4 py-4 text-gray-700 border-none outline-none text-sm placeholder-gray-400">
-                        <div class="absolute left-4 top-4 text-gray-400">
-                            <i class="fas fa-search text-lg"></i>
-                        </div>
-                    </div>
-                    <div class="md:col-span-4 relative shadow-md rounded-2xl bg-white overflow-hidden">
-                        <input type="date" id="date-filter" onchange="applyFilters()" 
-                            class="w-full px-4 py-4 text-gray-700 border-none outline-none text-sm text-center">
-                    </div>
+            <div class="flex gap-2">
+                <div class="flex-1 bg-white rounded-xl overflow-hidden flex items-center px-3 shadow-sm">
+                    <i class="fas fa-search text-gray-400 text-xs"></i>
+                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา DO..." class="w-full p-2 text-xs outline-none">
+                </div>
+                <div class="w-1/3 bg-white rounded-xl overflow-hidden shadow-sm">
+                    <input type="date" id="date-mobile" onchange="syncFilters('mobile')" class="w-full p-2 text-xs text-center outline-none bg-white">
                 </div>
             </div>
         </header>
 
-        <div class="mt-4 px-6">
-            <div class="flex text-center border-b-2 border-gray-100">
-                <div onclick="switchTab('tracking')" id="tab-tracking" class="flex-1 py-4 cursor-pointer tab-btn active-tab text-sm md:text-base uppercase tracking-wider">
-                    <i class="fas fa-list-ul mr-2"></i>รายการล่าสุด
-                </div>
-                <div onclick="switchTab('dashboard')" id="tab-dashboard" class="flex-1 py-4 cursor-pointer tab-btn text-sm md:text-base uppercase tracking-wider">
-                    <i class="fas fa-chart-pie mr-2"></i>ภาพรวมวันนี้
-                </div>
-            </div>
-        </div>
-
-        <main class="p-6">
-            
-            <div id="page-tracking" class="space-y-6 min-h-[50vh]">
-                <div id="first-load-skeleton" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="h-44 bg-gray-50 rounded-2xl skeleton"></div>
-                    <div class="h-44 bg-gray-50 rounded-2xl skeleton"></div>
-                </div>
-                <div id="tracking-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        <main class="p-4 space-y-4">
+            <div id="m-page-tracking" class="mobile-page block space-y-4">
+                <div id="m-list-container">
+                    </div>
             </div>
 
-            <div id="page-dashboard" class="hidden-page space-y-6">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border-t-4 border-ht-red relative overflow-hidden">
-                        <p class="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-wider">งานทั้งหมด</p>
-                        <h2 id="dash-total" class="text-3xl font-bold text-gray-800 mt-2">-</h2>
+            <div id="m-page-dashboard" class="mobile-page hidden space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-red">
+                        <p class="text-[10px] text-gray-400">งานทั้งหมด</p>
+                        <h2 class="text-2xl font-bold" id="m-dash-total">-</h2>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border-t-4 border-orange-400 relative overflow-hidden">
-                        <p class="text-[10px] md:text-xs text-orange-500 font-bold uppercase tracking-wider">รอเปิดบิล/ยืนยัน</p>
-                        <h2 id="dash-waiting" class="text-3xl font-bold text-orange-500 mt-2">-</h2>
-                    </div>
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border-t-4 border-blue-500 relative overflow-hidden">
-                        <p class="text-[10px] md:text-xs text-blue-500 font-bold uppercase tracking-wider">กำลังขึ้นของ</p>
-                        <h2 id="dash-loading" class="text-3xl font-bold text-blue-500 mt-2">-</h2>
-                    </div>
-                    <div class="bg-ht-green p-5 rounded-2xl shadow-sm border-t-4 border-green-800 text-white relative overflow-hidden">
-                        <p class="text-[10px] md:text-xs text-green-100 font-bold uppercase tracking-wider">จัดส่งสำเร็จ</p>
-                        <h2 id="dash-shipped" class="text-3xl font-bold mt-2">-</h2>
+                    <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-green">
+                        <p class="text-[10px] text-gray-400">ส่งแล้ว</p>
+                        <h2 class="text-2xl font-bold" id="m-dash-shipped">-</h2>
                     </div>
                 </div>
-
-                <div class="bg-gray-50 rounded-3xl p-6">
-                    <h3 class="font-bold text-gray-800 mb-6 flex items-center text-lg">
-                        <span class="w-2 h-6 bg-ht-red rounded-full mr-3"></span>
-                        ความเคลื่อนไหวล่าสุด
-                    </h3>
-                    <div id="latest-updates" class="space-y-3"></div>
+                <div class="bg-white rounded-xl shadow-sm p-4">
+                    <h3 class="font-bold text-sm mb-3">ความเคลื่อนไหวล่าสุด</h3>
+                    <div id="m-latest-updates" class="space-y-3"></div>
                 </div>
             </div>
         </main>
 
-        <footer class="text-center py-8 text-gray-400 text-xs">
-            &copy; 2026 HaadThip Public Company Limited
-        </footer>
+        <nav class="fixed bottom-0 w-full bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] flex justify-around py-3 z-40 pb-safe">
+            <div onclick="switchMobileTab('tracking')" class="mobile-nav-item active flex flex-col items-center text-gray-400 transition-all cursor-pointer w-1/2">
+                <i class="fas fa-shipping-fast text-lg mb-1 transition-transform"></i>
+                <span class="text-[10px]">ติดตามงาน</span>
+            </div>
+            <div onclick="switchMobileTab('dashboard')" class="mobile-nav-item flex flex-col items-center text-gray-400 transition-all cursor-pointer w-1/2">
+                <i class="fas fa-chart-pie text-lg mb-1 transition-transform"></i>
+                <span class="text-[10px]">ภาพรวม</span>
+            </div>
+        </nav>
+    </div>
+
+    <div id="desktop-view" class="hidden md:flex min-h-screen bg-gray-50">
+        
+        <aside class="w-64 bg-white shadow-xl z-10 flex flex-col fixed h-full">
+            <div class="p-6 bg-ht-red text-white">
+                <h1 class="text-2xl font-bold tracking-wider">HT TRACKING</h1>
+                <p class="text-xs text-red-200 mt-1">System Management</p>
+            </div>
+            <nav class="flex-1 mt-6">
+                <a onclick="switchDesktopTab('tracking')" id="d-nav-tracking" class="sidebar-link active flex items-center px-6 py-4 text-gray-600 cursor-pointer">
+                    <i class="fas fa-list-ul w-6"></i>
+                    <span class="font-medium">รายการงาน (List)</span>
+                </a>
+                <a onclick="switchDesktopTab('dashboard')" id="d-nav-dashboard" class="sidebar-link flex items-center px-6 py-4 text-gray-600 cursor-pointer">
+                    <i class="fas fa-chart-line w-6"></i>
+                    <span class="font-medium">แดชบอร์ด (Dashboard)</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t text-xs text-gray-400 text-center">
+                User: <span id="user-display-desktop">Guest</span>
+            </div>
+        </aside>
+
+        <main class="flex-1 ml-64 p-8">
+            <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
+                <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">รายการล่าสุด</h2>
+                <div class="flex gap-3">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา DO, สาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red">
+                    </div>
+                    <input type="date" id="date-desktop" onchange="syncFilters('desktop')" class="border rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-ht-red">
+                    <button onclick="manualRefresh()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 transition">
+                        <i class="fas fa-sync-alt refresh-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="d-page-tracking" class="desktop-page block">
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                            <tr>
+                                <th class="p-4">DO Number</th>
+                                <th class="p-4">สาขา</th>
+                                <th class="p-4">สถานะ</th>
+                                <th class="p-4">ความคืบหน้า</th>
+                                <th class="p-4 text-right">จำนวน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="d-table-body" class="text-sm divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="d-page-dashboard" class="desktop-page hidden">
+                <div class="grid grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-ht-red">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">งานทั้งหมด</h3>
+                        <p class="text-3xl font-bold text-gray-800 mt-2" id="d-dash-total">-</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">กำลังดำเนินการ</h3>
+                        <p class="text-3xl font-bold text-blue-600 mt-2" id="d-dash-loading">-</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-ht-green">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">เสร็จสิ้น</h3>
+                        <p class="text-3xl font-bold text-green-600 mt-2" id="d-dash-shipped">-</p>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
-        // Logic เดิมของคุณที่ทำงานได้ดีอยู่แล้ว ผมจะคงไว้และปรับปรุงการ Render HTML เล็กน้อย
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
 
         let globalData = [];
         let isFirstLoad = true;
+        let isDateAutoSet = false; // ตัวแปรเช็คว่าตั้งค่าวันที่อัตโนมัติไปหรือยัง
 
         window.onload = async function() {
-            document.getElementById('date-filter').valueAsDate = new Date();
             await initLiff();
-            fetchData(); 
+            fetchData();
+            // Auto Refresh
             setInterval(() => fetchData(true), 20000); 
         };
 
         async function initLiff() {
             try {
                 // if (liff.isLoggedIn()) { ... }
-                document.getElementById('user-display').innerText = `สวัสดี, ผู้ใช้งานทั่วไป`;
-            } catch (err) { console.log('LIFF Error:', err); }
+                // Mock Display
+            } catch (err) { console.log(err); }
         }
 
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active-tab'));
-            document.getElementById(`tab-${tabName}`).classList.add('active-tab');
-            document.getElementById('page-tracking').style.display = tabName === 'tracking' ? 'block' : 'none';
-            document.getElementById('page-dashboard').style.display = tabName === 'dashboard' ? 'block' : 'none';
-        }
-
+        // ==========================================
+        // 🔄 DATA FETCHING & DATE LOGIC
+        // ==========================================
         async function fetchData(isSilent = false) {
-            if (!isSilent) {
-                if(isFirstLoad) document.getElementById('first-load-skeleton').classList.remove('hidden');
-                document.getElementById('refresh-icon').classList.add('spin-slow');
-            }
+            if (!isSilent) toggleLoading(true);
 
             try {
                 const response = await fetch(`${GAS_API_URL}?action=getTrackingData&t=${new Date().getTime()}`);
@@ -184,120 +213,205 @@
                 
                 if (json.status === 'success') {
                     globalData = json.data;
-                    applyFilters();
-                    updateDashboard(json.dashboard, json.data.slice(0, 5));
+
+                    // 💡 สำคัญ: Logic ตั้งค่าวันที่อัตโนมัติจากข้อมูล
+                    if (!isDateAutoSet && globalData.length > 0) {
+                        // หาวันที่ที่มีข้อมูลล่าสุด (หรือจะเอาวันที่มีข้อมูลมากสุดก็ได้)
+                        // สมมติ: เอาวันที่จากรายการแรกสุด (ซึ่งมักจะเป็นรายการล่าสุด)
+                        const latestDate = globalData[0].targetDate; 
+                        
+                        document.getElementById('date-mobile').value = latestDate;
+                        document.getElementById('date-desktop').value = latestDate;
+                        
+                        isDateAutoSet = true; // ตั้งค่าแค่ครั้งแรกที่โหลดเจอข้อมูล
+                    } else if (globalData.length === 0 && !isDateAutoSet) {
+                        // ถ้าไม่มีข้อมูลเลย ให้เป็นวันนี้
+                        const today = new Date().toISOString().split('T')[0];
+                        document.getElementById('date-mobile').value = today;
+                        document.getElementById('date-desktop').value = today;
+                    }
+
+                    // Render ทั้งสองหน้าจอ
+                    applyFilters(); 
+                    updateDashboards(json.dashboard, json.data);
                 }
             } catch (error) {
-                console.error('Fetch Error:', error);
+                console.error('Error:', error);
             } finally {
-                document.getElementById('first-load-skeleton').classList.add('hidden');
-                document.getElementById('refresh-icon').classList.remove('spin-slow');
+                if (!isSilent) toggleLoading(false);
                 isFirstLoad = false;
             }
         }
 
+        // ==========================================
+        // 🔍 FILTER & RENDER
+        // ==========================================
+        function syncFilters(source) {
+            // ดึงค่าจาก source ที่พิมพ์ แล้วไปใส่ให้อีกฝั่งด้วย
+            const searchVal = document.getElementById(`search-${source}`).value;
+            const dateVal = document.getElementById(`date-${source}`).value;
+
+            const target = source === 'mobile' ? 'desktop' : 'mobile';
+            document.getElementById(`search-${target}`).value = searchVal;
+            document.getElementById(`date-${target}`).value = dateVal;
+
+            applyFilters();
+        }
+
         function applyFilters() {
-            const searchQuery = document.getElementById('search-input').value.toLowerCase();
-            const dateQuery = document.getElementById('date-filter').value;
+            // ใช้ค่าจาก Mobile เป็นหลัก (เพราะค่าเท่ากันแล้ว)
+            const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
+            const dateQuery = document.getElementById('date-mobile').value;
 
             const filtered = globalData.filter(item => {
                 const matchesSearch = item.doNumber.toLowerCase().includes(searchQuery) || 
                                     item.branch.toLowerCase().includes(searchQuery);
+                // ถ้ามี dateQuery ให้กรองตามวันที่ใน data (targetDate)
                 const matchesDate = !dateQuery || item.targetDate === dateQuery;
+                
                 return matchesSearch && matchesDate;
             });
-            renderTrackingList(filtered);
+
+            renderMobileList(filtered);
+            renderDesktopTable(filtered);
         }
 
-        function renderTrackingList(data) {
-            const container = document.getElementById('tracking-list');
+        // 📱 Render Mobile List (Cards)
+        function renderMobileList(data) {
+            const container = document.getElementById('m-list-container');
             if(data.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-20 opacity-40"><i class="fas fa-box-open text-6xl mb-4"></i><p>ไม่พบรายการที่ค้นหา</p></div>`;
+                container.innerHTML = '<div class="text-center text-gray-400 py-10">ไม่พบรายการ</div>';
                 return;
             }
-
+            
             container.innerHTML = data.map(item => {
-                let progressWidth = item.progress === 1 ? '0%' : item.progress === 2 ? '33.3%' : item.progress === 3 ? '66.6%' : '100%';
+                let p = item.progress; // 1-4
+                let width = p===1 ? '0%' : p===2 ? '33%' : p===3 ? '66%' : '100%';
                 
                 return `
-                <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 transition hover:shadow-xl hover:border-red-100 relative group">
-                    <div class="flex justify-between items-start mb-6">
+                <div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-50 relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-6 relative z-10">
                         <div>
-                            <span class="bg-red-50 text-ht-red text-[10px] font-bold px-3 py-1 rounded-full border border-red-100 uppercase mb-2 inline-block">
-                                ${item.branch}
-                            </span>
-                            <h3 class="text-xl font-bold text-gray-800">DO ${item.doNumber}</h3>
-                            <p class="text-xs text-gray-400 mt-1"><i class="far fa-calendar-alt mr-1"></i> วันที่: ${item.targetDate}</p>
+                            <span class="bg-red-50 text-ht-red text-[10px] px-2 py-0.5 rounded font-bold">${item.branch}</span>
+                            <h3 class="text-lg font-bold text-gray-800 mt-1">DO ${item.doNumber}</h3>
+                            <p class="text-[10px] text-gray-400">${item.targetDate}</p>
                         </div>
                         <div class="text-right">
-                             <p class="text-[10px] text-gray-400 uppercase font-bold">จำนวน</p>
-                             <p class="font-bold text-2xl text-ht-red">${item.amount} <span class="text-xs text-gray-500 font-normal">SH</span></p>
+                             <p class="text-xl font-bold text-gray-800">${item.amount}</p>
+                             <p class="text-[9px] text-gray-400">SH</p>
                         </div>
                     </div>
                     
-                    <div class="relative px-2 pt-2">
+                    <div class="relative px-1 pb-2">
                         <div class="timeline-line"></div>
-                        <div class="timeline-progress" style="width: ${progressWidth}"></div>
-                        <div class="flex justify-between relative z-10 text-[10px] font-bold">
-                            ${renderStep('เปิดบิล', item.details.bill.time, true)}
-                            ${renderStep('ยืนยัน', item.details.conf.time, item.progress >= 2)}
-                            ${renderStep('ขึ้นของ', item.details.load.time, item.progress >= 3, 'blue')}
-                            ${renderStep('จัดส่ง', item.details.ship.time, item.progress >= 4)}
+                        <div class="timeline-progress" style="width: ${width}"></div>
+                        <div class="flex justify-between relative z-10 text-[9px] font-bold text-center">
+                            <div class="w-1/4"><div class="w-3 h-3 mx-auto bg-ht-green rounded-full border mb-1"></div>เปิดบิล<br><span class="font-normal text-gray-400">${item.details.bill.time}</span></div>
+                            <div class="w-1/4"><div class="w-3 h-3 mx-auto ${p>=2?'bg-ht-green':'bg-gray-300'} rounded-full border mb-1"></div>ยืนยัน<br><span class="font-normal text-gray-400">${item.details.conf.time||'-'}</span></div>
+                            <div class="w-1/4"><div class="w-3 h-3 mx-auto ${p>=3?'bg-blue-500':'bg-gray-300'} rounded-full border mb-1"></div>ขึ้นของ<br><span class="font-normal text-gray-400">${item.details.load?.time||'-'}</span></div>
+                            <div class="w-1/4"><div class="w-3 h-3 mx-auto ${p>=4?'bg-ht-green':'bg-gray-300'} rounded-full border mb-1"></div>จัดส่ง<br><span class="font-normal text-gray-400">${item.details.ship.time||'-'}</span></div>
                         </div>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        function renderStep(label, time, isActive, activeColor = 'ht-green') {
-            const colorClass = isActive ? (activeColor === 'blue' ? 'bg-blue-500' : 'bg-ht-green') : 'bg-gray-300';
-            const textClass = isActive ? 'text-gray-800' : 'text-gray-300';
-            return `
-                <div class="flex flex-col items-center w-1/4">
-                    <div class="w-4 h-4 rounded-full ${colorClass} border-2 border-white shadow-sm mb-2 transition-all"></div>
-                    <span class="${textClass}">${label}</span>
-                    <span class="font-normal text-gray-400 mt-1">${time || '-'}</span>
-                </div>`;
-        }
+        // 💻 Render Desktop Table
+        function renderDesktopTable(data) {
+            const tbody = document.getElementById('d-table-body');
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400">ไม่พบข้อมูล</td></tr>';
+                return;
+            }
 
-        function updateDashboard(summary, latestItems) {
-            document.getElementById('dash-total').innerText = summary.total || 0;
-            document.getElementById('dash-waiting').innerText = summary.waiting || 0;
-            document.getElementById('dash-shipped').innerText = summary.shipped || 0;
-            document.getElementById('dash-loading').innerText = summary.loading || 0;
+            tbody.innerHTML = data.map(item => {
+                let statusBadge = '';
+                if(item.progress === 4) statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">จัดส่งแล้ว</span>';
+                else if(item.progress === 3) statusBadge = '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">กำลังขึ้นของ</span>';
+                else if(item.progress === 2) statusBadge = '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">ยืนยันแล้ว</span>';
+                else statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">เปิดบิล</span>';
 
-            const listDiv = document.getElementById('latest-updates');
-            listDiv.innerHTML = latestItems.map(item => {
-                const statusInfo = getStatusInfo(item.progress);
+                let width = item.progress===1 ? '5%' : item.progress===2 ? '40%' : item.progress===3 ? '70%' : '100%';
+                let barColor = item.progress===3 ? 'bg-blue-500' : 'bg-ht-green';
+
                 return `
-                <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border-l-4 ${statusInfo.border}">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center ${statusInfo.bg} ${statusInfo.text}">
-                            <i class="fas ${statusInfo.icon}"></i>
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="p-4 font-bold text-gray-700">${item.doNumber}<div class="text-xs text-gray-400 font-normal">${item.targetDate}</div></td>
+                    <td class="p-4 text-gray-600">${item.branch}</td>
+                    <td class="p-4">${statusBadge}</td>
+                    <td class="p-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="${barColor} h-2.5 rounded-full" style="width: ${width}"></div>
                         </div>
-                        <div>
-                            <p class="text-gray-800 font-bold text-sm">${item.branch}</p>
-                            <p class="text-gray-400 text-xs">DO: ${item.doNumber} • <span class="font-medium ${statusInfo.text}">${statusInfo.label}</span></p>
+                        <div class="text-[10px] text-gray-400 mt-1 flex justify-between">
+                            <span>เริ่ม: ${item.details.bill.time}</span>
+                            <span>ล่าสุด: ${getLastTime(item)}</span>
                         </div>
-                    </div>
-                    <span class="text-xs text-gray-400 font-mono font-bold">${item.details.bill.time}</span>
-                </div>`;
+                    </td>
+                    <td class="p-4 text-right font-bold text-gray-800">${item.amount}</td>
+                </tr>`;
             }).join('');
         }
 
-        function getStatusInfo(progress) {
-            if(progress === 4) return { icon: 'fa-check-circle', bg: 'bg-green-50', text: 'text-ht-green', border: 'border-ht-green', label: 'จัดส่งแล้ว' };
-            if(progress === 3) return { icon: 'fa-truck-loading', bg: 'bg-blue-50', text: 'text-blue-500', border: 'border-blue-500', label: 'กำลังขึ้นของ' };
-            if(progress === 2) return { icon: 'fa-file-signature', bg: 'bg-orange-50', text: 'text-orange-500', border: 'border-orange-500', label: 'ยืนยันแล้ว' };
-            return { icon: 'fa-file-invoice', bg: 'bg-gray-50', text: 'text-gray-400', border: 'border-gray-200', label: 'เปิดบิล' };
+        function getLastTime(item) {
+            if(item.progress === 4) return item.details.ship.time;
+            if(item.progress === 3) return item.details.load.time;
+            if(item.progress === 2) return item.details.conf.time;
+            return item.details.bill.time;
+        }
+
+        function updateDashboards(summary, items) {
+            // Update Mobile Dash
+            document.getElementById('m-dash-total').innerText = summary.total;
+            document.getElementById('m-dash-shipped').innerText = summary.shipped;
+            
+            // Update Desktop Dash
+            document.getElementById('d-dash-total').innerText = summary.total;
+            document.getElementById('d-dash-loading').innerText = summary.loading;
+            document.getElementById('d-dash-shipped').innerText = summary.shipped;
+
+            // Latest Updates (Mobile only logic for now, easy to duplicate for desktop if needed)
+            const mList = document.getElementById('m-latest-updates');
+            mList.innerHTML = items.slice(0,5).map(i => `
+                <div class="flex items-center gap-3 text-xs border-b pb-2 last:border-0">
+                    <div class="w-2 h-2 rounded-full ${i.progress===4?'bg-green-500':'bg-red-500'}"></div>
+                    <div class="flex-1 text-gray-600">${i.doNumber} (${i.branch})</div>
+                    <div class="text-gray-400">${i.details.bill.time}</div>
+                </div>
+            `).join('');
+        }
+
+        // ==========================================
+        // 🖥️ UI SWITCHING
+        // ==========================================
+        function switchMobileTab(tab) {
+            document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            document.querySelectorAll('.mobile-page').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`m-page-${tab}`).classList.remove('hidden');
+        }
+
+        function switchDesktopTab(tab) {
+            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+            document.getElementById(`d-nav-${tab}`).classList.add('active');
+            
+            document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`d-page-${tab}`).classList.remove('hidden');
+            
+            document.getElementById('desktop-page-title').innerText = tab === 'tracking' ? 'รายการงาน (Tracking)' : 'ภาพรวม (Dashboard)';
         }
 
         function manualRefresh() {
-            const icon = document.getElementById('refresh-icon');
-            icon.classList.add('spin-slow');
+            document.querySelectorAll('.refresh-icon').forEach(icon => icon.classList.add('spin-slow'));
             fetchData(false).then(() => {
-                setTimeout(() => icon.classList.remove('spin-slow'), 500);
+                 document.querySelectorAll('.refresh-icon').forEach(icon => icon.classList.remove('spin-slow'));
             });
+        }
+
+        function toggleLoading(isLoading) {
+            const icons = document.querySelectorAll('.refresh-icon');
+            icons.forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
         }
     </script>
 </body>
