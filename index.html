@@ -34,6 +34,11 @@
         .timeline-line-bg { position: absolute; top: 18px; left: 12%; right: 12%; height: 3px; background-color: #e5e7eb; z-index: 0; border-radius: 99px; }
         .timeline-line-progress { position: absolute; top: 18px; left: 12%; height: 3px; background-color: #007A33; z-index: 0; transition: width 0.8s ease; border-radius: 99px; }
         
+        /* Custom Progress Colors */
+        .bg-progress-blue { background-color: #3b82f6; } /* Confirm */
+        .bg-progress-orange { background-color: #F59E0B; } /* Edit */
+        .bg-progress-green { background-color: #007A33; } /* Finish */
+
         /* Animations */
         .spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -179,10 +184,6 @@
         // ==========================================
         // ⚙️ SETTINGS
         // ==========================================
-        
-        // ⚠️⚠️⚠️ ใส่ LIFF ID ตรงนี้ (ถ้ามี) ⚠️⚠️⚠️
-        const LIFF_ID = ''; 
-        
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
         
         let globalData = [];
@@ -190,23 +191,19 @@
         let isDateAutoSet = false;
 
         window.onload = async function() {
-            await initLiff(); 
+            await initLiff();
             fetchData();
             setInterval(() => fetchData(true), 20000); 
         };
 
         async function initLiff() {
             try {
-                if(!LIFF_ID) return;
-                await liff.init({ liffId: LIFF_ID });
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     document.getElementById('user-display-mobile').innerText = profile.displayName;
                     document.getElementById('user-display-desktop').innerText = profile.displayName;
                 }
-            } catch (err) { 
-                console.error('LIFF Init Error:', err);
-            }
+            } catch (err) { console.log('LIFF Error:', err); }
         }
 
         // ==========================================
@@ -219,8 +216,8 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    // ใช้ Mapper ที่ปรับปรุงตามรูปภาพ Google Sheet ของคุณ
-                    globalData = json.data.map(mapSheetDataExact);
+                    // ⚠️ Map Data to match Google Sheet Headers
+                    globalData = json.data.map(mapSheetData);
 
                     // Auto Date
                     if (!isDateAutoSet && globalData.length > 0) {
@@ -244,37 +241,27 @@
             }
         }
 
-        // 🔧 MAPPER: ตรงกับรูปภาพ Google Sheet เป๊ะๆ
-        function mapSheetDataExact(item) {
+        // 🔧 MAPPER: เชื่อมโยงตัวแปร JavaScript กับชื่อหัวตาราง Google Sheet
+        function mapSheetData(item) {
             return {
-                timestamp: item['Timestamp'] || item['timestamp'],
-                branch: item['Branch'], 
-                deliveryDate: item['Delivery Date'], // มีเว้นวรรค
-                doNumber: item['DO_Num'], 
+                timestamp: item.Timestamp || item.timestamp,
+                branch: item.Branch || item.branch,
+                // ใช้ key 'Delivery Date' (มีเว้นวรรค) ตาม Google Sheet
+                deliveryDate: item['Delivery Date'] || item.Delivery_Date || item.deliveryDate, 
+                doNumber: item.DO_Num || item.doNumber,
                 
-                // Timeline Data 
-                bill: { 
-                    time: item['Time_Bill'], 
-                    by: item['Admin_Name']   
-                },
-                conf: { 
-                    // แก้ไข: ใช้ 'time_conf' ตัวเล็กตามรูป
-                    time: item['time_conf'] || item['Time_Conf'], 
-                    by: item['Disp_Name']    
-                },
-                ship: { 
-                    time: item['Time_Ship'], 
-                    by: item['Ship_Name']    
-                },
+                // Timeline Data
+                bill: { time: item.Time_Bill, by: item.Admin_Name }, // Col F, E
+                conf: { time: item.Time_Conf, by: item.Disp_Name },  // Col I, H
+                ship: { time: item.Time_Ship, by: item.Ship_Name },  // Col M, L
                 
                 // Amounts
-                amount: item['Amt_Bill'],
-                shipmentAmount: item['Amt_Ship'],
+                amount: item.Amt_Bill || item.amount,
+                shipmentAmount: item.Amt_Ship || item.shipmentAmount, // Col N (Amt_Ship)
                 
-                // Meta & Logic
-                // แก้ไข: ใช้ 'Edit Count' มีเว้นวรรค
-                editCount: Number(item['Edit Count'] || 0), 
-                note: item['Note']
+                // Meta
+                editCount: parseInt(item['Edit Count'] || item.editCount || 0), // แปลงเป็นตัวเลขเสมอ
+                note: item.Note || item.note
             };
         }
 
@@ -290,12 +277,15 @@
         // ==========================================
         // 🛠 FORMATTERS
         // ==========================================
+        
         function parseDate(val) {
             if (!val) return '-';
             const s = String(val);
             if (s.includes('/')) return s; 
+            
             const d = new Date(val);
             if (isNaN(d.getTime())) return val;
+            
             const day = String(d.getDate()).padStart(2, '0');
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const year = d.getFullYear();
@@ -319,6 +309,23 @@
             return String(val).substring(0, 5);
         }
 
+        // คำนวณสถานะเพื่อใช้ในการเรียงลำดับหรือ Badge
+        function calculateProgress(item) {
+            if (item.ship.time) return 4; // เสร็จสิ้น
+            // ถ้ามีการแก้ไข (Edit Count >= 1) และยังไม่ส่งของ ให้เป็นสถานะ 3
+            if (item.editCount >= 1 && item.conf.time) return 3; 
+            if (item.conf.time) return 2; // ยืนยันแล้ว
+            return 1; // งานใหม่
+        }
+
+        function getStatusBadge(progress, isEdit) {
+            if (progress >= 4) return '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
+            // สถานะ 3 คือการแก้ไข
+            if (progress === 3 || isEdit) return '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
+            if (progress === 2) return '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
+            return '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
+        }
+
         // ==========================================
         // 📱 RENDER: MOBILE
         // ==========================================
@@ -330,29 +337,26 @@
             }
             
             container.innerHTML = data.map(item => {
-                const isShipped = item.ship.time ? true : false;
-                const isConfirmed = item.conf.time ? true : false;
-                const hasEdit = (item.editCount >= 1);
+                const p = calculateProgress(item);
+                const hasEdit = item.editCount >= 1;
+                const isFinished = !!item.ship.time;
 
-                // --- 🚩 LOGIC เส้นความคืบหน้า (Mobile) ---
+                // Logic คำนวณความกว้างและสีของเส้น
                 let width = '0%';
-                if (isShipped) {
-                    // ถ้าเสร็จแล้ว วิ่งเต็ม 100% (ข้ามสถานะแก้ไขไปเลย)
-                    width = '100%'; 
-                } else if (isConfirmed && hasEdit) {
-                    // ถ้ายังไม่เสร็จ + มีแก้ไข = วิ่งไปหยุดที่ 66%
-                    width = '66%';  
-                } else if (isConfirmed) {
-                    // ถ้าแค่ยืนยันเฉยๆ = 33%
-                    width = '33%'; 
+                let colorClass = 'bg-ht-green'; // สี Default
+
+                if (isFinished) {
+                    width = '100%';
+                    colorClass = 'bg-progress-green'; // สีเขียวเมื่อเสร็จ
+                } else if (hasEdit && p >= 2) {
+                    width = '66%';
+                    colorClass = 'bg-progress-orange'; // สีส้มเมื่ออยู่สถานะแก้ไข
+                } else if (p >= 2) {
+                    width = '33%';
+                    colorClass = 'bg-progress-blue'; // สีฟ้าเมื่อยืนยัน
                 }
 
                 const shipmentVal = item.shipmentAmount || '-';
-                
-                let statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
-                if (isShipped) statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
-                else if (hasEdit && isConfirmed) statusBadge = '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
-                else if (isConfirmed) statusBadge = '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
 
                 return `
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 mb-3 transition active:scale-[0.99]">
@@ -363,7 +367,7 @@
                         </div>
                         <div class="text-right">
                              <div class="text-xl font-bold text-ht-red">${item.amount}</div>
-                             ${statusBadge}
+                             ${getStatusBadge(p, hasEdit && !isFinished)}
                         </div>
                     </div>
                     
@@ -378,47 +382,57 @@
                     
                     <div class="relative px-1 pb-2 mt-2">
                         <div class="absolute left-0 right-0 top-[6px] h-[2px] bg-gray-100 z-0 rounded-full"></div>
-                        <div class="absolute left-0 top-[6px] h-[2px] bg-ht-green z-0 transition-all duration-700 rounded-full" style="width: ${width}"></div>
+                        <div class="absolute left-0 top-[6px] h-[2px] ${colorClass} z-0 transition-all duration-700 rounded-full" style="width: ${width}"></div>
                         <div class="flex justify-between relative z-10 text-[9px] text-center">
                             ${renderMobileNode('งานใหม่', item.bill, true, 'bg-ht-green')}
-                            ${renderMobileNode('ยืนยัน', item.conf, isConfirmed, 'bg-blue-500')}
-                            ${renderMobileEditNode(hasEdit, item.editCount, isShipped, isConfirmed)}
-                            ${renderMobileNode('เสร็จสิ้น', item.ship, isShipped, 'bg-green-600')}
+                            ${renderMobileNode('ยืนยัน', item.conf, p>=2, 'bg-blue-500')}
+                            
+                            ${renderMobileNode(
+                                'แก้บิล', 
+                                { time: hasEdit ? item.editCount + ' ครั้ง' : '' }, 
+                                hasEdit && !isFinished, /* Active เมื่อมีแก้และยังไม่เสร็จ */
+                                'bg-ht-orange', 
+                                true, /* isEditNode */
+                                hasEdit /* showIfEdited: แสดงเมื่อมีการแก้ไข (แม้เสร็จแล้วก็แสดงเป็นจุด history) */
+                            )}
+                            
+                            ${renderMobileNode('เสร็จสิ้น', item.ship, isFinished, 'bg-green-600')}
                         </div>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        function renderMobileNode(label, detail, isActive, colorClass) {
-            const circle = isActive ? `w-3 h-3 ${colorClass} border border-white shadow-sm` : `w-3 h-3 bg-gray-200 border border-white`;
-            const text = isActive ? 'text-gray-600 font-bold' : 'text-gray-300';
+        function renderMobileNode(label, detail, isActive, colorClass, isEditNode=false, showIfEdited=true) {
+            // ถ้าเป็น Node แก้บิล และไม่มีการแก้ไขเลย (showIfEdited = false) ให้ซ่อนหรือแสดงเป็นช่องว่าง
+            if (isEditNode && !showIfEdited) {
+                return `<div class="flex flex-col items-center w-1/4 opacity-0"><div class="w-2 h-2 rounded-full bg-gray-100 mt-0.5 mb-1"></div></div>`;
+            }
+
+            // ถ้า Active ให้ใช้สีที่กำหนด, ถ้าไม่ Active (เป็นอดีตหรือยังไม่ถึง) ให้เป็นสีเทา
+            // กรณีพิเศษ: ถ้าเป็น Edit Node และงานเสร็จแล้ว (isActive=false) แต่มีประวัติแก้ไข (showIfEdited=true) ให้แสดงเป็นจุดเล็กๆ
+            let circleClass = `w-3 h-3 bg-gray-200 border border-white`;
+            let textClass = 'text-gray-300';
+
+            if (isActive) {
+                circleClass = `w-3 h-3 ${colorClass} border border-white shadow-sm`;
+                textClass = 'text-gray-600 font-bold';
+            } else if (isEditNode && showIfEdited) {
+                 // เคยมีการแก้ไข แต่ตอนนี้เสร็จแล้ว (เป็น History)
+                 circleClass = `w-3 h-3 bg-orange-200 border border-white`;
+                 textClass = 'text-gray-400';
+            } else if (!isEditNode && detail?.time) {
+                 // สถานะปกติที่ผ่านมาแล้ว (มีเวลา)
+                 circleClass = `w-3 h-3 bg-green-200 border border-white`;
+            }
+
             return `
             <div class="flex flex-col items-center w-1/4">
-                <div class="${circle} rounded-full mb-1"></div>
-                <span class="${text}">${label}</span>
+                <div class="${circleClass} rounded-full mb-1"></div>
+                <span class="${textClass}">${label}</span>
                 <span class="text-gray-400 scale-90">${parseTime(detail?.time)}</span>
+                <span class="text-gray-400 scale-75 truncate w-full">${detail?.by || ''}</span>
             </div>`;
-        }
-
-        function renderMobileEditNode(hasEdit, count, isShipped, isConfirmed) {
-            // Logic: ถ้า Shipped แล้ว -> ไม่ต้องแสดงสถานะแก้บิล (ให้ความสำคัญที่เสร็จสิ้น)
-            if (isShipped) {
-                 return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
-            }
-
-            // ถ้ายังไม่เสร็จ + มีแก้ไข -> แสดงสีส้ม
-            if (hasEdit && isConfirmed) {
-                return `
-                <div class="flex flex-col items-center w-1/4">
-                    <div class="w-3 h-3 bg-orange-500 rounded-full mb-1 border border-white shadow-sm scale-110"></div>
-                    <span class="text-orange-600 font-bold">แก้บิล</span>
-                    <span class="text-gray-400 scale-90">${count} ครั้ง</span>
-                </div>`;
-            }
-
-            // กรณีอื่นๆ (ยังไม่ถึง หรือไม่มีแก้) -> จุดว่าง
-            return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
         }
 
         // ==========================================
@@ -432,22 +446,25 @@
             }
 
             tbody.innerHTML = data.map(item => {
-                const isShipped = item.ship.time ? true : false;
-                const isConfirmed = item.conf.time ? true : false;
-                const hasEdit = (item.editCount >= 1);
+                const p = calculateProgress(item);
+                const hasEdit = item.editCount >= 1;
+                const isFinished = !!item.ship.time;
 
-                // --- 🚩 LOGIC เส้นความคืบหน้า Desktop ---
                 let barWidth = '0%';
-                if (isShipped) barWidth = '100%'; 
-                else if (isConfirmed && hasEdit) barWidth = '66%';
-                else if (isConfirmed) barWidth = '33%';
+                let barColor = 'background-color: #007A33;'; // Default
+
+                if (isFinished) {
+                    barWidth = '100%';
+                    barColor = 'background-color: #007A33;'; // Green
+                } else if (hasEdit && p >= 2) {
+                    barWidth = '66%';
+                    barColor = 'background-color: #F59E0B;'; // Orange
+                } else if (p >= 2) {
+                    barWidth = '33%';
+                    barColor = 'background-color: #3b82f6;'; // Blue
+                }
 
                 const shipmentVal = item.shipmentAmount || '-';
-
-                let statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
-                if (isShipped) statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
-                else if (hasEdit && isConfirmed) statusBadge = '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
-                else if (isConfirmed) statusBadge = '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
 
                 return `
                 <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0 group">
@@ -461,17 +478,19 @@
                         ${parseDate(item.deliveryDate)}
                     </td>
                     <td class="p-4 align-top text-center">
-                        ${statusBadge}
+                        ${getStatusBadge(p, hasEdit && !isFinished)}
                     </td>
                     <td class="p-4 align-middle">
                         <div class="timeline-container">
                             <div class="timeline-line-bg"></div>
-                            <div class="timeline-line-progress" style="width: ${barWidth}"></div>
+                            <div class="timeline-line-progress" style="width: ${barWidth}; ${barColor}"></div>
                             <div class="flex justify-between relative z-10 px-2">
                                 ${renderDesktopNode('งานใหม่', item.bill, true, 'border-gray-300')}
-                                ${renderDesktopNode('ยืนยันแล้ว', item.conf, isConfirmed, 'border-blue-400', 'bg-blue-400')}
-                                ${renderEditNodeDesktop(hasEdit, item.editCount, item.note, isShipped, isConfirmed)}
-                                ${renderDesktopNode('เสร็จสิ้น', item.ship, isShipped, 'border-green-500', 'bg-green-500')}
+                                ${renderDesktopNode('ยืนยันแล้ว', item.conf, p>=2, 'border-blue-400', 'bg-blue-400')}
+                                
+                                ${renderEditNodeDesktop(hasEdit, item.editCount, item.note, isFinished)}
+                                
+                                ${renderDesktopNode('เสร็จสิ้น', item.ship, isFinished, 'border-green-500', 'bg-green-500')}
                             </div>
                         </div>
                     </td>
@@ -499,33 +518,37 @@
             </div>`;
         }
 
-        function renderEditNodeDesktop(hasEdit, count, note, isShipped, isConfirmed) {
-            // ถ้าเสร็จแล้ว -> ให้แสดงเป็นแค่จุดผ่าน (สีเทา) ไม่แสดงปุ่มสีส้ม
-            if (isShipped) {
-                return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-1 mb-1"></div></div>`;
+        function renderEditNodeDesktop(hasEdit, count, note, isFinished) {
+            // ถ้าไม่มีการแก้ไขเลย ให้แสดงจุดว่างๆ
+            if (!hasEdit) return `<div class="flex flex-col items-center w-1/4 opacity-50"><div class="w-3 h-3 rounded-full bg-gray-200 mt-0.5 mb-1 border-2 border-white"></div></div>`;
+            
+            // ถ้ามีการแก้ไข
+            let circleBorder = 'border-orange-400';
+            let dotColor = 'bg-orange-400';
+            let labelClass = 'text-orange-500 font-bold';
+
+            // ถ้างานเสร็จแล้ว ให้ลดความเด่นลง (เป็น History)
+            if (isFinished) {
+                circleBorder = 'border-orange-200';
+                dotColor = 'bg-orange-200';
+                labelClass = 'text-gray-400';
             }
 
-            // ถ้ายังไม่เสร็จ + มีแก้ไข -> แสดงปุ่มแก้บิล
-            if (hasEdit && isConfirmed) {
-                return `
-                <div class="flex flex-col items-center w-1/4">
-                    <div class="w-4 h-4 rounded-full bg-white border-2 border-orange-400 flex items-center justify-center mb-1 shadow-sm z-10">
-                        <div class="w-2 h-2 rounded-full bg-orange-400"></div>
-                    </div>
-                    <div class="text-[10px] text-center">
-                        <div class="text-orange-500 font-bold">แก้บิล</div>
-                        <div class="text-gray-400 scale-90">${count} ครั้ง</div>
-                        ${note ? `<div class="text-gray-400 scale-90 cursor-help" title="${note}"><i class="far fa-comment-dots"></i></div>` : ''}
-                    </div>
-                </div>`;
-            }
-
-            // กรณีอื่นๆ -> จุดว่าง
-            return `<div class="flex flex-col items-center w-1/4"><div class="w-3 h-3 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
+            return `
+            <div class="flex flex-col items-center w-1/4">
+                <div class="w-4 h-4 rounded-full bg-white border-2 ${circleBorder} flex items-center justify-center mb-1 shadow-sm z-10">
+                    <div class="w-2 h-2 rounded-full ${dotColor}"></div>
+                </div>
+                <div class="text-[10px] text-center">
+                    <div class="${labelClass}">แก้บิล</div>
+                    <div class="text-gray-400 scale-90">${count} ครั้ง</div>
+                    ${note ? `<div class="text-gray-400 scale-90 cursor-help" title="${note}"><i class="far fa-comment-dots"></i></div>` : ''}
+                </div>
+            </div>`;
         }
 
         // ==========================================
-        // 🔍 FILTER & UTILS
+        // 🔍 FILTER
         // ==========================================
         function syncFilters(source) {
             const searchVal = document.getElementById(`search-${source}`).value;
@@ -567,8 +590,7 @@
             if(items && items.length > 0) {
                 const mList = document.getElementById('m-latest-updates');
                 mList.innerHTML = items.slice(0,5).map(i => {
-                    const isShipped = i.ship.time ? true : false;
-                    let color = isShipped ? 'bg-green-500' : 'bg-gray-400';
+                    let color = calculateProgress(i) === 4 ? 'bg-green-500' : 'bg-gray-400';
                     return `
                     <div class="flex items-center gap-3 text-xs border-b border-gray-50 pb-2 last:border-0 last:pb-0">
                         <div class="w-2 h-2 rounded-full ${color}"></div>
