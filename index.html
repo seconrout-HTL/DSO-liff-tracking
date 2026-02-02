@@ -180,7 +180,7 @@
         // ⚙️ SETTINGS
         // ==========================================
         
-        // ⚠️⚠️⚠️ ใส่ LIFF ID ของคุณตรงนี้ (ห้ามลืม!) ⚠️⚠️⚠️
+        // ⚠️⚠️⚠️ ใส่ LIFF ID ตรงนี้ครับ ⚠️⚠️⚠️
         const LIFF_ID = 'YOUR_LIFF_ID_HERE'; 
         
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
@@ -222,8 +222,8 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    // ใช้ Smart Mapper
-                    globalData = json.data.map(mapSheetDataSmart);
+                    // ใช้ตัว Mapper ที่เจาะจงกับรูปภาพ Sheet ที่ส่งมา
+                    globalData = json.data.map(mapSheetDataSpecific);
 
                     // Auto Date
                     if (!isDateAutoSet && globalData.length > 0) {
@@ -247,53 +247,38 @@
             }
         }
 
-        // 🔧 SMART MAPPER: ค้นหา Key แบบยืดหยุ่น (Universal Key Finder)
-        function mapSheetDataSmart(item) {
-            // สร้างรายการ Key ทั้งหมดที่มีใน object นี้ (ทำเป็นตัวพิมพ์เล็กเพื่อเทียบง่าย)
-            const keys = Object.keys(item);
-
-            // ฟังก์ชันค้นหาค่าโดยใช้ Keyword หลายคำ (รองรับทั้งไทยและอังกฤษ)
-            const findValue = (keywords) => {
-                for (let k of keys) {
-                    let kLower = k.toLowerCase();
-                    // ตรวจสอบว่า Key นี้มี keyword ครบทุกคำหรือไม่
-                    // เช่น ['time', 'conf'] ต้องเจอทั้ง time และ conf ใน key เดียวกัน
-                    let match = keywords.every(kw => kLower.includes(kw));
-                    if (match && item[k] !== undefined && item[k] !== "") {
-                        return item[k];
-                    }
-                }
-                return null;
-            };
+        // 🔧 MAPPER SPECIFIC: ตรงกับรูปภาพใน Google Sheet เป๊ะๆ
+        function mapSheetDataSpecific(item) {
+            // ฟังก์ชันช่วยหาค่าแบบยืดหยุ่น (Fallback) กรณีชื่อไม่ตรงเป๊ะจริงๆ
+            const get = (k) => item[k] || item[Object.keys(item).find(key => key.toLowerCase() === k.toLowerCase())];
 
             return {
-                timestamp: findValue(['time', 'stamp']) || findValue(['date']) || findValue(['วัน']),
-                branch: findValue(['branch']) || findValue(['สาขา']),
-                deliveryDate: findValue(['delivery', 'date']) || findValue(['กำหนด', 'ส่ง']),
-                doNumber: findValue(['do', 'num']) || findValue(['เลข', 'do']),
+                timestamp: item['Timestamp'] || item['timestamp'],
+                branch: item['Branch'], // Col B
+                deliveryDate: item['Delivery Date'], // Col C
+                doNumber: item['DO_Num'], // Col D
                 
-                // Timeline Data (ค้นหาด้วยคู่คำ เช่น time+conf หรือ เวลา+ยืนยัน)
+                // Timeline Data (ชื่อตามรูปภาพ Sheet เป๊ะๆ)
                 bill: { 
-                    time: findValue(['time', 'bill']) || findValue(['เวลา', 'บิล']) || findValue(['time', 'open']), 
-                    by: findValue(['admin', 'name']) || findValue(['ผู้', 'ทำ']) 
-                }, 
+                    time: item['Time_Bill'], // Col F
+                    by: item['Admin_Name']   // Col E
+                },
                 conf: { 
-                    time: findValue(['time', 'conf']) || findValue(['เวลา', 'ยืนยัน']) || findValue(['confirm']), 
-                    by: findValue(['disp', 'name']) || findValue(['ผู้', 'จ่าย']) 
-                },  
+                    time: item['time_conf'], // Col I (ตัวเล็ก ตามรูป)
+                    by: item['Disp_Name']    // Col H
+                },
                 ship: { 
-                    time: findValue(['time', 'ship']) || findValue(['เวลา', 'ส่ง']) || findValue(['shipment']), 
-                    by: findValue(['ship', 'name']) || findValue(['คน', 'ส่ง']) 
-                },  
+                    time: item['Time_Ship'], // Col M (ตัวใหญ่ ตามรูป)
+                    by: item['Ship_Name']    // Col L
+                },
                 
                 // Amounts
-                amount: findValue(['amt', 'bill']) || findValue(['amount']) || findValue(['ยอด', 'บิล']),
-                shipmentAmount: findValue(['amt', 'ship']) || findValue(['ยอด', 'ส่ง']),
+                amount: item['Amt_Bill'],     // Col G
+                shipmentAmount: item['Amt_Ship'], // Col N
                 
                 // Meta & Logic
-                // ค้นหาคำว่า edit/count หรือ แก้/ครั้ง
-                editCount: Number(findValue(['edit', 'count']) || findValue(['แก้', 'ครั้ง']) || findValue(['edit']) || 0), 
-                note: findValue(['note']) || findValue(['remark']) || findValue(['หมายเหตุ'])
+                editCount: Number(item['Edit Count'] || 0), // Col Q (มีเว้นวรรค)
+                note: item['Note'] // Col R
             };
         }
 
@@ -356,9 +341,9 @@
                 // --- 🚩 LOGIC เส้นความคืบหน้า ---
                 let width = '0%';
                 if (isShipped) {
-                    width = '100%'; // เสร็จสิ้น: วิ่งเต็ม
+                    width = '100%'; // เสร็จสิ้น: เต็มหลอด
                 } else if (isConfirmed && hasEdit) {
-                    width = '66%';  // มีแก้: หยุดที่ตรงกลาง (2/3)
+                    width = '66%';  // มีแก้: หยุดที่ 2/3
                 } else if (isConfirmed) {
                     width = '33%';  // ยืนยัน: หยุดที่ 1/3
                 }
@@ -418,12 +403,13 @@
         }
 
         function renderMobileEditNode(hasEdit, count, isShipped, isConfirmed) {
-            // ถ้างานเสร็จแล้ว (isShipped) -> ให้ซ่อนสถานะแก้บิล (แสดงแค่จุดผ่านเฉยๆ ไม่มีข้อความ)
+            // Logic ตามที่คุณต้องการ:
+            // 1. ถ้าเสร็จสิ้น (Shipped) -> หายไปเลย หรือเป็นจุดว่าง (ไม่แสดงสีส้ม)
             if (isShipped) {
-                 return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-300 mt-0.5 mb-1"></div></div>`;
+                 return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
             }
 
-            // ถ้างานยังไม่เสร็จ + มีการแก้ไข -> แสดงสถานะสีส้ม
+            // 2. ถ้ายังไม่เสร็จ + มีการแก้ไข -> แสดงสีส้ม
             if (hasEdit && isConfirmed) {
                 return `
                 <div class="flex flex-col items-center w-1/4">
@@ -433,7 +419,7 @@
                 </div>`;
             }
 
-            // ถ้าไม่มีอะไรเลย -> จุดว่าง
+            // 3. ปกติ -> จุดว่าง
             return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
         }
 
@@ -516,12 +502,12 @@
         }
 
         function renderEditNodeDesktop(hasEdit, count, note, isShipped, isConfirmed) {
-            // Logic: ถ้าเสร็จแล้ว (isShipped) -> ซ่อน (แสดงจุดผ่านเล็กๆ)
+            // ถ้าเสร็จแล้ว -> ซ่อน (แสดงจุดผ่านเล็กๆ)
             if (isShipped) {
-                return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-300 mt-1 mb-1"></div></div>`;
+                return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-1 mb-1"></div></div>`;
             }
 
-            // Logic: ถ้ายังไม่เสร็จ + มีแก้ไข -> แสดงปุ่มแก้บิล
+            // ถ้ายังไม่เสร็จ + มีแก้ไข -> แสดงปุ่มแก้บิล
             if (hasEdit && isConfirmed) {
                 return `
                 <div class="flex flex-col items-center w-1/4">
