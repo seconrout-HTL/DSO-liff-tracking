@@ -18,7 +18,7 @@
                         'ht-red': '#E41E2B',
                         'ht-green': '#007A33',
                         'ht-orange': '#F59E0B',
-                        'ht-blue': '#0056b3', // ปรับสีน้ำเงินให้เข้มขึ้นเล็กน้อยให้อ่านง่าย
+                        'ht-blue': '#0056b3',
                         'ht-gray': '#F4F4F4',
                     }
                 }
@@ -62,7 +62,7 @@
             <div class="flex gap-2">
                 <div class="flex-1 bg-white rounded-xl overflow-hidden flex items-center px-3 shadow-sm">
                     <i class="fas fa-search text-gray-400 text-xs"></i>
-                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา..." class="w-full p-2 text-xs outline-none text-gray-700">
+                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา DO, สาขา..." class="w-full p-2 text-xs outline-none text-gray-700">
                 </div>
                 <div class="w-1/3 bg-white rounded-xl overflow-hidden shadow-sm">
                     <input type="date" id="date-mobile" onchange="syncFilters('mobile')" class="w-full p-2 text-xs text-center outline-none bg-white text-gray-700">
@@ -133,7 +133,7 @@
                 <div class="flex gap-3">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
+                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา DO, สาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
                     </div>
                     <input type="date" id="date-desktop" onchange="syncFilters('desktop')" class="border rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-ht-red">
                     <button onclick="manualRefresh()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 transition"><i class="fas fa-sync-alt refresh-icon"></i></button>
@@ -185,13 +185,10 @@
         let isFirstLoad = true;
         let isDateAutoSet = false;
 
-        // ==========================================
-        // 🚀 INITIALIZATION
-        // ==========================================
         window.onload = async function() {
             await initLiff();
             fetchData();
-            setInterval(() => fetchData(true), 20000); // Refresh every 20s
+            setInterval(() => fetchData(true), 20000); 
         };
 
         async function initLiff() {
@@ -214,18 +211,21 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    globalData = json.data;
+                    globalData = json.data.map(mapSheetData);
 
-                    // Auto set date filter on first load
+                    // Auto Date
                     if (!isDateAutoSet && globalData.length > 0) {
-                        const latestDate = globalData[0].targetDate; 
-                        document.getElementById('date-mobile').value = latestDate;
-                        document.getElementById('date-desktop').value = latestDate;
-                        isDateAutoSet = true;
+                        const latestDate = globalData[0].timestamp; 
+                        if(latestDate) {
+                            const d = parseDateToISO(latestDate);
+                            document.getElementById('date-mobile').value = d;
+                            document.getElementById('date-desktop').value = d;
+                            isDateAutoSet = true;
+                        }
                     }
 
                     applyFilters(); 
-                    updateDashboards(json.dashboard, json.data);
+                    updateDashboards(json.dashboard, globalData);
                 }
             } catch (error) {
                 console.error('Fetch Error:', error);
@@ -233,6 +233,28 @@
                 if (!isSilent) toggleLoading(false);
                 isFirstLoad = false;
             }
+        }
+
+        function mapSheetData(item) {
+            return {
+                timestamp: item.Timestamp || item.timestamp,
+                branch: item.Branch || item.branch,
+                deliveryDate: item['Delivery Date'] || item.Delivery_Date || item.deliveryDate, 
+                doNumber: item.DO_Num || item.doNumber,
+                
+                // Timeline Data
+                bill: { time: item.Time_Bill, by: item.Admin_Name }, 
+                conf: { time: item.Time_Conf, by: item.Disp_Name },  
+                ship: { time: item.Time_Ship, by: item.Ship_Name },  
+                
+                // Amounts
+                amount: item.Amt_Bill || item.amount,
+                shipmentAmount: item.Amt_Ship || item.shipmentAmount,
+                
+                // Meta & Logic
+                editCount: Number(item['Edit Count'] || item.editCount || 0), // แปลงเป็นตัวเลขเสมอ
+                note: item.Note || item.note
+            };
         }
 
         function toggleLoading(isLoading) {
@@ -245,63 +267,35 @@
         }
 
         // ==========================================
-        // 🛠 FORMATTERS (IMPROVED)
+        // 🛠 FORMATTERS
         // ==========================================
-        
-        // แปลงวันที่ รองรับทั้ง YYYY-MM-DD และ DD/MM/YYYY
         function parseDate(val) {
             if (!val) return '-';
-            
-            // ถ้าเป็นรูปแบบ DD/MM/YYYY หรือ DD/MM/YY อยู่แล้ว
-            if (String(val).includes('/') && String(val).length < 12) return val;
-            
-            // ถ้าเป็น ISO Format (YYYY-MM-DD)
+            const s = String(val);
+            if (s.includes('/')) return s; 
             const d = new Date(val);
-            if (isNaN(d.getTime())) return val; 
-            
+            if (isNaN(d.getTime())) return val;
             const day = String(d.getDate()).padStart(2, '0');
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const year = d.getFullYear();
             return `${day}/${month}/${year}`;
         }
+        
+        function parseDateToISO(val) {
+             const d = new Date(val);
+             if (isNaN(d.getTime())) return '';
+             return d.toISOString().split('T')[0];
+        }
 
-        // แปลงเวลา รองรับ Timezone +7
         function parseTime(val) {
             if (!val) return '-';
-            
-            // เช็คว่าเป็น ISO String (มี T) หรือไม่ เช่น 1899-12-30T06:42:00.000Z
             if (String(val).includes('T')) {
                 const d = new Date(val);
                 if (!isNaN(d.getTime())) {
-                    // แปลงเป็นเวลาไทย (Asia/Bangkok)
-                    return d.toLocaleTimeString('th-TH', { 
-                        timeZone: 'Asia/Bangkok',
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        hour12: false 
-                    });
+                    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
                 }
             }
-            
-            // กรณีเป็น String ธรรมดา เช่น "13:42"
             return String(val).substring(0, 5);
-        }
-
-        // คำนวณสถานะใหม่ โดยไม่สนค่า Progress จาก Backend
-        function calculateProgress(item) {
-            // ถ้ามีเวลาส่งของ (Ship Time) -> จบงาน (4)
-            if (item.details?.ship?.time) return 4;
-            // ถ้ามีเวลายืนยัน (Conf Time) -> ยืนยันแล้ว (2)
-            if (item.details?.conf?.time) return 2;
-            // ถ้าไม่มีอะไรเลย -> งานใหม่ (1)
-            return 1;
-        }
-
-        function getStatusBadge(progress, isEdit) {
-            if (progress >= 4) return '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
-            if (isEdit) return '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
-            if (progress === 2) return '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
-            return '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
         }
 
         // ==========================================
@@ -315,29 +309,38 @@
             }
             
             container.innerHTML = data.map(item => {
-                // คำนวณสถานะใหม่
-                const p = calculateProgress(item);
-                const editCount = item.editCount || 0;
-                const hasEdit = editCount > 0 || (item.note && item.note !== '');
+                const isShipped = item.ship.time ? true : false;
+                const isConfirmed = item.conf.time ? true : false;
+                const hasEdit = (item.editCount >= 1); // มีการแก้ไขเมื่อ Edit Count >= 1
 
+                // --- 🚩 LOGIC เส้นความคืบหน้า (UPDATED) ---
                 let width = '0%';
-                if (p === 2) width = '33%';
-                else if (p === 3 || (p === 2 && hasEdit)) width = '66%'; 
-                else if (p >= 4) width = '100%';
+                if (isShipped) {
+                    width = '100%'; // เสร็จสิ้น: เต็มหลอด (ข้ามสถานะแก้ไขไปเลย)
+                } else if (isConfirmed && hasEdit) {
+                    width = '66%';  // ยืนยัน + มีแก้ไข: หยุดที่สถานะแก้ไข
+                } else if (isConfirmed) {
+                    width = '33%';  // ยืนยัน: หยุดที่ยืนยัน
+                }
 
-                // ดึงค่ายอดจัดส่ง (รองรับหลายชื่อตัวแปรเผื่อไว้)
-                const shipmentAmt = item.amtShip || item.shipmentAmount || '-';
+                const shipmentVal = item.shipmentAmount || '-';
+                
+                // Status Badge Logic
+                let statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
+                if (isShipped) statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
+                else if (hasEdit && isConfirmed) statusBadge = '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
+                else if (isConfirmed) statusBadge = '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
 
                 return `
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 mb-3 transition active:scale-[0.99]">
                     <div class="flex justify-between mb-2">
                         <div>
-                            <div class="font-bold text-gray-800 text-lg tracking-tight">${parseDate(item.timestamp || item.targetDate)}</div>
+                            <div class="font-bold text-gray-800 text-lg tracking-tight">${parseDate(item.timestamp)}</div>
                             <div class="text-xs text-gray-400 mt-0.5">DO: ${item.doNumber} <span class="mx-1">•</span> <span class="font-bold text-gray-500">${item.branch}</span></div>
                         </div>
                         <div class="text-right">
                              <div class="text-xl font-bold text-ht-red">${item.amount}</div>
-                             ${getStatusBadge(p, hasEdit && p < 4)}
+                             ${statusBadge}
                         </div>
                     </div>
                     
@@ -346,34 +349,55 @@
                             <i class="fas fa-truck text-gray-400 mr-1"></i>Deliver: <span class="font-medium ml-1 text-gray-700">${parseDate(item.deliveryDate)}</span>
                         </div>
                         <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 text-center min-w-[80px]">
-                            Shipment<br><span class="font-bold text-lg">${shipmentAmt}</span>
+                            Shipment<br><span class="font-bold text-lg">${shipmentVal}</span>
                         </div>
                     </div>
                     
                     <div class="relative px-1 pb-2 mt-2">
                         <div class="absolute left-0 right-0 top-[6px] h-[2px] bg-gray-100 z-0 rounded-full"></div>
                         <div class="absolute left-0 top-[6px] h-[2px] bg-ht-green z-0 transition-all duration-700 rounded-full" style="width: ${width}"></div>
-                        
                         <div class="flex justify-between relative z-10 text-[9px] text-center">
-                            ${renderMobileNode('งานใหม่', item.details?.bill, true, 'bg-ht-green')}
-                            ${renderMobileNode('ยืนยัน', item.details?.conf, p>=2, 'bg-blue-500')}
-                            ${renderMobileNode(hasEdit?'แก้บิล':'', {time: hasEdit?editCount+' ครั้ง':''}, hasEdit, 'bg-ht-orange', true)}
-                            ${renderMobileNode('เสร็จสิ้น', item.details?.ship, p>=4, 'bg-green-600')}
+                            ${renderMobileNode('งานใหม่', item.bill, true, 'bg-ht-green')}
+                            ${renderMobileNode('ยืนยัน', item.conf, isConfirmed, 'bg-blue-500')}
+                            ${renderMobileEditNode(hasEdit, item.editCount, isShipped, isConfirmed)}
+                            ${renderMobileNode('เสร็จสิ้น', item.ship, isShipped, 'bg-green-600')}
                         </div>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        function renderMobileNode(label, detail, isActive, colorClass, isEditNode=false) {
-            if(isEditNode && !isActive) return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
+        function renderMobileNode(label, detail, isActive, colorClass) {
             const circle = isActive ? `w-3 h-3 ${colorClass} border border-white shadow-sm` : `w-3 h-3 bg-gray-200 border border-white`;
             const text = isActive ? 'text-gray-600 font-bold' : 'text-gray-300';
             return `
             <div class="flex flex-col items-center w-1/4">
-                <div class="${circle} rounded-full mb-1 transition-colors"></div>
+                <div class="${circle} rounded-full mb-1"></div>
                 <span class="${text}">${label}</span>
                 <span class="text-gray-400 scale-90">${parseTime(detail?.time)}</span>
+            </div>`;
+        }
+
+        // ฟังก์ชั่นแสดงโหนดแก้ไข (Mobile)
+        function renderMobileEditNode(hasEdit, count, isShipped, isConfirmed) {
+            // ถ้าไม่มีการแก้ไขเลย ให้แสดงเป็นจุดว่างๆ (Placeholder)
+            if (!hasEdit) {
+                return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
+            }
+            
+            // Logic การแสดงผล: 
+            // - ถ้าเสร็จสิ้นแล้ว (isShipped) -> แสดงเป็นจุดสีเทาหรือสีปกติ (เพราะผ่านสถานะนี้ไปแล้ว) แต่เส้นจะข้ามไป
+            // - ถ้ายังไม่เสร็จ แต่ยืนยันแล้ว และมีแก้ไข -> แสดงเป็น Active (สีส้ม)
+            
+            const isActive = (isConfirmed && !isShipped); // Active เฉพาะตอนที่ยังไม่ส่งของ
+            const circleClass = isActive ? 'bg-orange-500 border-white shadow-sm scale-110' : (isShipped ? 'bg-orange-300' : 'bg-gray-200');
+            const textClass = isActive ? 'text-orange-600 font-bold' : (isShipped ? 'text-gray-400' : 'text-gray-300');
+
+            return `
+            <div class="flex flex-col items-center w-1/4">
+                <div class="w-3 h-3 ${circleClass} rounded-full mb-1 border border-white"></div>
+                <span class="${textClass}">แก้บิล</span>
+                <span class="text-gray-400 scale-90">${count} ครั้ง</span>
             </div>`;
         }
 
@@ -388,57 +412,52 @@
             }
 
             tbody.innerHTML = data.map(item => {
-                // คำนวณสถานะ
-                const p = calculateProgress(item);
-                const editCount = item.editCount || 0;
-                const hasEdit = editCount > 0 || (item.note && item.note !== '');
+                const isShipped = item.ship.time ? true : false;
+                const isConfirmed = item.conf.time ? true : false;
+                const hasEdit = (item.editCount >= 1);
 
+                // --- 🚩 LOGIC เส้นความคืบหน้า Desktop (เหมือน Mobile) ---
                 let barWidth = '0%';
-                if (p === 2) barWidth = '33%';
-                else if (p === 3) barWidth = '66%'; 
-                else if (p >= 4) barWidth = '100%';
+                if (isShipped) barWidth = '100%'; 
+                else if (isConfirmed && hasEdit) barWidth = '66%';
+                else if (isConfirmed) barWidth = '33%';
 
-                const shipmentAmt = item.amtShip || item.shipmentAmount || '-';
+                const shipmentVal = item.shipmentAmount || '-';
+
+                // Status Badge Logic
+                let statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
+                if (isShipped) statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
+                else if (hasEdit && isConfirmed) statusBadge = '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
+                else if (isConfirmed) statusBadge = '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
 
                 return `
                 <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0 group">
                     <td class="p-4 align-top">
-                        <div class="font-bold text-gray-800 text-lg">${parseDate(item.timestamp || item.targetDate)}</div>
-                         <div class="text-xs text-gray-400 mt-1">DO: ${item.doNumber}</div>
-                    </td>
-
+                        <div class="font-bold text-gray-800 text-lg">${parseDate(item.timestamp)}</div>
+                         </td>
                     <td class="p-4 align-top text-center">
                         <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm border border-gray-200 font-medium">${item.branch || '-'}</span>
                     </td>
-
                     <td class="p-4 align-top text-center text-gray-600 font-medium">
                         ${parseDate(item.deliveryDate)}
                     </td>
-
                     <td class="p-4 align-top text-center">
-                        ${getStatusBadge(p, hasEdit && p < 4)}
+                        ${statusBadge}
                     </td>
-
                     <td class="p-4 align-middle">
                         <div class="timeline-container">
                             <div class="timeline-line-bg"></div>
                             <div class="timeline-line-progress" style="width: ${barWidth}"></div>
                             <div class="flex justify-between relative z-10 px-2">
-                                ${renderDesktopNode('งานใหม่', item.details?.bill, true, 'border-gray-300')}
-                                ${renderDesktopNode('ยืนยันแล้ว', item.details?.conf, p>=2, 'border-blue-400', 'bg-blue-400')}
-                                ${renderEditNodeDesktop(hasEdit, editCount, item.note)}
-                                ${renderDesktopNode('เสร็จสิ้น', item.details?.ship, p>=4, 'border-green-500', 'bg-green-500')}
+                                ${renderDesktopNode('งานใหม่', item.bill, true, 'border-gray-300')}
+                                ${renderDesktopNode('ยืนยันแล้ว', item.conf, isConfirmed, 'border-blue-400', 'bg-blue-400')}
+                                ${renderEditNodeDesktop(hasEdit, item.editCount, item.note, isShipped, isConfirmed)}
+                                ${renderDesktopNode('เสร็จสิ้น', item.ship, isShipped, 'border-green-500', 'bg-green-500')}
                             </div>
                         </div>
                     </td>
-
-                    <td class="p-4 align-top text-right font-bold text-ht-red text-lg">
-                        ${item.amount}
-                    </td>
-
-                    <td class="p-4 align-top text-right font-bold text-ht-blue text-lg">
-                         ${shipmentAmt}
-                    </td>
+                    <td class="p-4 align-top text-right font-bold text-ht-red text-lg">${item.amount}</td>
+                    <td class="p-4 align-top text-right font-bold text-ht-blue text-lg">${shipmentVal}</td>
                 </tr>`;
             }).join('');
         }
@@ -450,26 +469,34 @@
             
             return `
             <div class="flex flex-col items-center w-1/4 relative group/node">
-                <div class="w-4 h-4 rounded-full ${circleStyle} flex items-center justify-center mb-1 shadow-sm z-10 transition-all">
+                <div class="w-4 h-4 rounded-full ${circleStyle} flex items-center justify-center mb-1 shadow-sm z-10">
                     <div class="${dotStyle}"></div>
                 </div>
-                <div class="text-[10px] text-center">
-                    <div class="${labelColor} transition-colors">${label}</div>
+                <div class="text-[10px] text-center w-full">
+                    <div class="${labelColor}">${label}</div>
                     <div class="text-gray-400 font-mono scale-90">${parseTime(detail?.time)}</div>
-                    <div class="text-gray-500 scale-90 truncate max-w-[80px]" title="${detail?.by||''}">${detail?.by || '-'}</div>
+                    <div class="text-gray-500 scale-90 truncate max-w-[80px] mx-auto" title="${detail?.by||''}">${detail?.by || '-'}</div>
                 </div>
             </div>`;
         }
 
-        function renderEditNodeDesktop(hasEdit, count, note) {
+        // ฟังก์ชั่นแสดงโหนดแก้ไข (Desktop)
+        function renderEditNodeDesktop(hasEdit, count, note, isShipped, isConfirmed) {
             if (!hasEdit) return `<div class="flex flex-col items-center w-1/4"><div class="w-3 h-3 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
+            
+            // Logic: ถ้ายังไม่ Ship และมี Edit -> Active, ถ้า Ship แล้ว -> เป็นแค่ History (สีจางลงแต่ยังเห็น)
+            const isActive = (isConfirmed && !isShipped);
+            const borderColor = isActive ? 'border-orange-400' : (isShipped ? 'border-gray-300' : 'border-gray-200');
+            const dotColor = isActive ? 'bg-orange-400' : (isShipped ? 'bg-orange-200' : '');
+            const textColor = isActive ? 'text-orange-500 font-bold' : 'text-gray-400';
+
             return `
             <div class="flex flex-col items-center w-1/4">
-                <div class="w-4 h-4 rounded-full bg-white border-2 border-orange-400 flex items-center justify-center mb-1 shadow-sm z-10">
-                    <div class="w-2 h-2 rounded-full bg-orange-400"></div>
+                <div class="w-4 h-4 rounded-full bg-white border-2 ${borderColor} flex items-center justify-center mb-1 shadow-sm z-10">
+                    <div class="w-2 h-2 rounded-full ${dotColor}"></div>
                 </div>
                 <div class="text-[10px] text-center">
-                    <div class="text-orange-500 font-bold">แก้บิล</div>
+                    <div class="${textColor}">แก้บิล</div>
                     <div class="text-gray-400 scale-90">${count} ครั้ง</div>
                     ${note ? `<div class="text-gray-400 scale-90 cursor-help" title="${note}"><i class="far fa-comment-dots"></i></div>` : ''}
                 </div>
@@ -477,7 +504,7 @@
         }
 
         // ==========================================
-        // 🔍 FILTER & SYNC
+        // 🔍 FILTER
         // ==========================================
         function syncFilters(source) {
             const searchVal = document.getElementById(`search-${source}`).value;
@@ -491,11 +518,18 @@
         function applyFilters() {
             const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
             const dateQuery = document.getElementById('date-mobile').value;
+            
             const filtered = globalData.filter(item => {
                 const doStr = String(item.doNumber || '').toLowerCase(); 
                 const branchStr = String(item.branch || '').toLowerCase();
                 const matchesSearch = doStr.includes(searchQuery) || branchStr.includes(searchQuery);
-                const matchesDate = !dateQuery || item.targetDate === dateQuery;
+                
+                let matchesDate = true;
+                if(dateQuery && item.timestamp) {
+                    const itemDate = parseDateToISO(item.timestamp);
+                    matchesDate = itemDate === dateQuery;
+                }
+                
                 return matchesSearch && matchesDate;
             });
             renderMobileList(filtered);
@@ -509,22 +543,21 @@
             document.getElementById('d-dash-total').innerText = summary.total || 0;
             document.getElementById('d-dash-shipped').innerText = summary.shipped || 0;
             
-            // Update Recent List on Mobile Dashboard
-            if(items) {
+            if(items && items.length > 0) {
                 const mList = document.getElementById('m-latest-updates');
                 mList.innerHTML = items.slice(0,5).map(i => {
-                    let color = calculateProgress(i) === 4 ? 'bg-green-500' : 'bg-gray-400';
+                    const isShipped = i.ship.time ? true : false;
+                    let color = isShipped ? 'bg-green-500' : 'bg-gray-400';
                     return `
                     <div class="flex items-center gap-3 text-xs border-b border-gray-50 pb-2 last:border-0 last:pb-0">
                         <div class="w-2 h-2 rounded-full ${color}"></div>
                         <div class="flex-1 text-gray-700 font-medium">DO ${i.doNumber} <span class="text-gray-400 font-normal">(${i.branch})</span></div>
-                        <div class="text-gray-400 font-mono text-[10px]">${parseTime(i.details?.bill?.time)}</div>
+                        <div class="text-gray-400 font-mono text-[10px]">${parseTime(i.bill?.time)}</div>
                     </div>`;
                 }).join('');
             }
         }
         
-        // Tab Switching Logic
         function switchDesktopTab(tab) {
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
             document.getElementById(`d-nav-${tab}`).classList.add('active');
