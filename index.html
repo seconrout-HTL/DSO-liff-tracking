@@ -190,23 +190,18 @@
         let isDateAutoSet = false;
 
         window.onload = async function() {
-            await initLiff(); // รอให้ Liff Init เสร็จก่อน
+            await initLiff(); 
             fetchData();
             setInterval(() => fetchData(true), 20000); 
         };
 
         async function initLiff() {
             try {
-                // 1. ตรวจสอบว่ามี LIFF ID หรือยัง
                 if(!LIFF_ID || LIFF_ID === 'YOUR_LIFF_ID_HERE') {
                     console.warn('⚠️ ยังไม่ได้ใส่ LIFF ID');
                     return;
                 }
-                
-                // 2. Initialize LIFF
                 await liff.init({ liffId: LIFF_ID });
-                
-                // 3. เมื่อ Init สำเร็จแล้ว ค่อยเช็คสถานะ Login
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     document.getElementById('user-display-mobile').innerText = profile.displayName;
@@ -214,7 +209,6 @@
                 }
             } catch (err) { 
                 console.error('LIFF Init Error:', err);
-                // กรณี Init ไม่ผ่าน ก็ปล่อยให้ทำงานต่อในโหมด Guest
             }
         }
 
@@ -228,9 +222,10 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    globalData = json.data.map(mapSheetData);
+                    // ใช้ Mapper ตัวใหม่ที่แข็งแกร่งกว่าเดิม
+                    globalData = json.data.map(mapSheetDataRobust);
 
-                    // Auto Date (Set วันที่ล่าสุดอัตโนมัติ)
+                    // Auto Date
                     if (!isDateAutoSet && globalData.length > 0) {
                         const latestDate = globalData[0].timestamp; 
                         if(latestDate) {
@@ -252,43 +247,60 @@
             }
         }
 
-        // 🔧 MAPPER: ฟังก์ชันนี้แก้ไขแล้ว ให้ดึงข้อมูลได้ฉลาดขึ้น
-        function mapSheetData(item) {
-            // ฟังก์ชันช่วยค้นหาค่า (ดักจับชื่อตัวแปรหลายรูปแบบ เพื่อป้องกัน Error)
-            const getVal = (keys) => {
-                for (const k of keys) {
-                    if (item[k] !== undefined && item[k] !== "") return item[k];
+        // 🔧 MAPPER: ตัวใหม่ "แบบครอบจักรวาล"
+        function mapSheetDataRobust(item) {
+            // สร้าง Dictionary ที่ Key เป็นตัวพิมพ์เล็กล้วนและตัดสัญลักษณ์ออก เพื่อใช้ค้นหา
+            // ตัวอย่าง: "Time_Conf" -> "timeconf", "Delivery Date" -> "deliverydate"
+            const normalizedItem = {};
+            for (let key in item) {
+                if (Object.prototype.hasOwnProperty.call(item, key)) {
+                    // ลบช่องว่าง, ขีดล่าง, ขีดกลาง และทำเป็นตัวเล็กให้หมด
+                    const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    normalizedItem[cleanKey] = item[key];
+                }
+            }
+
+            // ฟังก์ชันดึงค่าจาก Normalized Key
+            const getVal = (targetKeys) => {
+                if (!Array.isArray(targetKeys)) targetKeys = [targetKeys];
+                for (const k of targetKeys) {
+                    // ทำให้ Key ที่เราจะหา เป็นตัวเล็กตัดคำเหมือนกัน
+                    const searchKey = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (normalizedItem[searchKey] !== undefined && normalizedItem[searchKey] !== "") {
+                        return normalizedItem[searchKey];
+                    }
                 }
                 return null;
             };
 
             return {
-                timestamp: getVal(['Timestamp', 'timestamp', 'Date']),
-                branch: getVal(['Branch', 'branch', 'สาขา']),
-                deliveryDate: getVal(['Delivery Date', 'Delivery_Date', 'deliveryDate', 'delivery_date']),
-                doNumber: getVal(['DO_Num', 'doNumber', 'DO Num', 'do_num']),
+                // ค้นหาโดยไม่ต้องสนตัวพิมพ์เล็กใหญ่ หรือเว้นวรรค
+                timestamp: getVal(['timestamp', 'date', 'creatingdate']),
+                branch: getVal(['branch']),
+                deliveryDate: getVal(['deliverydate', 'delivery_date']),
+                doNumber: getVal(['donum', 'donumber', 'do_num']),
                 
-                // Timeline Data (ดักจับทั้งแบบมี _ และไม่มี)
+                // Timeline Data
                 bill: { 
-                    time: getVal(['Time_Bill', 'Time Bill', 'time_bill', 'timeBill']), 
-                    by: getVal(['Admin_Name', 'Admin Name', 'admin_name', 'adminName']) 
+                    time: getVal(['timebill', 'time_bill']), 
+                    by: getVal(['adminname', 'admin_name']) 
                 }, 
                 conf: { 
-                    time: getVal(['Time_Conf', 'Time Conf', 'time_conf', 'timeConf']), 
-                    by: getVal(['Disp_Name', 'Disp Name', 'disp_name', 'dispName']) 
+                    time: getVal(['timeconf', 'time_conf', 'confirmtime']), 
+                    by: getVal(['dispname', 'disp_name']) 
                 },  
                 ship: { 
-                    time: getVal(['Time_Ship', 'Time Ship', 'time_ship', 'timeShip']), 
-                    by: getVal(['Ship_Name', 'Ship Name', 'ship_name', 'shipName']) 
+                    time: getVal(['timeship', 'time_ship', 'shiptime']), 
+                    by: getVal(['shipname', 'ship_name']) 
                 },  
                 
                 // Amounts
-                amount: getVal(['Amt_Bill', 'Amt Bill', 'amount', 'amt_bill']),
-                shipmentAmount: getVal(['Amt_Ship', 'Amt Ship', 'shipmentAmount', 'amt_ship']),
+                amount: getVal(['amtbill', 'amt_bill', 'amount']),
+                shipmentAmount: getVal(['amtship', 'amt_ship', 'shipmentamount']),
                 
                 // Meta & Logic
-                editCount: Number(getVal(['Edit Count', 'Edit_Count', 'editCount', 'edit_count']) || 0), 
-                note: getVal(['Note', 'note', 'remark'])
+                editCount: Number(getVal(['editcount', 'edit_count']) || 0), 
+                note: getVal(['note', 'remark'])
             };
         }
 
@@ -348,14 +360,14 @@
                 const isConfirmed = item.conf.time ? true : false;
                 const hasEdit = (item.editCount >= 1);
 
-                // --- 🚩 LOGIC เส้นความคืบหน้า (Mobile) ---
+                // --- 🚩 LOGIC เส้นความคืบหน้า ---
                 let width = '0%';
                 if (isShipped) {
-                    width = '100%'; // เสร็จสิ้น: เต็มหลอด
+                    width = '100%'; 
                 } else if (isConfirmed && hasEdit) {
-                    width = '66%';  // ยืนยัน + แก้ไข: หยุดที่ 2/3
+                    width = '66%';  
                 } else if (isConfirmed) {
-                    width = '33%';  // ยืนยัน: หยุดที่ 1/3
+                    width = '33%'; 
                 }
 
                 const shipmentVal = item.shipmentAmount || '-';
@@ -413,13 +425,10 @@
         }
 
         function renderMobileEditNode(hasEdit, count, isShipped, isConfirmed) {
-            // ถ้าไม่เคยแก้เลย ให้เป็นจุดว่าง
             if (!hasEdit) {
                 return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
             }
-            // ถ้ามีแก้:
-            // 1. ถ้ายังไม่ Ship แต่ Confirm แล้ว -> Active (สีส้ม)
-            // 2. ถ้า Ship แล้ว -> เป็น History (สีส้มจางๆ หรือ เทา)
+            
             const isActive = (isConfirmed && !isShipped); 
             const circleClass = isActive ? 'bg-orange-500 border-white shadow-sm scale-110' : (isShipped ? 'bg-orange-300' : 'bg-gray-200');
             const textClass = isActive ? 'text-orange-600 font-bold' : (isShipped ? 'text-gray-400' : 'text-gray-300');
@@ -447,7 +456,7 @@
                 const isConfirmed = item.conf.time ? true : false;
                 const hasEdit = (item.editCount >= 1);
 
-                // --- 🚩 LOGIC เส้นความคืบหน้า (Desktop) ---
+                // --- 🚩 LOGIC เส้นความคืบหน้า ---
                 let barWidth = '0%';
                 if (isShipped) barWidth = '100%'; 
                 else if (isConfirmed && hasEdit) barWidth = '66%';
