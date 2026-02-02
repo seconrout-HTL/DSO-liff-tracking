@@ -180,8 +180,8 @@
         // ⚙️ SETTINGS
         // ==========================================
         
-        // ⚠️⚠️⚠️ ใส่ LIFF ID ตรงนี้ครับ ⚠️⚠️⚠️
-        const LIFF_ID = 'YOUR_LIFF_ID_HERE'; 
+        // ⚠️⚠️⚠️ ใส่ LIFF ID ตรงนี้ (ถ้ามี) ⚠️⚠️⚠️
+        const LIFF_ID = ''; 
         
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
         
@@ -197,10 +197,7 @@
 
         async function initLiff() {
             try {
-                if(!LIFF_ID || LIFF_ID === 'YOUR_LIFF_ID_HERE') {
-                    console.warn('⚠️ ยังไม่ได้ใส่ LIFF ID');
-                    return;
-                }
+                if(!LIFF_ID) return;
                 await liff.init({ liffId: LIFF_ID });
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
@@ -222,8 +219,8 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    // ใช้ตัว Mapper ที่เจาะจงกับรูปภาพ Sheet ที่ส่งมา
-                    globalData = json.data.map(mapSheetDataSpecific);
+                    // ใช้ Mapper ที่ปรับปรุงตามรูปภาพ Google Sheet ของคุณ
+                    globalData = json.data.map(mapSheetDataExact);
 
                     // Auto Date
                     if (!isDateAutoSet && globalData.length > 0) {
@@ -247,38 +244,37 @@
             }
         }
 
-        // 🔧 MAPPER SPECIFIC: ตรงกับรูปภาพใน Google Sheet เป๊ะๆ
-        function mapSheetDataSpecific(item) {
-            // ฟังก์ชันช่วยหาค่าแบบยืดหยุ่น (Fallback) กรณีชื่อไม่ตรงเป๊ะจริงๆ
-            const get = (k) => item[k] || item[Object.keys(item).find(key => key.toLowerCase() === k.toLowerCase())];
-
+        // 🔧 MAPPER: ตรงกับรูปภาพ Google Sheet เป๊ะๆ
+        function mapSheetDataExact(item) {
             return {
                 timestamp: item['Timestamp'] || item['timestamp'],
-                branch: item['Branch'], // Col B
-                deliveryDate: item['Delivery Date'], // Col C
-                doNumber: item['DO_Num'], // Col D
+                branch: item['Branch'], 
+                deliveryDate: item['Delivery Date'], // มีเว้นวรรค
+                doNumber: item['DO_Num'], 
                 
-                // Timeline Data (ชื่อตามรูปภาพ Sheet เป๊ะๆ)
+                // Timeline Data 
                 bill: { 
-                    time: item['Time_Bill'], // Col F
-                    by: item['Admin_Name']   // Col E
+                    time: item['Time_Bill'], 
+                    by: item['Admin_Name']   
                 },
                 conf: { 
-                    time: item['time_conf'], // Col I (ตัวเล็ก ตามรูป)
-                    by: item['Disp_Name']    // Col H
+                    // แก้ไข: ใช้ 'time_conf' ตัวเล็กตามรูป
+                    time: item['time_conf'] || item['Time_Conf'], 
+                    by: item['Disp_Name']    
                 },
                 ship: { 
-                    time: item['Time_Ship'], // Col M (ตัวใหญ่ ตามรูป)
-                    by: item['Ship_Name']    // Col L
+                    time: item['Time_Ship'], 
+                    by: item['Ship_Name']    
                 },
                 
                 // Amounts
-                amount: item['Amt_Bill'],     // Col G
-                shipmentAmount: item['Amt_Ship'], // Col N
+                amount: item['Amt_Bill'],
+                shipmentAmount: item['Amt_Ship'],
                 
                 // Meta & Logic
-                editCount: Number(item['Edit Count'] || 0), // Col Q (มีเว้นวรรค)
-                note: item['Note'] // Col R
+                // แก้ไข: ใช้ 'Edit Count' มีเว้นวรรค
+                editCount: Number(item['Edit Count'] || 0), 
+                note: item['Note']
             };
         }
 
@@ -338,14 +334,17 @@
                 const isConfirmed = item.conf.time ? true : false;
                 const hasEdit = (item.editCount >= 1);
 
-                // --- 🚩 LOGIC เส้นความคืบหน้า ---
+                // --- 🚩 LOGIC เส้นความคืบหน้า (Mobile) ---
                 let width = '0%';
                 if (isShipped) {
-                    width = '100%'; // เสร็จสิ้น: เต็มหลอด
+                    // ถ้าเสร็จแล้ว วิ่งเต็ม 100% (ข้ามสถานะแก้ไขไปเลย)
+                    width = '100%'; 
                 } else if (isConfirmed && hasEdit) {
-                    width = '66%';  // มีแก้: หยุดที่ 2/3
+                    // ถ้ายังไม่เสร็จ + มีแก้ไข = วิ่งไปหยุดที่ 66%
+                    width = '66%';  
                 } else if (isConfirmed) {
-                    width = '33%';  // ยืนยัน: หยุดที่ 1/3
+                    // ถ้าแค่ยืนยันเฉยๆ = 33%
+                    width = '33%'; 
                 }
 
                 const shipmentVal = item.shipmentAmount || '-';
@@ -403,13 +402,12 @@
         }
 
         function renderMobileEditNode(hasEdit, count, isShipped, isConfirmed) {
-            // Logic ตามที่คุณต้องการ:
-            // 1. ถ้าเสร็จสิ้น (Shipped) -> หายไปเลย หรือเป็นจุดว่าง (ไม่แสดงสีส้ม)
+            // Logic: ถ้า Shipped แล้ว -> ไม่ต้องแสดงสถานะแก้บิล (ให้ความสำคัญที่เสร็จสิ้น)
             if (isShipped) {
                  return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
             }
 
-            // 2. ถ้ายังไม่เสร็จ + มีการแก้ไข -> แสดงสีส้ม
+            // ถ้ายังไม่เสร็จ + มีแก้ไข -> แสดงสีส้ม
             if (hasEdit && isConfirmed) {
                 return `
                 <div class="flex flex-col items-center w-1/4">
@@ -419,7 +417,7 @@
                 </div>`;
             }
 
-            // 3. ปกติ -> จุดว่าง
+            // กรณีอื่นๆ (ยังไม่ถึง หรือไม่มีแก้) -> จุดว่าง
             return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
         }
 
@@ -502,7 +500,7 @@
         }
 
         function renderEditNodeDesktop(hasEdit, count, note, isShipped, isConfirmed) {
-            // ถ้าเสร็จแล้ว -> ซ่อน (แสดงจุดผ่านเล็กๆ)
+            // ถ้าเสร็จแล้ว -> ให้แสดงเป็นแค่จุดผ่าน (สีเทา) ไม่แสดงปุ่มสีส้ม
             if (isShipped) {
                 return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-1 mb-1"></div></div>`;
             }
@@ -522,7 +520,7 @@
                 </div>`;
             }
 
-            // ไม่มีสถานะ -> จุดว่าง
+            // กรณีอื่นๆ -> จุดว่าง
             return `<div class="flex flex-col items-center w-1/4"><div class="w-3 h-3 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
         }
 
