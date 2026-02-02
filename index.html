@@ -179,6 +179,10 @@
         // ==========================================
         // ⚙️ SETTINGS
         // ==========================================
+        
+        // ⚠️⚠️⚠️ ใส่ LIFF ID ของคุณตรงนี้ (ห้ามลืม!) ⚠️⚠️⚠️
+        const LIFF_ID = 'YOUR_LIFF_ID_HERE'; 
+        
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
         
         let globalData = [];
@@ -186,19 +190,32 @@
         let isDateAutoSet = false;
 
         window.onload = async function() {
-            await initLiff();
+            await initLiff(); // รอให้ Liff Init เสร็จก่อน
             fetchData();
             setInterval(() => fetchData(true), 20000); 
         };
 
         async function initLiff() {
             try {
+                // 1. ตรวจสอบว่ามี LIFF ID หรือยัง
+                if(!LIFF_ID || LIFF_ID === 'YOUR_LIFF_ID_HERE') {
+                    console.warn('⚠️ ยังไม่ได้ใส่ LIFF ID');
+                    return;
+                }
+                
+                // 2. Initialize LIFF
+                await liff.init({ liffId: LIFF_ID });
+                
+                // 3. เมื่อ Init สำเร็จแล้ว ค่อยเช็คสถานะ Login
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     document.getElementById('user-display-mobile').innerText = profile.displayName;
                     document.getElementById('user-display-desktop').innerText = profile.displayName;
                 }
-            } catch (err) { console.log('LIFF Error:', err); }
+            } catch (err) { 
+                console.error('LIFF Init Error:', err);
+                // กรณี Init ไม่ผ่าน ก็ปล่อยให้ทำงานต่อในโหมด Guest
+            }
         }
 
         // ==========================================
@@ -213,7 +230,7 @@
                 if (json.status === 'success') {
                     globalData = json.data.map(mapSheetData);
 
-                    // Auto Date
+                    // Auto Date (Set วันที่ล่าสุดอัตโนมัติ)
                     if (!isDateAutoSet && globalData.length > 0) {
                         const latestDate = globalData[0].timestamp; 
                         if(latestDate) {
@@ -235,25 +252,43 @@
             }
         }
 
+        // 🔧 MAPPER: ฟังก์ชันนี้แก้ไขแล้ว ให้ดึงข้อมูลได้ฉลาดขึ้น
         function mapSheetData(item) {
+            // ฟังก์ชันช่วยค้นหาค่า (ดักจับชื่อตัวแปรหลายรูปแบบ เพื่อป้องกัน Error)
+            const getVal = (keys) => {
+                for (const k of keys) {
+                    if (item[k] !== undefined && item[k] !== "") return item[k];
+                }
+                return null;
+            };
+
             return {
-                timestamp: item.Timestamp || item.timestamp,
-                branch: item.Branch || item.branch,
-                deliveryDate: item['Delivery Date'] || item.Delivery_Date || item.deliveryDate, 
-                doNumber: item.DO_Num || item.doNumber,
+                timestamp: getVal(['Timestamp', 'timestamp', 'Date']),
+                branch: getVal(['Branch', 'branch', 'สาขา']),
+                deliveryDate: getVal(['Delivery Date', 'Delivery_Date', 'deliveryDate', 'delivery_date']),
+                doNumber: getVal(['DO_Num', 'doNumber', 'DO Num', 'do_num']),
                 
-                // Timeline Data
-                bill: { time: item.Time_Bill, by: item.Admin_Name }, 
-                conf: { time: item.Time_Conf, by: item.Disp_Name },  
-                ship: { time: item.Time_Ship, by: item.Ship_Name },  
+                // Timeline Data (ดักจับทั้งแบบมี _ และไม่มี)
+                bill: { 
+                    time: getVal(['Time_Bill', 'Time Bill', 'time_bill', 'timeBill']), 
+                    by: getVal(['Admin_Name', 'Admin Name', 'admin_name', 'adminName']) 
+                }, 
+                conf: { 
+                    time: getVal(['Time_Conf', 'Time Conf', 'time_conf', 'timeConf']), 
+                    by: getVal(['Disp_Name', 'Disp Name', 'disp_name', 'dispName']) 
+                },  
+                ship: { 
+                    time: getVal(['Time_Ship', 'Time Ship', 'time_ship', 'timeShip']), 
+                    by: getVal(['Ship_Name', 'Ship Name', 'ship_name', 'shipName']) 
+                },  
                 
                 // Amounts
-                amount: item.Amt_Bill || item.amount,
-                shipmentAmount: item.Amt_Ship || item.shipmentAmount,
+                amount: getVal(['Amt_Bill', 'Amt Bill', 'amount', 'amt_bill']),
+                shipmentAmount: getVal(['Amt_Ship', 'Amt Ship', 'shipmentAmount', 'amt_ship']),
                 
                 // Meta & Logic
-                editCount: Number(item['Edit Count'] || item.editCount || 0), // แปลงเป็นตัวเลขเสมอ
-                note: item.Note || item.note
+                editCount: Number(getVal(['Edit Count', 'Edit_Count', 'editCount', 'edit_count']) || 0), 
+                note: getVal(['Note', 'note', 'remark'])
             };
         }
 
@@ -311,21 +346,20 @@
             container.innerHTML = data.map(item => {
                 const isShipped = item.ship.time ? true : false;
                 const isConfirmed = item.conf.time ? true : false;
-                const hasEdit = (item.editCount >= 1); // มีการแก้ไขเมื่อ Edit Count >= 1
+                const hasEdit = (item.editCount >= 1);
 
-                // --- 🚩 LOGIC เส้นความคืบหน้า (UPDATED) ---
+                // --- 🚩 LOGIC เส้นความคืบหน้า (Mobile) ---
                 let width = '0%';
                 if (isShipped) {
-                    width = '100%'; // เสร็จสิ้น: เต็มหลอด (ข้ามสถานะแก้ไขไปเลย)
+                    width = '100%'; // เสร็จสิ้น: เต็มหลอด
                 } else if (isConfirmed && hasEdit) {
-                    width = '66%';  // ยืนยัน + มีแก้ไข: หยุดที่สถานะแก้ไข
+                    width = '66%';  // ยืนยัน + แก้ไข: หยุดที่ 2/3
                 } else if (isConfirmed) {
-                    width = '33%';  // ยืนยัน: หยุดที่ยืนยัน
+                    width = '33%';  // ยืนยัน: หยุดที่ 1/3
                 }
 
                 const shipmentVal = item.shipmentAmount || '-';
                 
-                // Status Badge Logic
                 let statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
                 if (isShipped) statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
                 else if (hasEdit && isConfirmed) statusBadge = '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
@@ -378,18 +412,15 @@
             </div>`;
         }
 
-        // ฟังก์ชั่นแสดงโหนดแก้ไข (Mobile)
         function renderMobileEditNode(hasEdit, count, isShipped, isConfirmed) {
-            // ถ้าไม่มีการแก้ไขเลย ให้แสดงเป็นจุดว่างๆ (Placeholder)
+            // ถ้าไม่เคยแก้เลย ให้เป็นจุดว่าง
             if (!hasEdit) {
                 return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
             }
-            
-            // Logic การแสดงผล: 
-            // - ถ้าเสร็จสิ้นแล้ว (isShipped) -> แสดงเป็นจุดสีเทาหรือสีปกติ (เพราะผ่านสถานะนี้ไปแล้ว) แต่เส้นจะข้ามไป
-            // - ถ้ายังไม่เสร็จ แต่ยืนยันแล้ว และมีแก้ไข -> แสดงเป็น Active (สีส้ม)
-            
-            const isActive = (isConfirmed && !isShipped); // Active เฉพาะตอนที่ยังไม่ส่งของ
+            // ถ้ามีแก้:
+            // 1. ถ้ายังไม่ Ship แต่ Confirm แล้ว -> Active (สีส้ม)
+            // 2. ถ้า Ship แล้ว -> เป็น History (สีส้มจางๆ หรือ เทา)
+            const isActive = (isConfirmed && !isShipped); 
             const circleClass = isActive ? 'bg-orange-500 border-white shadow-sm scale-110' : (isShipped ? 'bg-orange-300' : 'bg-gray-200');
             const textClass = isActive ? 'text-orange-600 font-bold' : (isShipped ? 'text-gray-400' : 'text-gray-300');
 
@@ -416,7 +447,7 @@
                 const isConfirmed = item.conf.time ? true : false;
                 const hasEdit = (item.editCount >= 1);
 
-                // --- 🚩 LOGIC เส้นความคืบหน้า Desktop (เหมือน Mobile) ---
+                // --- 🚩 LOGIC เส้นความคืบหน้า (Desktop) ---
                 let barWidth = '0%';
                 if (isShipped) barWidth = '100%'; 
                 else if (isConfirmed && hasEdit) barWidth = '66%';
@@ -424,7 +455,6 @@
 
                 const shipmentVal = item.shipmentAmount || '-';
 
-                // Status Badge Logic
                 let statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
                 if (isShipped) statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
                 else if (hasEdit && isConfirmed) statusBadge = '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
@@ -480,11 +510,9 @@
             </div>`;
         }
 
-        // ฟังก์ชั่นแสดงโหนดแก้ไข (Desktop)
         function renderEditNodeDesktop(hasEdit, count, note, isShipped, isConfirmed) {
             if (!hasEdit) return `<div class="flex flex-col items-center w-1/4"><div class="w-3 h-3 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
             
-            // Logic: ถ้ายังไม่ Ship และมี Edit -> Active, ถ้า Ship แล้ว -> เป็นแค่ History (สีจางลงแต่ยังเห็น)
             const isActive = (isConfirmed && !isShipped);
             const borderColor = isActive ? 'border-orange-400' : (isShipped ? 'border-gray-300' : 'border-gray-200');
             const dotColor = isActive ? 'bg-orange-400' : (isShipped ? 'bg-orange-200' : '');
