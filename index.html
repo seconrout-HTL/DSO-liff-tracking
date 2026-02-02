@@ -18,7 +18,7 @@
                         'ht-red': '#E41E2B',
                         'ht-green': '#007A33',
                         'ht-orange': '#F59E0B',
-                        'ht-blue': '#007bff',
+                        'ht-blue': '#0056b3', // ปรับสีน้ำเงินให้เข้มขึ้นเล็กน้อยให้อ่านง่าย
                         'ht-gray': '#F4F4F4',
                     }
                 }
@@ -31,19 +31,19 @@
         
         /* Timeline Styles */
         .timeline-container { position: relative; width: 100%; padding: 10px 0; }
-        /* เส้นพื้นหลัง (สีเทา) */
         .timeline-line-bg { position: absolute; top: 18px; left: 12%; right: 12%; height: 3px; background-color: #e5e7eb; z-index: 0; border-radius: 99px; }
-        /* เส้นความคืบหน้า (สีเขียว) */
         .timeline-line-progress { position: absolute; top: 18px; left: 12%; height: 3px; background-color: #007A33; z-index: 0; transition: width 0.8s ease; border-radius: 99px; }
         
         /* Animations */
         .spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        /* Nav & Sidebar */
-        .mobile-nav-item.active { color: #E41E2B; font-weight: bold; }
-        .sidebar-link { border-right: 4px solid transparent; }
+        /* Sidebar Link Active State */
+        .sidebar-link { border-right: 4px solid transparent; transition: all 0.2s; }
         .sidebar-link:hover, .sidebar-link.active { background-color: #ffeaea; color: #E41E2B; border-right: 4px solid #E41E2B; }
+        
+        /* Mobile Nav Active State */
+        .mobile-nav-item.active { color: #E41E2B; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -78,8 +78,7 @@
 
             <div id="m-page-tracking" class="mobile-page block space-y-4">
                 <h2 class="text-sm font-bold text-gray-600 px-1">งานล่าสุด (Recent order)</h2>
-                <div id="m-list-container">
-                    </div>
+                <div id="m-list-container"></div>
             </div>
 
             <div id="m-page-dashboard" class="mobile-page hidden space-y-4">
@@ -146,12 +145,13 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                             <tr>
-                                <th class="p-4 font-semibold w-[12%]">Creating Date</th>
-                                <th class="p-4 font-semibold w-[8%] text-center">สาขา</th>
-                                <th class="p-4 font-semibold w-[12%] text-center">Delivery Date</th>
+                                <th class="p-4 font-semibold w-[10%]">Creating Date</th>
+                                <th class="p-4 font-semibold w-[5%] text-center">สาขา</th>
+                                <th class="p-4 font-semibold w-[10%] text-center">Delivery Date</th>
                                 <th class="p-4 font-semibold w-[10%] text-center">สถานะล่าสุด</th>
-                                <th class="p-4 font-semibold w-[48%] text-center">ความคืบหน้า (Timeline)</th>
-                                <th class="p-4 text-right font-semibold w-[10%]">จำนวน</th>
+                                <th class="p-4 font-semibold w-[45%] text-center">ความคืบหน้า (Timeline)</th>
+                                <th class="p-4 text-right font-semibold w-[10%]">จำนวนบิล</th>
+                                <th class="p-4 text-right font-semibold w-[10%] text-ht-blue">ยอดจัดส่ง (Shipment)</th>
                             </tr>
                         </thead>
                         <tbody id="d-table-body" class="text-sm divide-y divide-gray-100">
@@ -191,14 +191,11 @@
         window.onload = async function() {
             await initLiff();
             fetchData();
-            // Auto refresh every 20 seconds
-            setInterval(() => fetchData(true), 20000); 
+            setInterval(() => fetchData(true), 20000); // Refresh every 20s
         };
 
         async function initLiff() {
             try {
-                // Initialize LIFF (Optional: Add your LIFF ID here if needed)
-                // await liff.init({ liffId: "YOUR_LIFF_ID" });
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     document.getElementById('user-display-mobile').innerText = profile.displayName;
@@ -208,7 +205,7 @@
         }
 
         // ==========================================
-        // 🔄 DATA FETCHING
+        // 🔄 DATA FETCHING & LOGIC
         // ==========================================
         async function fetchData(isSilent = false) {
             if (!isSilent) toggleLoading(true);
@@ -219,7 +216,7 @@
                 if (json.status === 'success') {
                     globalData = json.data;
 
-                    // Auto Select Date Logic (First Load Only)
+                    // Auto set date filter on first load
                     if (!isDateAutoSet && globalData.length > 0) {
                         const latestDate = globalData[0].targetDate; 
                         document.getElementById('date-mobile').value = latestDate;
@@ -240,31 +237,27 @@
 
         function toggleLoading(isLoading) {
             document.querySelectorAll('.refresh-icon').forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
-            
             if(isFirstLoad) {
                 const skeleton = document.getElementById('loading-skeleton-mobile');
                 const list = document.getElementById('m-list-container');
-                if(isLoading) {
-                    skeleton.classList.remove('hidden');
-                    list.classList.add('hidden');
-                } else {
-                    skeleton.classList.add('hidden');
-                    list.classList.remove('hidden');
-                }
+                isLoading ? (skeleton.classList.remove('hidden'), list.classList.add('hidden')) : (skeleton.classList.add('hidden'), list.classList.remove('hidden'));
             }
         }
 
         // ==========================================
-        // 🛠 FORMATTERS
+        // 🛠 FORMATTERS (IMPROVED)
         // ==========================================
+        
+        // แปลงวันที่ รองรับทั้ง YYYY-MM-DD และ DD/MM/YYYY
         function parseDate(val) {
             if (!val) return '-';
-            // If already formatted (e.g. DD/MM/YYYY), return as is
-            if (String(val).includes('/')) return val; 
             
-            // Parse ISO Date
+            // ถ้าเป็นรูปแบบ DD/MM/YYYY หรือ DD/MM/YY อยู่แล้ว
+            if (String(val).includes('/') && String(val).length < 12) return val;
+            
+            // ถ้าเป็น ISO Format (YYYY-MM-DD)
             const d = new Date(val);
-            if (isNaN(d.getTime())) return val;
+            if (isNaN(d.getTime())) return val; 
             
             const day = String(d.getDate()).padStart(2, '0');
             const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -272,15 +265,36 @@
             return `${day}/${month}/${year}`;
         }
 
+        // แปลงเวลา รองรับ Timezone +7
         function parseTime(val) {
             if (!val) return '-';
-            // Handle ISO string with time
+            
+            // เช็คว่าเป็น ISO String (มี T) หรือไม่ เช่น 1899-12-30T06:42:00.000Z
             if (String(val).includes('T')) {
-                const parts = val.split('T');
-                if (parts.length > 1) return parts[1].substring(0, 5); // Return HH:mm
+                const d = new Date(val);
+                if (!isNaN(d.getTime())) {
+                    // แปลงเป็นเวลาไทย (Asia/Bangkok)
+                    return d.toLocaleTimeString('th-TH', { 
+                        timeZone: 'Asia/Bangkok',
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        hour12: false 
+                    });
+                }
             }
-            // Handle simple time string
+            
+            // กรณีเป็น String ธรรมดา เช่น "13:42"
             return String(val).substring(0, 5);
+        }
+
+        // คำนวณสถานะใหม่ โดยไม่สนค่า Progress จาก Backend
+        function calculateProgress(item) {
+            // ถ้ามีเวลาส่งของ (Ship Time) -> จบงาน (4)
+            if (item.details?.ship?.time) return 4;
+            // ถ้ามีเวลายืนยัน (Conf Time) -> ยืนยันแล้ว (2)
+            if (item.details?.conf?.time) return 2;
+            // ถ้าไม่มีอะไรเลย -> งานใหม่ (1)
+            return 1;
         }
 
         function getStatusBadge(progress, isEdit) {
@@ -301,17 +315,18 @@
             }
             
             container.innerHTML = data.map(item => {
-                const p = item.progress;
-                // Edit Logic: Check count or note
+                // คำนวณสถานะใหม่
+                const p = calculateProgress(item);
                 const editCount = item.editCount || 0;
                 const hasEdit = editCount > 0 || (item.note && item.note !== '');
 
-                // Timeline Width Calculation for 4 Nodes
-                // 1=0%, 2=33%, 3=66%, 4=100%
                 let width = '0%';
                 if (p === 2) width = '33%';
                 else if (p === 3 || (p === 2 && hasEdit)) width = '66%'; 
                 else if (p >= 4) width = '100%';
+
+                // ดึงค่ายอดจัดส่ง (รองรับหลายชื่อตัวแปรเผื่อไว้)
+                const shipmentAmt = item.amtShip || item.shipmentAmount || '-';
 
                 return `
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 mb-3 transition active:scale-[0.99]">
@@ -326,8 +341,13 @@
                         </div>
                     </div>
                     
-                    <div class="text-xs text-gray-500 mb-4 bg-gray-50 p-2 rounded border border-gray-100 flex items-center">
-                        <i class="fas fa-truck text-gray-400 mr-2"></i>Delivery: <span class="font-medium ml-1">${parseDate(item.deliveryDate)}</span>
+                    <div class="flex gap-2 mb-4">
+                         <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 flex-1">
+                            <i class="fas fa-truck text-gray-400 mr-1"></i>Deliver: <span class="font-medium ml-1 text-gray-700">${parseDate(item.deliveryDate)}</span>
+                        </div>
+                        <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 text-center min-w-[80px]">
+                            Shipment<br><span class="font-bold text-lg">${shipmentAmt}</span>
+                        </div>
                     </div>
                     
                     <div class="relative px-1 pb-2 mt-2">
@@ -346,14 +366,9 @@
         }
 
         function renderMobileNode(label, detail, isActive, colorClass, isEditNode=false) {
-            // If it's the edit node but inactive, show small gray dot
-            if(isEditNode && !isActive) {
-                return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
-            }
-            
+            if(isEditNode && !isActive) return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
             const circle = isActive ? `w-3 h-3 ${colorClass} border border-white shadow-sm` : `w-3 h-3 bg-gray-200 border border-white`;
             const text = isActive ? 'text-gray-600 font-bold' : 'text-gray-300';
-            
             return `
             <div class="flex flex-col items-center w-1/4">
                 <div class="${circle} rounded-full mb-1 transition-colors"></div>
@@ -362,33 +377,34 @@
             </div>`;
         }
 
-
         // ==========================================
         // 💻 RENDER: DESKTOP
         // ==========================================
         function renderDesktopTable(data) {
             const tbody = document.getElementById('d-table-body');
             if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-gray-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-gray-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
                 return;
             }
 
             tbody.innerHTML = data.map(item => {
-                let p = item.progress;
+                // คำนวณสถานะ
+                const p = calculateProgress(item);
                 const editCount = item.editCount || 0;
                 const hasEdit = editCount > 0 || (item.note && item.note !== '');
 
-                // Timeline Width
                 let barWidth = '0%';
                 if (p === 2) barWidth = '33%';
                 else if (p === 3) barWidth = '66%'; 
                 else if (p >= 4) barWidth = '100%';
 
+                const shipmentAmt = item.amtShip || item.shipmentAmount || '-';
+
                 return `
                 <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0 group">
                     <td class="p-4 align-top">
                         <div class="font-bold text-gray-800 text-lg">${parseDate(item.timestamp || item.targetDate)}</div>
-                        <div class="text-xs text-gray-400 mt-1">DO: ${item.doNumber}</div>
+                         <div class="text-xs text-gray-400 mt-1">DO: ${item.doNumber}</div>
                     </td>
 
                     <td class="p-4 align-top text-center">
@@ -409,11 +425,8 @@
                             <div class="timeline-line-progress" style="width: ${barWidth}"></div>
                             <div class="flex justify-between relative z-10 px-2">
                                 ${renderDesktopNode('งานใหม่', item.details?.bill, true, 'border-gray-300')}
-                                
                                 ${renderDesktopNode('ยืนยันแล้ว', item.details?.conf, p>=2, 'border-blue-400', 'bg-blue-400')}
-                                
                                 ${renderEditNodeDesktop(hasEdit, editCount, item.note)}
-                                
                                 ${renderDesktopNode('เสร็จสิ้น', item.details?.ship, p>=4, 'border-green-500', 'bg-green-500')}
                             </div>
                         </div>
@@ -422,15 +435,16 @@
                     <td class="p-4 align-top text-right font-bold text-ht-red text-lg">
                         ${item.amount}
                     </td>
+
+                    <td class="p-4 align-top text-right font-bold text-ht-blue text-lg">
+                         ${shipmentAmt}
+                    </td>
                 </tr>`;
             }).join('');
         }
 
         function renderDesktopNode(label, detail, isActive, borderColor, activeBg='bg-ht-green') {
-            const circleStyle = isActive 
-                ? `bg-white border-2 ${borderColor}` 
-                : 'bg-gray-200 border-2 border-transparent';
-            
+            const circleStyle = isActive ? `bg-white border-2 ${borderColor}` : 'bg-gray-200 border-2 border-transparent';
             const dotStyle = isActive ? `w-2 h-2 rounded-full ${activeBg}` : '';
             const labelColor = isActive ? 'text-gray-700 font-bold' : 'text-gray-300';
             
@@ -448,15 +462,7 @@
         }
 
         function renderEditNodeDesktop(hasEdit, count, note) {
-            // If no edit, show a subtle gray dot
-            if (!hasEdit) {
-                return `
-                <div class="flex flex-col items-center w-1/4">
-                    <div class="w-3 h-3 rounded-full bg-gray-200 mt-0.5 mb-1"></div>
-                </div>`;
-            }
-
-            // If has edit, show active orange node
+            if (!hasEdit) return `<div class="flex flex-col items-center w-1/4"><div class="w-3 h-3 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
             return `
             <div class="flex flex-col items-center w-1/4">
                 <div class="w-4 h-4 rounded-full bg-white border-2 border-orange-400 flex items-center justify-center mb-1 shadow-sm z-10">
@@ -477,7 +483,6 @@
             const searchVal = document.getElementById(`search-${source}`).value;
             const dateVal = document.getElementById(`date-${source}`).value;
             const target = source === 'mobile' ? 'desktop' : 'mobile';
-            
             document.getElementById(`search-${target}`).value = searchVal;
             document.getElementById(`date-${target}`).value = dateVal;
             applyFilters();
@@ -486,73 +491,54 @@
         function applyFilters() {
             const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
             const dateQuery = document.getElementById('date-mobile').value;
-
             const filtered = globalData.filter(item => {
                 const doStr = String(item.doNumber || '').toLowerCase(); 
                 const branchStr = String(item.branch || '').toLowerCase();
-                
                 const matchesSearch = doStr.includes(searchQuery) || branchStr.includes(searchQuery);
                 const matchesDate = !dateQuery || item.targetDate === dateQuery;
-                
                 return matchesSearch && matchesDate;
             });
-
             renderMobileList(filtered);
             renderDesktopTable(filtered);
         }
 
         function updateDashboards(summary, items) {
             if(!summary) return;
-            // Update Stats
             document.getElementById('m-dash-total').innerText = summary.total || 0;
             document.getElementById('m-dash-shipped').innerText = summary.shipped || 0;
             document.getElementById('d-dash-total').innerText = summary.total || 0;
             document.getElementById('d-dash-shipped').innerText = summary.shipped || 0;
-
-            // Update Mobile Recent List
+            
+            // Update Recent List on Mobile Dashboard
             if(items) {
                 const mList = document.getElementById('m-latest-updates');
                 mList.innerHTML = items.slice(0,5).map(i => {
-                    let color = i.progress === 4 ? 'bg-green-500' : (i.progress===3 ? 'bg-blue-500' : 'bg-gray-400');
+                    let color = calculateProgress(i) === 4 ? 'bg-green-500' : 'bg-gray-400';
                     return `
                     <div class="flex items-center gap-3 text-xs border-b border-gray-50 pb-2 last:border-0 last:pb-0">
                         <div class="w-2 h-2 rounded-full ${color}"></div>
-                        <div class="flex-1 text-gray-700 font-medium">
-                            DO ${i.doNumber} <span class="text-gray-400 font-normal">(${i.branch})</span>
-                        </div>
+                        <div class="flex-1 text-gray-700 font-medium">DO ${i.doNumber} <span class="text-gray-400 font-normal">(${i.branch})</span></div>
                         <div class="text-gray-400 font-mono text-[10px]">${parseTime(i.details?.bill?.time)}</div>
                     </div>`;
                 }).join('');
             }
         }
-
-        // ==========================================
-        // 🖥️ UI SWITCHING
-        // ==========================================
-        function switchMobileTab(tab) {
-            document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            
-            document.querySelectorAll('.mobile-page').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`m-page-${tab}`).classList.remove('hidden');
-        }
-
+        
+        // Tab Switching Logic
         function switchDesktopTab(tab) {
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
             document.getElementById(`d-nav-${tab}`).classList.add('active');
-            
             document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
             document.getElementById(`d-page-${tab}`).classList.remove('hidden');
-            
             document.getElementById('desktop-page-title').innerText = tab === 'tracking' ? 'งานล่าสุด (Recent order)' : 'แดชบอร์ด (Dashboard)';
         }
-
-        function manualRefresh() {
-            toggleLoading(true);
-            fetchData(false).then(() => {
-                setTimeout(() => toggleLoading(false), 500);
-            });
+        function switchMobileTab(tab) {
+            document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.querySelectorAll('.mobile-page').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`m-page-${tab}`).classList.remove('hidden');
         }
+        function manualRefresh() { toggleLoading(true); fetchData(false); }
     </script>
 </body>
 </html>
