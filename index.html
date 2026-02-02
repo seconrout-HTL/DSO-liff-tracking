@@ -1,550 +1,527 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fleet Order Tracking</title>
-    
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'ht-red': '#E41E2B',
-                        'ht-green': '#007A33',
-                        'ht-orange': '#F59E0B',
-                        'ht-blue': '#0056b3',
-                        'ht-gray': '#F4F4F4',
-                    }
-                }
-            }
-        }
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fleet Order Tracking</title>
+    
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'ht-red': '#E41E2B',
+                        'ht-green': '#007A33',
+                        'ht-gray': '#F4F4F4',
+                        'ht-blue': '#007bff',
+                    }
+                }
+            }
+        }
+    </script>
 
-    <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
-        
-        /* Timeline Styles */
-        .timeline-container { position: relative; width: 100%; padding: 10px 0; }
-        .timeline-line-bg { position: absolute; top: 18px; left: 12%; right: 12%; height: 3px; background-color: #e5e7eb; z-index: 0; border-radius: 99px; }
-        .timeline-line-progress { position: absolute; top: 18px; left: 12%; height: 3px; background-color: #007A33; z-index: 0; transition: width 0.8s ease; border-radius: 99px; }
-        
-        /* Animations */
-        .spin-slow { animation: spin 2s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        
-        /* Sidebar Link Active State */
-        .sidebar-link { border-right: 4px solid transparent; transition: all 0.2s; }
-        .sidebar-link:hover, .sidebar-link.active { background-color: #ffeaea; color: #E41E2B; border-right: 4px solid #E41E2B; }
-        
-        /* Mobile Nav Active State */
-        .mobile-nav-item.active { color: #E41E2B; font-weight: bold; }
-    </style>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        
+        /* Timeline Styles */
+        .timeline-line { position: absolute; left: 0; right: 0; top: 24px; height: 2px; background: #E5E7EB; z-index: 0; }
+        .timeline-progress { position: absolute; left: 0; top: 24px; height: 2px; background: #007A33; z-index: 1; transition: width 0.5s ease; }
+        
+        /* Step Bar Styles (Desktop) */
+        .step-segment {
+            position: relative;
+            background-color: #f3f4f6;
+            transition: all 0.3s ease;
+        }
+        .step-segment.active {
+            background-color: #e6fffa; /* Light Green bg */
+            border-color: #007A33;
+        }
+        .step-segment.active .step-bar {
+            background-color: #007A33;
+        }
+        .step-segment::after {
+            content: ''; position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+            border-left: 10px solid transparent; /* Arrow effect logic if needed, simplified for clean look */
+        }
+
+        /* Animations */
+        .spin-slow { animation: spin 2s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        /* Mobile Nav Styles */
+        .mobile-nav-item.active { color: #E41E2B; font-weight: bold; }
+        .mobile-nav-item.active i { transform: translateY(-5px); }
+        
+        /* Desktop Sidebar Styles */
+        .sidebar-link { transition: all 0.2s; }
+        .sidebar-link:hover, .sidebar-link.active { background-color: #ffeaea; color: #E41E2B; border-right: 4px solid #E41E2B; }
+    </style>
 </head>
 <body>
 
-    <div id="mobile-view" class="md:hidden flex flex-col min-h-screen pb-20">
-        <header class="bg-ht-red text-white p-5 rounded-b-3xl shadow-lg sticky top-0 z-50">
-            <div class="flex justify-between items-center mb-4">
-                <div>
-                    <h1 class="text-xl font-bold">Fleet Order</h1>
-                    <p id="user-display-mobile" class="text-xs text-red-100 opacity-90">Guest User</p>
-                </div>
-                <button onclick="manualRefresh()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition hover:bg-white/30">
-                    <i class="fas fa-sync-alt text-xs refresh-icon"></i>
-                </button>
-            </div>
-            <div class="flex gap-2">
-                <div class="flex-1 bg-white rounded-xl overflow-hidden flex items-center px-3 shadow-sm">
-                    <i class="fas fa-search text-gray-400 text-xs"></i>
-                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา DO, สาขา..." class="w-full p-2 text-xs outline-none text-gray-700">
-                </div>
-                <div class="w-1/3 bg-white rounded-xl overflow-hidden shadow-sm">
-                    <input type="date" id="date-mobile" onchange="syncFilters('mobile')" class="w-full p-2 text-xs text-center outline-none bg-white text-gray-700">
-                </div>
-            </div>
-        </header>
+    <div id="mobile-view" class="md:hidden flex flex-col min-h-screen pb-20">
+        
+        <header class="bg-ht-red text-white p-5 rounded-b-3xl shadow-lg sticky top-0 z-50">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h1 class="text-xl font-bold">Fleet Order</h1>
+                    <p id="user-display-mobile" class="text-xs text-red-100 opacity-90">Guest User</p>
+                </div>
+                <button onclick="manualRefresh()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition">
+                    <i class="fas fa-sync-alt text-xs refresh-icon"></i>
+                </button>
+            </div>
+            
+            <div class="flex gap-2">
+                <div class="flex-1 bg-white rounded-xl overflow-hidden flex items-center px-3 shadow-sm">
+                    <i class="fas fa-search text-gray-400 text-xs"></i>
+                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา DO..." class="w-full p-2 text-xs outline-none text-gray-700">
+                </div>
+                <div class="w-1/3 bg-white rounded-xl overflow-hidden shadow-sm">
+                    <input type="date" id="date-mobile" onchange="syncFilters('mobile')" class="w-full p-2 text-xs text-center outline-none bg-white text-gray-700">
+                </div>
+            </div>
+        </header>
 
-        <main class="p-4 space-y-4">
-            <div id="loading-skeleton-mobile" class="space-y-4 hidden">
-                <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
-                <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
-            </div>
+        <main class="p-4 space-y-4">
+            
+            <div id="loading-skeleton-mobile" class="space-y-4 hidden">
+                <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
+                <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
+            </div>
 
-            <div id="m-page-tracking" class="mobile-page block space-y-4">
-                <h2 class="text-sm font-bold text-gray-600 px-1">งานล่าสุด (Recent order)</h2>
-                <div id="m-list-container"></div>
-            </div>
+            <div id="m-page-tracking" class="mobile-page block space-y-4">
+                <h2 class="text-sm font-bold text-gray-600 px-1">งานล่าสุด (Recent order)</h2>
+                <div id="m-list-container">
+                    </div>
+            </div>
 
-            <div id="m-page-dashboard" class="mobile-page hidden space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-red">
-                        <p class="text-[10px] text-gray-400">งานทั้งหมด</p>
-                        <h2 class="text-2xl font-bold text-gray-800" id="m-dash-total">-</h2>
-                    </div>
-                    <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-green">
-                        <p class="text-[10px] text-gray-400">เสร็จสิ้น</p>
-                        <h2 class="text-2xl font-bold text-ht-green" id="m-dash-shipped">-</h2>
-                    </div>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm p-4">
-                    <h3 class="font-bold text-sm mb-3 text-gray-800">อัปเดตล่าสุด</h3>
-                    <div id="m-latest-updates" class="space-y-3"></div>
-                </div>
-            </div>
-        </main>
+            <div id="m-page-dashboard" class="mobile-page hidden space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-red">
+                        <p class="text-[10px] text-gray-400">งานทั้งหมด</p>
+                        <h2 class="text-2xl font-bold text-gray-800" id="m-dash-total">-</h2>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-green">
+                        <p class="text-[10px] text-gray-400">ส่งแล้ว</p>
+                        <h2 class="text-2xl font-bold text-ht-green" id="m-dash-shipped">-</h2>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-4">
+                    <h3 class="font-bold text-sm mb-3 text-gray-800">ความเคลื่อนไหวล่าสุด</h3>
+                    <div id="m-latest-updates" class="space-y-3"></div>
+                </div>
+            </div>
+        </main>
 
-        <nav class="fixed bottom-0 w-full bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] flex justify-around py-3 z-40 pb-safe">
-            <div onclick="switchMobileTab('tracking')" class="mobile-nav-item active flex flex-col items-center text-gray-400 transition-all cursor-pointer w-1/2">
-                <i class="fas fa-shipping-fast text-lg mb-1"></i><span class="text-[10px]">งานล่าสุด</span>
-            </div>
-            <div onclick="switchMobileTab('dashboard')" class="mobile-nav-item flex flex-col items-center text-gray-400 transition-all cursor-pointer w-1/2">
-                <i class="fas fa-chart-pie text-lg mb-1"></i><span class="text-[10px]">ภาพรวม</span>
-            </div>
-        </nav>
-    </div>
+        <nav class="fixed bottom-0 w-full bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] flex justify-around py-3 z-40 pb-safe">
+            <div onclick="switchMobileTab('tracking')" class="mobile-nav-item active flex flex-col items-center text-gray-400 transition-all cursor-pointer w-1/2">
+                <i class="fas fa-shipping-fast text-lg mb-1 transition-transform"></i>
+                <span class="text-[10px]">งานล่าสุด</span>
+            </div>
+            <div onclick="switchMobileTab('dashboard')" class="mobile-nav-item flex flex-col items-center text-gray-400 transition-all cursor-pointer w-1/2">
+                <i class="fas fa-chart-pie text-lg mb-1 transition-transform"></i>
+                <span class="text-[10px]">ภาพรวม</span>
+            </div>
+        </nav>
+    </div>
 
-    <div id="desktop-view" class="hidden md:flex min-h-screen bg-gray-50">
-        
-        <aside class="w-64 bg-white shadow-xl z-10 flex flex-col fixed h-full">
-            <div class="p-6 bg-ht-red text-white">
-                <h1 class="text-2xl font-bold tracking-wider">Fleet Order</h1>
-                <p class="text-xs text-red-200 mt-1">Tracking System</p>
-            </div>
-            <nav class="flex-1 mt-6">
-                <a onclick="switchDesktopTab('tracking')" id="d-nav-tracking" class="sidebar-link active flex items-center px-6 py-4 text-gray-600 cursor-pointer">
-                    <i class="fas fa-list-ul w-6"></i><span class="font-medium ml-3">งานล่าสุด (Recent order)</span>
-                </a>
-                <a onclick="switchDesktopTab('dashboard')" id="d-nav-dashboard" class="sidebar-link flex items-center px-6 py-4 text-gray-600 cursor-pointer">
-                    <i class="fas fa-chart-line w-6"></i><span class="font-medium ml-3">แดชบอร์ด (Dashboard)</span>
-                </a>
-            </nav>
-            <div class="p-4 border-t text-xs text-gray-400 text-center">User: <span id="user-display-desktop">Guest</span></div>
-        </aside>
+    <div id="desktop-view" class="hidden md:flex min-h-screen bg-gray-50">
+        
+        <aside class="w-64 bg-white shadow-xl z-10 flex flex-col fixed h-full">
+            <div class="p-6 bg-ht-red text-white">
+                <h1 class="text-2xl font-bold tracking-wider">Fleet Order</h1>
+                <p class="text-xs text-red-200 mt-1">Tracking System</p>
+            </div>
+            <nav class="flex-1 mt-6">
+                <a onclick="switchDesktopTab('tracking')" id="d-nav-tracking" class="sidebar-link active flex items-center px-6 py-4 text-gray-600 cursor-pointer">
+                    <i class="fas fa-list-ul w-6"></i>
+                    <span class="font-medium">งานล่าสุด (Recent order)</span>
+                </a>
+                <a onclick="switchDesktopTab('dashboard')" id="d-nav-dashboard" class="sidebar-link flex items-center px-6 py-4 text-gray-600 cursor-pointer">
+                    <i class="fas fa-chart-line w-6"></i>
+                    <span class="font-medium">แดชบอร์ด (Dashboard)</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t text-xs text-gray-400 text-center">
+                User: <span id="user-display-desktop">Guest</span>
+            </div>
+        </aside>
 
-        <main class="flex-1 ml-64 p-8">
-            <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
-                <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">งานล่าสุด (Recent order)</h2>
-                <div class="flex gap-3">
-                    <div class="relative">
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา DO, สาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
-                    </div>
-                    <input type="date" id="date-desktop" onchange="syncFilters('desktop')" class="border rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-ht-red">
-                    <button onclick="manualRefresh()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 transition"><i class="fas fa-sync-alt refresh-icon"></i></button>
-                </div>
-            </div>
+        <main class="flex-1 ml-64 p-8">
+            <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
+                <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">งานล่าสุด (Recent order)</h2>
+                <div class="flex gap-3">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา DO, สาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
+                    </div>
+                    <input type="date" id="date-desktop" onchange="syncFilters('desktop')" class="border rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-ht-red">
+                    <button onclick="manualRefresh()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 transition">
+                        <i class="fas fa-sync-alt refresh-icon"></i>
+                    </button>
+                </div>
+            </div>
 
-            <div id="d-page-tracking" class="desktop-page block">
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden min-h-[400px]">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
-                            <tr>
-                                <th class="p-4 font-semibold w-[10%]">Creating Date</th>
-                                <th class="p-4 font-semibold w-[5%] text-center">สาขา</th>
-                                <th class="p-4 font-semibold w-[10%] text-center">Delivery Date</th>
-                                <th class="p-4 font-semibold w-[10%] text-center">สถานะล่าสุด</th>
-                                <th class="p-4 font-semibold w-[45%] text-center">ความคืบหน้า (Timeline)</th>
-                                <th class="p-4 text-right font-semibold w-[10%]">จำนวนบิล</th>
-                                <th class="p-4 text-right font-semibold w-[10%] text-ht-blue">ยอดจัดส่ง (Shipment)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="d-table-body" class="text-sm divide-y divide-gray-100">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
+            <div id="d-page-tracking" class="desktop-page block">
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden min-h-[400px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                            <tr>
+                                <th class="p-4 font-semibold w-[15%]">DO Number</th>
+                                <th class="p-4 font-semibold w-[5%]">สาขา</th>
+                                <th class="p-4 font-semibold w-[15%]">Delivery Date</th>
+                                <th class="p-4 font-semibold w-[55%]">สถานะความคืบหน้า</th>
+                                <th class="p-4 text-right font-semibold w-[10%]">จำนวน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="d-table-body" class="text-sm divide-y divide-gray-100">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-            <div id="d-page-dashboard" class="desktop-page hidden">
-                <div class="grid grid-cols-4 gap-6 mb-6">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-ht-red">
-                        <h3 class="text-gray-400 text-xs font-bold uppercase">งานทั้งหมด</h3>
-                        <p class="text-3xl font-bold text-gray-800 mt-2" id="d-dash-total">-</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-ht-green">
-                        <h3 class="text-gray-400 text-xs font-bold uppercase">เสร็จสิ้น</h3>
-                        <p class="text-3xl font-bold text-green-600 mt-2" id="d-dash-shipped">-</p>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
+            <div id="d-page-dashboard" class="desktop-page hidden">
+                <div class="grid grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-ht-red">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">งานทั้งหมด</h3>
+                        <p class="text-3xl font-bold text-gray-800 mt-2" id="d-dash-total">-</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">กำลังดำเนินการ</h3>
+                        <p class="text-3xl font-bold text-blue-600 mt-2" id="d-dash-loading">-</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-ht-green">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">เสร็จสิ้น</h3>
+                        <p class="text-3xl font-bold text-green-600 mt-2" id="d-dash-shipped">-</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
-    <script>
-        // ==========================================
-        // ⚙️ SETTINGS
-        // ==========================================
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
-        
-        let globalData = [];
-        let isFirstLoad = true;
-        let isDateAutoSet = false;
+    <script>
+        // ==========================================
+        // ⚙️ SETTINGS
+        // ==========================================
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
+        
+        let globalData = [];
+        let isFirstLoad = true;
+        let isDateAutoSet = false;
 
-        window.onload = async function() {
-            await initLiff();
-            fetchData();
-            setInterval(() => fetchData(true), 20000); 
-        };
+        window.onload = async function() {
+            await initLiff();
+            fetchData();
+            setInterval(() => fetchData(true), 20000); 
+        };
 
-        async function initLiff() {
-            try {
-                if (liff.isLoggedIn()) {
-                    const profile = await liff.getProfile();
-                    document.getElementById('user-display-mobile').innerText = profile.displayName;
-                    document.getElementById('user-display-desktop').innerText = profile.displayName;
-                }
-            } catch (err) { console.log('LIFF Error:', err); }
-        }
+        async function initLiff() {
+            try {
+                // await liff.init({ liffId: "YOUR_LIFF_ID" });
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    document.getElementById('user-display-mobile').innerText = profile.displayName;
+                    document.getElementById('user-display-desktop').innerText = profile.displayName;
+                }
+            } catch (err) { console.log('LIFF Error:', err); }
+        }
 
-        // ==========================================
-        // 🔄 DATA FETCHING & LOGIC
-        // ==========================================
-        async function fetchData(isSilent = false) {
-            if (!isSilent) toggleLoading(true);
-            try {
-                const response = await fetch(`${GAS_API_URL}?action=getTrackingData&t=${new Date().getTime()}`);
-                const json = await response.json();
-                
-                if (json.status === 'success') {
-                    // ⚠️ Map Data to match Google Sheet Headers
-                    globalData = json.data.map(mapSheetData);
+        // ==========================================
+        // 🔄 DATA FETCHING & LOGIC
+        // ==========================================
+        async function fetchData(isSilent = false) {
+            if (!isSilent) toggleLoading(true);
 
-                    // Auto Date
-                    if (!isDateAutoSet && globalData.length > 0) {
-                        const latestDate = globalData[0].timestamp; 
-                        if(latestDate) {
-                            const d = parseDateToISO(latestDate);
-                            document.getElementById('date-mobile').value = d;
-                            document.getElementById('date-desktop').value = d;
-                            isDateAutoSet = true;
-                        }
-                    }
+            try {
+                const response = await fetch(`${GAS_API_URL}?action=getTrackingData&t=${new Date().getTime()}`);
+                const json = await response.json();
+                
+                if (json.status === 'success') {
+                    globalData = json.data;
 
-                    applyFilters(); 
-                    updateDashboards(json.dashboard, globalData);
-                }
-            } catch (error) {
-                console.error('Fetch Error:', error);
-            } finally {
-                if (!isSilent) toggleLoading(false);
-                isFirstLoad = false;
-            }
-        }
+                    // 📅 Auto Select Date Logic
+                    if (!isDateAutoSet && globalData.length > 0) {
+                        const latestDate = globalData[0].targetDate; 
+                        document.getElementById('date-mobile').value = latestDate;
+                        document.getElementById('date-desktop').value = latestDate;
+                        isDateAutoSet = true;
+                    } else if (globalData.length === 0 && !isDateAutoSet) {
+                        const today = new Date().toISOString().split('T')[0];
+                        document.getElementById('date-mobile').value = today;
+                        document.getElementById('date-desktop').value = today;
+                    }
 
-        // 🔧 MAPPER: เชื่อมโยงตัวแปร JavaScript กับชื่อหัวตาราง Google Sheet
-        function mapSheetData(item) {
-            return {
-                timestamp: item.Timestamp || item.timestamp,
-                branch: item.Branch || item.branch,
-                // ใช้ key 'Delivery Date' (มีเว้นวรรค) ตาม Google Sheet
-                deliveryDate: item['Delivery Date'] || item.Delivery_Date || item.deliveryDate, 
-                doNumber: item.DO_Num || item.doNumber,
-                
-                // Timeline Data
-                bill: { time: item.Time_Bill, by: item.Admin_Name }, // Col F, E
-                conf: { time: item.Time_Conf, by: item.Disp_Name },  // Col I, H
-                ship: { time: item.Time_Ship, by: item.Ship_Name },  // Col M, L
-                
-                // Amounts
-                amount: item.Amt_Bill || item.amount,
-                shipmentAmount: item.Amt_Ship || item.shipmentAmount, // Col N (Amt_Ship)
-                
-                // Meta
-                editCount: item['Edit Count'] || item.editCount || 0,
-                note: item.Note || item.note
-            };
-        }
+                    applyFilters(); 
+                    updateDashboards(json.dashboard, json.data);
+                }
+            } catch (error) {
+                console.error('Fetch Error:', error);
+            } finally {
+                if (!isSilent) toggleLoading(false);
+                isFirstLoad = false;
+            }
+        }
 
-        function toggleLoading(isLoading) {
-            document.querySelectorAll('.refresh-icon').forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
-            if(isFirstLoad) {
-                const skeleton = document.getElementById('loading-skeleton-mobile');
-                const list = document.getElementById('m-list-container');
-                isLoading ? (skeleton.classList.remove('hidden'), list.classList.add('hidden')) : (skeleton.classList.add('hidden'), list.classList.remove('hidden'));
-            }
-        }
+        function toggleLoading(isLoading) {
+            const icons = document.querySelectorAll('.refresh-icon');
+            icons.forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
+            
+            if(isFirstLoad) {
+                const skeleton = document.getElementById('loading-skeleton-mobile');
+                const list = document.getElementById('m-list-container');
+                if(isLoading) {
+                    skeleton.classList.remove('hidden');
+                    list.classList.add('hidden');
+                } else {
+                    skeleton.classList.add('hidden');
+                    list.classList.remove('hidden');
+                }
+            }
+        }
 
-        // ==========================================
-        // 🛠 FORMATTERS
-        // ==========================================
-        
-        function parseDate(val) {
-            if (!val) return '-';
-            const s = String(val);
-            if (s.includes('/')) return s; 
-            
-            const d = new Date(val);
-            if (isNaN(d.getTime())) return val;
-            
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-        
-        function parseDateToISO(val) {
-             const d = new Date(val);
-             if (isNaN(d.getTime())) return '';
-             return d.toISOString().split('T')[0];
-        }
+        // ==========================================
+        // 🛠 HELPERS
+        // ==========================================
+        function formatDateTH(dateStr) {
+            if(!dateStr) return '-';
+            // Assume input is ISO or YYYY-MM-DD format
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr; // Return original if invalid
+            
+            // Format: 30/01/2026
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
 
-        function parseTime(val) {
-            if (!val) return '-';
-            // กรณีเป็น ISO Date ปี 1899 จาก Google Sheet (เช่น 1899-12-30T06:42:00.000Z)
-            if (String(val).includes('T')) {
-                const d = new Date(val);
-                if (!isNaN(d.getTime())) {
-                    // แปลงเป็นเวลาไทย
-                    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
-                }
-            }
-            // กรณีเป็น Text ธรรมดา เช่น "13:42"
-            return String(val).substring(0, 5);
-        }
+        // ==========================================
+        // 🔍 FILTER & SYNC
+        // ==========================================
+        function syncFilters(source) {
+            const searchVal = document.getElementById(`search-${source}`).value;
+            const dateVal = document.getElementById(`date-${source}`).value;
+            const target = source === 'mobile' ? 'desktop' : 'mobile';
+            
+            document.getElementById(`search-${target}`).value = searchVal;
+            document.getElementById(`date-${target}`).value = dateVal;
+            applyFilters();
+        }
 
-        // คำนวณสถานะ: เช็คว่ามีเวลาในขั้นตอนไหนบ้าง
-        function calculateProgress(item) {
-            if (item.ship.time) return 4; // มีเวลา Ship = เสร็จสิ้น
-            if (item.conf.time) return 2; // มีเวลายืนยัน = ยืนยันแล้ว
-            return 1; // นอกนั้น = งานใหม่
-        }
+        function applyFilters() {
+            const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
+            const dateQuery = document.getElementById('date-mobile').value;
 
-        function getStatusBadge(progress, isEdit) {
-            if (progress >= 4) return '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
-            if (isEdit) return '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
-            if (progress === 2) return '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
-            return '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
-        }
+            const filtered = globalData.filter(item => {
+                const doStr = String(item.doNumber || '').toLowerCase(); 
+                const branchStr = String(item.branch || '').toLowerCase();
+                
+                const matchesSearch = doStr.includes(searchQuery) || branchStr.includes(searchQuery);
+                const matchesDate = !dateQuery || item.targetDate === dateQuery;
+                
+                return matchesSearch && matchesDate;
+            });
 
-        // ==========================================
-        // 📱 RENDER: MOBILE
-        // ==========================================
-        function renderMobileList(data) {
-            const container = document.getElementById('m-list-container');
-            if(data.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 opacity-50"><i class="fas fa-box-open text-4xl mb-2 text-gray-300"></i><p class="text-gray-400 text-sm mt-2">ไม่พบรายการ</p></div>`;
-                return;
-            }
-            
-            container.innerHTML = data.map(item => {
-                const p = calculateProgress(item);
-                const hasEdit = (item.editCount > 0) || (item.note && item.note !== '');
+            renderMobileList(filtered);
+            renderDesktopTable(filtered);
+        }
 
-                let width = '0%';
-                if (p === 2) width = '33%';
-                else if (p === 3 || (p === 2 && hasEdit)) width = '66%'; 
-                else if (p >= 4) width = '100%';
+        // ==========================================
+        // 📱 RENDER MOBILE
+        // ==========================================
+        function renderMobileList(data) {
+            const container = document.getElementById('m-list-container');
+            if(data.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 opacity-50"><i class="fas fa-box-open text-4xl mb-2 text-gray-300"></i><p class="text-gray-400 text-sm">ไม่พบรายการ</p></div>`;
+                return;
+            }
+            
+            container.innerHTML = data.map(item => {
+                // Prepare Data
+                const details = item.details || {};
+                const bill = details.bill || {};
+                const conf = details.conf || {};
+                const ship = details.ship || {};
+                
+                // Status Logic
+                let p = item.progress; 
+                let width = p===1 ? '0%' : p===2 ? '33.33%' : p===3 ? '66.66%' : '100%';
+                
+                return `
+                <div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-50 relative overflow-hidden mb-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="bg-red-50 text-ht-red text-xs px-2 py-0.5 rounded font-bold border border-red-100">${item.branch || '-'}</span>
+                                <h3 class="text-lg font-bold text-gray-800">DO ${item.doNumber}</h3>
+                            </div>
+                            <div class="mt-1 text-xs text-gray-500">
+                                <p><i class="far fa-clock mr-1"></i>Create: ${formatDateTH(item.timestamp || item.targetDate)}</p>
+                                <p><i class="fas fa-truck mr-1"></i>Deliver: ${formatDateTH(item.deliveryDate)}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-xl font-bold text-ht-red">${item.amount}</p>
+                             <p class="text-[9px] text-gray-400">Items</p>
+                        </div>
+                    </div>
+                    
+                    <div class="relative px-1 pb-2 mt-4">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-progress" style="width: ${width}"></div>
+                        <div class="flex justify-between relative z-10 text-[9px] font-bold text-center">
+                            ${renderStepMobile('งานใหม่', bill.time, true)}
+                            ${renderStepMobile('ยืนยัน', conf.time, p>=2)}
+                            ${renderStepMobile('กำลังส่ง', ship.time, p>=3, 'blue')}
+                            ${renderStepMobile('เสร็จสิ้น', '', p>=4)}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
 
-                const shipmentVal = item.shipmentAmount || '-';
+        function renderStepMobile(label, time, isActive, color='green') {
+            const bg = isActive ? (color==='blue' ? 'bg-blue-500' : 'bg-ht-green') : 'bg-gray-300';
+            const txt = isActive ? (color==='blue' ? 'text-blue-600' : 'text-gray-600') : 'text-gray-300';
+            return `
+            <div class="w-1/4 flex flex-col items-center">
+                <div class="w-3 h-3 ${bg} rounded-full border border-white shadow-sm mb-1.5 transition-colors"></div>
+                <span class="${txt}">${label}</span>
+                <span class="font-normal text-gray-400 scale-90 block">${time||'-'}</span>
+            </div>`;
+        }
 
-                return `
-                <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 mb-3 transition active:scale-[0.99]">
-                    <div class="flex justify-between mb-2">
-                        <div>
-                            <div class="font-bold text-gray-800 text-lg tracking-tight">${parseDate(item.timestamp)}</div>
-                            <div class="text-xs text-gray-400 mt-0.5">DO: ${item.doNumber} <span class="mx-1">•</span> <span class="font-bold text-gray-500">${item.branch}</span></div>
-                        </div>
-                        <div class="text-right">
-                             <div class="text-xl font-bold text-ht-red">${item.amount}</div>
-                             ${getStatusBadge(p, hasEdit && p < 4)}
-                        </div>
-                    </div>
-                    
-                    <div class="flex gap-2 mb-4">
-                         <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 flex-1">
-                            <i class="fas fa-truck text-gray-400 mr-1"></i>Deliver: <span class="font-medium ml-1 text-gray-700">${parseDate(item.deliveryDate)}</span>
-                        </div>
-                        <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 text-center min-w-[80px]">
-                            Shipment<br><span class="font-bold text-lg">${shipmentVal}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="relative px-1 pb-2 mt-2">
-                        <div class="absolute left-0 right-0 top-[6px] h-[2px] bg-gray-100 z-0 rounded-full"></div>
-                        <div class="absolute left-0 top-[6px] h-[2px] bg-ht-green z-0 transition-all duration-700 rounded-full" style="width: ${width}"></div>
-                        <div class="flex justify-between relative z-10 text-[9px] text-center">
-                            ${renderMobileNode('งานใหม่', item.bill, true, 'bg-ht-green')}
-                            ${renderMobileNode('ยืนยัน', item.conf, p>=2, 'bg-blue-500')}
-                            ${renderMobileNode(hasEdit?'แก้บิล':'', {time: hasEdit?item.editCount+' ครั้ง':''}, hasEdit, 'bg-ht-orange', true)}
-                            ${renderMobileNode('เสร็จสิ้น', item.ship, p>=4, 'bg-green-600')}
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-        }
+        // ==========================================
+        // 💻 RENDER DESKTOP
+        // ==========================================
+        function renderDesktopTable(data) {
+            const tbody = document.getElementById('d-table-body');
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
+                return;
+            }
 
-        function renderMobileNode(label, detail, isActive, colorClass, isEditNode=false) {
-            if(isEditNode && !isActive) return `<div class="flex flex-col items-center w-1/4"><div class="w-2 h-2 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
-            const circle = isActive ? `w-3 h-3 ${colorClass} border border-white shadow-sm` : `w-3 h-3 bg-gray-200 border border-white`;
-            const text = isActive ? 'text-gray-600 font-bold' : 'text-gray-300';
-            return `
-            <div class="flex flex-col items-center w-1/4">
-                <div class="${circle} rounded-full mb-1"></div>
-                <span class="${text}">${label}</span>
-                <span class="text-gray-400 scale-90">${parseTime(detail?.time)}</span>
-                <span class="text-gray-400 scale-75 truncate w-full">${detail?.by || ''}</span>
-            </div>`;
-        }
+            tbody.innerHTML = data.map(item => {
+                const details = item.details || {};
+                const bill = details.bill || {}; // Step 1: Open Bill
+                const conf = details.conf || {}; // Step 2: Confirm
+                const ship = details.ship || {}; // Step 3: Ship
 
-        // ==========================================
-        // 💻 RENDER: DESKTOP
-        // ==========================================
-        function renderDesktopTable(data) {
-            const tbody = document.getElementById('d-table-body');
-            if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-gray-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
-                return;
-            }
+                return `
+                <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                    <td class="p-4 align-top">
+                        <div class="font-bold text-gray-800 text-lg">${item.doNumber}</div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            <i class="far fa-calendar-plus mr-1"></i>Create: ${formatDateTH(item.timestamp || item.targetDate)}
+                        </div>
+                    </td>
 
-            tbody.innerHTML = data.map(item => {
-                const p = calculateProgress(item);
-                const hasEdit = (item.editCount > 0) || (item.note && item.note !== '');
+                    <td class="p-4 align-top">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded font-bold text-sm border border-gray-200">${item.branch || '-'}</span>
+                    </td>
 
-                let barWidth = '0%';
-                if (p === 2) barWidth = '33%';
-                else if (p === 3) barWidth = '66%'; 
-                else if (p >= 4) barWidth = '100%';
+                    <td class="p-4 align-top">
+                        <div class="text-gray-700 text-sm font-medium">
+                            ${formatDateTH(item.deliveryDate)}
+                        </div>
+                    </td>
 
-                const shipmentVal = item.shipmentAmount || '-';
+                    <td class="p-4 align-middle">
+                        <div class="flex w-full gap-1">
+                            ${renderSegment('งานใหม่', bill.by, bill.time, true, 'border-ht-red')}
+                            
+                            ${renderSegment('ยืนยันแล้ว', conf.by, conf.time, item.progress >= 2, 'border-orange-400')}
+                            
+                            ${renderSegment('กำลังส่ง', ship.by, ship.time, item.progress >= 3, 'border-blue-500')}
+                        </div>
+                    </td>
 
-                return `
-                <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0 group">
-                    <td class="p-4 align-top">
-                        <div class="font-bold text-gray-800 text-lg">${parseDate(item.timestamp)}</div>
-                         </td>
-                    <td class="p-4 align-top text-center">
-                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm border border-gray-200 font-medium">${item.branch || '-'}</span>
-                    </td>
-                    <td class="p-4 align-top text-center text-gray-600 font-medium">
-                        ${parseDate(item.deliveryDate)}
-                    </td>
-                    <td class="p-4 align-top text-center">
-                        ${getStatusBadge(p, hasEdit && p < 4)}
-                    </td>
-                    <td class="p-4 align-middle">
-                        <div class="timeline-container">
-                            <div class="timeline-line-bg"></div>
-                            <div class="timeline-line-progress" style="width: ${barWidth}"></div>
-                            <div class="flex justify-between relative z-10 px-2">
-                                ${renderDesktopNode('งานใหม่', item.bill, true, 'border-gray-300')}
-                                ${renderDesktopNode('ยืนยันแล้ว', item.conf, p>=2, 'border-blue-400', 'bg-blue-400')}
-                                ${renderEditNodeDesktop(hasEdit, item.editCount, item.note)}
-                                ${renderDesktopNode('เสร็จสิ้น', item.ship, p>=4, 'border-green-500', 'bg-green-500')}
-                            </div>
-                        </div>
-                    </td>
-                    <td class="p-4 align-top text-right font-bold text-ht-red text-lg">${item.amount}</td>
-                    <td class="p-4 align-top text-right font-bold text-ht-blue text-lg">${shipmentVal}</td>
-                </tr>`;
-            }).join('');
-        }
+                    <td class="p-4 align-top text-right">
+                        <div class="font-bold text-ht-red text-lg">${item.amount}</div>
+                        <div class="text-[10px] text-gray-400">Items</div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
 
-        function renderDesktopNode(label, detail, isActive, borderColor, activeBg='bg-ht-green') {
-            const circleStyle = isActive ? `bg-white border-2 ${borderColor}` : 'bg-gray-200 border-2 border-transparent';
-            const dotStyle = isActive ? `w-2 h-2 rounded-full ${activeBg}` : '';
-            const labelColor = isActive ? 'text-gray-700 font-bold' : 'text-gray-300';
-            
-            return `
-            <div class="flex flex-col items-center w-1/4 relative group/node">
-                <div class="w-4 h-4 rounded-full ${circleStyle} flex items-center justify-center mb-1 shadow-sm z-10">
-                    <div class="${dotStyle}"></div>
-                </div>
-                <div class="text-[10px] text-center w-full">
-                    <div class="${labelColor}">${label}</div>
-                    <div class="text-gray-400 font-mono scale-90">${parseTime(detail?.time)}</div>
-                    <div class="text-gray-500 scale-90 truncate max-w-[80px] mx-auto" title="${detail?.by||''}">${detail?.by || '-'}</div>
-                </div>
-            </div>`;
-        }
+        function renderSegment(statusName, user, time, isActive, activeBorderColor) {
+            // Logic: If active, show colored bar and text. If inactive, show gray.
+            const opacity = isActive ? 'opacity-100' : 'opacity-40 grayscale';
+            const bgColor = isActive ? 'bg-white' : 'bg-gray-50';
+            const barColor = isActive ? activeBorderColor.replace('border-', 'bg-') : 'bg-gray-300';
+            const borderClass = isActive ? `border-l-4 ${activeBorderColor} shadow-sm` : 'border border-gray-100';
 
-        function renderEditNodeDesktop(hasEdit, count, note) {
-            if (!hasEdit) return `<div class="flex flex-col items-center w-1/4"><div class="w-3 h-3 rounded-full bg-gray-200 mt-0.5 mb-1"></div></div>`;
-            return `
-            <div class="flex flex-col items-center w-1/4">
-                <div class="w-4 h-4 rounded-full bg-white border-2 border-orange-400 flex items-center justify-center mb-1 shadow-sm z-10">
-                    <div class="w-2 h-2 rounded-full bg-orange-400"></div>
-                </div>
-                <div class="text-[10px] text-center">
-                    <div class="text-orange-500 font-bold">แก้บิล</div>
-                    <div class="text-gray-400 scale-90">${count} ครั้ง</div>
-                    ${note ? `<div class="text-gray-400 scale-90 cursor-help" title="${note}"><i class="far fa-comment-dots"></i></div>` : ''}
-                </div>
-            </div>`;
-        }
+            return `
+            <div class="flex-1 rounded-lg p-2 ${bgColor} ${borderClass} ${opacity} transition-all">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-bold uppercase text-gray-600">${statusName}</span>
+                    <span class="text-[9px] font-mono text-gray-400">${time || '-'}</span>
+                </div>
+                <div class="text-[10px] text-gray-500 truncate" title="${user || ''}">
+                    <i class="fas fa-user-circle text-gray-300 mr-1"></i>${user || '-'}
+                </div>
+            </div>`;
+        }
 
-        // ==========================================
-        // 🔍 FILTER
-        // ==========================================
-        function syncFilters(source) {
-            const searchVal = document.getElementById(`search-${source}`).value;
-            const dateVal = document.getElementById(`date-${source}`).value;
-            const target = source === 'mobile' ? 'desktop' : 'mobile';
-            document.getElementById(`search-${target}`).value = searchVal;
-            document.getElementById(`date-${target}`).value = dateVal;
-            applyFilters();
-        }
+        // ==========================================
+        // 🖥️ UI SWITCHING
+        // ==========================================
+        function switchMobileTab(tab) {
+            document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            document.querySelectorAll('.mobile-page').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`m-page-${tab}`).classList.remove('hidden');
+        }
 
-        function applyFilters() {
-            const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
-            const dateQuery = document.getElementById('date-mobile').value;
-            
-            const filtered = globalData.filter(item => {
-                const doStr = String(item.doNumber || '').toLowerCase(); 
-                const branchStr = String(item.branch || '').toLowerCase();
-                const matchesSearch = doStr.includes(searchQuery) || branchStr.includes(searchQuery);
-                
-                let matchesDate = true;
-                if(dateQuery && item.timestamp) {
-                    const itemDate = parseDateToISO(item.timestamp);
-                    matchesDate = itemDate === dateQuery;
-                }
-                
-                return matchesSearch && matchesDate;
-            });
-            renderMobileList(filtered);
-            renderDesktopTable(filtered);
-        }
+        function switchDesktopTab(tab) {
+            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+            document.getElementById(`d-nav-${tab}`).classList.add('active');
+            
+            document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`d-page-${tab}`).classList.remove('hidden');
+            
+            document.getElementById('desktop-page-title').innerText = tab === 'tracking' ? 'งานล่าสุด (Recent order)' : 'แดชบอร์ด (Dashboard)';
+        }
 
-        function updateDashboards(summary, items) {
-            if(!summary) return;
-            document.getElementById('m-dash-total').innerText = summary.total || 0;
-            document.getElementById('m-dash-shipped').innerText = summary.shipped || 0;
-            document.getElementById('d-dash-total').innerText = summary.total || 0;
-            document.getElementById('d-dash-shipped').innerText = summary.shipped || 0;
-            
-            if(items && items.length > 0) {
-                const mList = document.getElementById('m-latest-updates');
-                mList.innerHTML = items.slice(0,5).map(i => {
-                    let color = calculateProgress(i) === 4 ? 'bg-green-500' : 'bg-gray-400';
-                    return `
-                    <div class="flex items-center gap-3 text-xs border-b border-gray-50 pb-2 last:border-0 last:pb-0">
-                        <div class="w-2 h-2 rounded-full ${color}"></div>
-                        <div class="flex-1 text-gray-700 font-medium">DO ${i.doNumber} <span class="text-gray-400 font-normal">(${i.branch})</span></div>
-                        <div class="text-gray-400 font-mono text-[10px]">${parseTime(i.bill?.time)}</div>
-                    </div>`;
-                }).join('');
-            }
-        }
-        
-        function switchDesktopTab(tab) {
-            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
-            document.getElementById(`d-nav-${tab}`).classList.add('active');
-            document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`d-page-${tab}`).classList.remove('hidden');
-            document.getElementById('desktop-page-title').innerText = tab === 'tracking' ? 'งานล่าสุด (Recent order)' : 'แดชบอร์ด (Dashboard)';
-        }
-        function switchMobileTab(tab) {
-            document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            document.querySelectorAll('.mobile-page').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`m-page-${tab}`).classList.remove('hidden');
-        }
-        function manualRefresh() { toggleLoading(true); fetchData(false); }
-    </script>
+        function manualRefresh() {
+            toggleLoading(true);
+            fetchData(false).then(() => {
+                setTimeout(() => toggleLoading(false), 500);
+            });
+        }
+        
+        function updateDashboards(summary, items) {
+            // Update Mobile
+            document.getElementById('m-dash-total').innerText = summary.total || 0;
+            document.getElementById('m-dash-shipped').innerText = summary.shipped || 0;
+            
+            // Update Desktop
+            document.getElementById('d-dash-total').innerText = summary.total || 0;
+            document.getElementById('d-dash-loading').innerText = summary.loading || 0;
+            document.getElementById('d-dash-shipped').innerText = summary.shipped || 0;
+
+            // List Updates (Mobile Dashboard)
+            const mList = document.getElementById('m-latest-updates');
+            mList.innerHTML = items.slice(0,5).map(i => {
+                let color = i.progress === 4 ? 'bg-green-500' : (i.progress===3 ? 'bg-blue-500' : 'bg-orange-400');
+                return `
+                <div class="flex items-center gap-3 text-xs border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                    <div class="w-2 h-2 rounded-full ${color}"></div>
+                    <div class="flex-1 text-gray-700 font-medium">
+                        ${i.doNumber} <span class="text-gray-400 font-normal">(${i.branch})</span>
+                    </div>
+                    <div class="text-gray-400 font-mono text-[10px]">${i.details.bill.time || '-'}</div>
+                </div>`;
+            }).join('');
+        }
+    </script>
 </body>
 </html>
