@@ -35,7 +35,7 @@
         .timeline-line-progress { position: absolute; top: 18px; left: 12%; height: 3px; background-color: #007A33; z-index: 0; transition: width 0.8s ease; border-radius: 99px; }
         
         /* Animations */
-        .spin-slow { animation: spin 2s linear infinite; }
+        .spin-slow { animation: spin 1.5s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
         /* Sidebar Link Active State */
@@ -48,6 +48,9 @@
 </head>
 <body>
 
+    <!-- =========================== -->
+    <!-- 📱 MOBILE VIEW -->
+    <!-- =========================== -->
     <div id="mobile-view" class="md:hidden flex flex-col min-h-screen pb-20">
         <header class="bg-ht-red text-white p-5 rounded-b-3xl shadow-lg sticky top-0 z-50">
             <div class="flex justify-between items-center mb-4">
@@ -65,7 +68,7 @@
                     <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา DO, สาขา..." class="w-full p-2 text-xs outline-none text-gray-700">
                 </div>
                 <div class="w-1/3 bg-white rounded-xl overflow-hidden shadow-sm">
-                    <input type="date" id="date-mobile" onchange="syncFilters('mobile')" class="w-full p-2 text-xs text-center outline-none bg-white text-gray-700">
+                    <input type="text" id="date-mobile" onkeyup="syncFilters('mobile')" placeholder="ดูทั้งหมด" class="w-full p-2 text-xs text-center outline-none bg-white text-gray-700">
                 </div>
             </div>
         </header>
@@ -109,6 +112,9 @@
         </nav>
     </div>
 
+    <!-- =========================== -->
+    <!-- 💻 DESKTOP VIEW -->
+    <!-- =========================== -->
     <div id="desktop-view" class="hidden md:flex min-h-screen bg-gray-50">
         
         <aside class="w-64 bg-white shadow-xl z-10 flex flex-col fixed h-full">
@@ -135,7 +141,7 @@
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                         <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา DO, สาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
                     </div>
-                    <input type="date" id="date-desktop" onchange="syncFilters('desktop')" class="border rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-ht-red">
+                    <input type="text" id="date-desktop" onkeyup="syncFilters('desktop')" placeholder="ดูทั้งหมด" class="border rounded-lg px-4 py-2 text-sm text-center text-gray-600 focus:outline-none focus:border-ht-red w-32">
                     <button onclick="manualRefresh()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 transition"><i class="fas fa-sync-alt refresh-icon"></i></button>
                 </div>
             </div>
@@ -145,17 +151,18 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                             <tr>
-                                <th class="p-4 font-semibold w-[10%]">Creating Date</th>
+                                <th class="p-4 font-semibold w-[15%]">Creating Date</th>
                                 <th class="p-4 font-semibold w-[5%] text-center">สาขา</th>
                                 <th class="p-4 font-semibold w-[10%] text-center">Delivery Date</th>
                                 <th class="p-4 font-semibold w-[10%] text-center">สถานะล่าสุด</th>
-                                <th class="p-4 font-semibold w-[45%] text-center">ความคืบหน้า (Timeline)</th>
+                                <th class="p-4 font-semibold w-[40%] text-center">ความคืบหน้า (Timeline)</th>
                                 <th class="p-4 text-right font-semibold w-[10%]">จำนวนบิล</th>
                                 <th class="p-4 text-right font-semibold w-[10%] text-ht-blue">ยอดจัดส่ง (Shipment)</th>
                             </tr>
                         </thead>
                         <tbody id="d-table-body" class="text-sm divide-y divide-gray-100">
-                            </tbody>
+                            <!-- Rows will be injected here -->
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -183,7 +190,6 @@
         
         let globalData = [];
         let isFirstLoad = true;
-        let isDateAutoSet = false;
 
         window.onload = async function() {
             await initLiff();
@@ -193,7 +199,7 @@
 
         async function initLiff() {
             try {
-                if (liff.isLoggedIn()) {
+                if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     document.getElementById('user-display-mobile').innerText = profile.displayName;
                     document.getElementById('user-display-desktop').innerText = profile.displayName;
@@ -211,22 +217,10 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    // ⚠️ Map Data to match Google Sheet Headers
-                    globalData = json.data.map(mapSheetData);
-
-                    // Auto Date
-                    if (!isDateAutoSet && globalData.length > 0) {
-                        const latestDate = globalData[0].timestamp; 
-                        if(latestDate) {
-                            const d = parseDateToISO(latestDate);
-                            document.getElementById('date-mobile').value = d;
-                            document.getElementById('date-desktop').value = d;
-                            isDateAutoSet = true;
-                        }
-                    }
-
+                    // Normalize data: แปลงชื่อคอลัมน์ และ แปลงวันที่ให้เป็นมาตรฐาน
+                    globalData = normalizeData(json.data);
+                    
                     applyFilters(); 
-                    updateDashboards(json.dashboard, globalData);
                 }
             } catch (error) {
                 console.error('Fetch Error:', error);
@@ -236,28 +230,94 @@
             }
         }
 
-        // 🔧 MAPPER: เชื่อมโยงตัวแปร JavaScript กับชื่อหัวตาราง Google Sheet
-        function mapSheetData(item) {
-            return {
-                timestamp: item.Timestamp || item.timestamp,
-                branch: item.Branch || item.branch,
-                // ใช้ key 'Delivery Date' (มีเว้นวรรค) ตาม Google Sheet
-                deliveryDate: item['Delivery Date'] || item.Delivery_Date || item.deliveryDate, 
-                doNumber: item.DO_Num || item.doNumber,
+        // 🆕 ฟังก์ชันใหม่: แปลงข้อมูลดิบให้เป็นรูปแบบมาตรฐานและจัดการวันที่
+        function normalizeData(rawData) {
+            return rawData.map(item => {
+                // 1. ดึงค่าจาก Key ที่อาจจะเป็นชื่อคอลัมน์เดิม หรือชื่อใหม่
+                const rawTimestamp = item.Timestamp || item.timestamp;
+                const rawDelivery = item['Delivery Date'] || item.Delivery_Date || item.deliveryDate;
                 
-                // Timeline Data
-                bill: { time: item.Time_Bill, by: item.Admin_Name }, // Col F, E
-                conf: { time: item.Time_Conf, by: item.Disp_Name },  // Col I, H
-                ship: { time: item.Time_Ship, by: item.Ship_Name },  // Col M, L
+                // 2. ใช้ Smart Parser แปลงวันที่
+                const tsDateObj = parseSmartDate(rawTimestamp);
+                const delDateObj = parseSmartDate(rawDelivery);
+
+                // 3. จัดรูปแบบวันที่เพื่อใช้แสดงผล (Display) และใช้กรอง (Filter)
+                let displayTs = '-', filterDate = '';
+                if (tsDateObj) {
+                    const d = String(tsDateObj.getDate()).padStart(2, '0');
+                    const m = String(tsDateObj.getMonth() + 1).padStart(2, '0');
+                    const y = tsDateObj.getFullYear();
+                    const h = String(tsDateObj.getHours()).padStart(2, '0');
+                    const min = String(tsDateObj.getMinutes()).padStart(2, '0');
+                    
+                    displayTs = `${d}/${m}/${y} ${h}:${min}`; // สำหรับแสดงบนหน้าเว็บ
+                    filterDate = `${d}/${m}/${y.toString().slice(-2)}`; // สำหรับ Filter (dd/mm/yy)
+                } else {
+                    displayTs = rawTimestamp || '-'; // ถ้าแปลงไม่ได้ ให้ใช้ค่าเดิม
+                }
+
+                let displayDelivery = '-';
+                if (delDateObj) {
+                    const d = String(delDateObj.getDate()).padStart(2, '0');
+                    const m = String(delDateObj.getMonth() + 1).padStart(2, '0');
+                    const y = delDateObj.getFullYear();
+                    displayDelivery = `${d}/${m}/${y}`;
+                } else {
+                    displayDelivery = rawDelivery || '-';
+                }
+
+                return {
+                    // Standard Fields
+                    timestamp: displayTs,
+                    filterDate: filterDate, // เอาไว้ใช้กับ Search Date
+                    branch: item.Branch || item.branch,
+                    doNumber: item.DO_Num || item.doNumber,
+                    deliveryDate: displayDelivery,
+                    
+                    // Amounts
+                    amount: item.Amt_Bill || item.amount,
+                    shipmentAmount: item.Amt_Ship || item.shipmentAmount,
+
+                    // Timeline Data
+                    bill: { time: item.Time_Bill, by: item.Admin_Name },
+                    conf: { time: item.Time_Conf, by: item.Disp_Name },
+                    ship: { time: item.Time_Ship, by: item.Ship_Name },
+
+                    // Meta
+                    editCount: item['Edit Count'] || item.editCount || 0,
+                    note: item.Note || item.note
+                };
+            });
+        }
+
+        // 🆕 ฟังก์ชัน Smart Date Parser (รองรับรูปแบบ 30/1/2026, 13:40:31)
+        function parseSmartDate(val) {
+            if (!val) return null;
+            if (val instanceof Date) return val;
+
+            const str = val.toString().trim();
+            // Regex จับรูปแบบ d/m/y, d-m-y, yyyy-mm-dd พร้อมเวลา
+            const regex = /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})(?:[,\sT]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/;
+            const match = str.match(regex);
+
+            if (match) {
+                let day = parseInt(match[1]);
+                let month = parseInt(match[2]) - 1; // JS month 0-11
+                let yearStr = match[3];
+                let year = parseInt(yearStr);
                 
-                // Amounts
-                amount: item.Amt_Bill || item.amount,
-                shipmentAmount: item.Amt_Ship || item.shipmentAmount, // Col N (Amt_Ship)
+                if (yearStr.length === 2) year += 2000; // แก้ปี 2 หลัก
                 
-                // Meta
-                editCount: item['Edit Count'] || item.editCount || 0,
-                note: item.Note || item.note
-            };
+                let hour = match[4] ? parseInt(match[4]) : 0;
+                let min = match[5] ? parseInt(match[5]) : 0;
+                let sec = match[6] ? parseInt(match[6]) : 0;
+
+                return new Date(year, month, day, hour, min, sec);
+            }
+            
+            // Fallback: ลองใช้ Date constructor
+            const d = new Date(val);
+            return isNaN(d.getTime()) ? null : d;
         }
 
         function toggleLoading(isLoading) {
@@ -270,48 +330,25 @@
         }
 
         // ==========================================
-        // 🛠 FORMATTERS
+        // 🛠 FORMATTERS & HELPERS
         // ==========================================
-        
-        function parseDate(val) {
-            if (!val) return '-';
-            const s = String(val);
-            if (s.includes('/')) return s; 
-            
-            const d = new Date(val);
-            if (isNaN(d.getTime())) return val;
-            
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-        
-        function parseDateToISO(val) {
-             const d = new Date(val);
-             if (isNaN(d.getTime())) return '';
-             return d.toISOString().split('T')[0];
-        }
-
         function parseTime(val) {
             if (!val) return '-';
-            // กรณีเป็น ISO Date ปี 1899 จาก Google Sheet (เช่น 1899-12-30T06:42:00.000Z)
+            // ถ้าเป็น ISO String หรือมี T
             if (String(val).includes('T')) {
                 const d = new Date(val);
                 if (!isNaN(d.getTime())) {
-                    // แปลงเป็นเวลาไทย
                     return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
                 }
             }
-            // กรณีเป็น Text ธรรมดา เช่น "13:42"
+            // ถ้าเป็น Text ธรรมดา ตัดเอาแค่ 5 ตัวแรก (HH:mm)
             return String(val).substring(0, 5);
         }
 
-        // คำนวณสถานะ: เช็คว่ามีเวลาในขั้นตอนไหนบ้าง
         function calculateProgress(item) {
-            if (item.ship.time) return 4; // มีเวลา Ship = เสร็จสิ้น
-            if (item.conf.time) return 2; // มีเวลายืนยัน = ยืนยันแล้ว
-            return 1; // นอกนั้น = งานใหม่
+            if (item.ship.time) return 4; // เสร็จสิ้น
+            if (item.conf.time) return 2; // ยืนยันแล้ว
+            return 1; // งานใหม่
         }
 
         function getStatusBadge(progress, isEdit) {
@@ -346,7 +383,7 @@
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 mb-3 transition active:scale-[0.99]">
                     <div class="flex justify-between mb-2">
                         <div>
-                            <div class="font-bold text-gray-800 text-lg tracking-tight">${parseDate(item.timestamp)}</div>
+                            <div class="font-bold text-gray-800 text-lg tracking-tight">${item.timestamp}</div>
                             <div class="text-xs text-gray-400 mt-0.5">DO: ${item.doNumber} <span class="mx-1">•</span> <span class="font-bold text-gray-500">${item.branch}</span></div>
                         </div>
                         <div class="text-right">
@@ -357,7 +394,7 @@
                     
                     <div class="flex gap-2 mb-4">
                          <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 flex-1">
-                            <i class="fas fa-truck text-gray-400 mr-1"></i>Deliver: <span class="font-medium ml-1 text-gray-700">${parseDate(item.deliveryDate)}</span>
+                            <i class="fas fa-truck text-gray-400 mr-1"></i>Deliver: <span class="font-medium ml-1 text-gray-700">${item.deliveryDate}</span>
                         </div>
                         <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 text-center min-w-[80px]">
                             Shipment<br><span class="font-bold text-lg">${shipmentVal}</span>
@@ -415,13 +452,14 @@
                 return `
                 <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0 group">
                     <td class="p-4 align-top">
-                        <div class="font-bold text-gray-800 text-lg">${parseDate(item.timestamp)}</div>
-                         </td>
+                        <div class="font-bold text-gray-800 text-lg">${item.timestamp}</div>
+                        <div class="text-xs text-gray-400">DO: ${item.doNumber}</div>
+                    </td>
                     <td class="p-4 align-top text-center">
                         <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm border border-gray-200 font-medium">${item.branch || '-'}</span>
                     </td>
                     <td class="p-4 align-top text-center text-gray-600 font-medium">
-                        ${parseDate(item.deliveryDate)}
+                        ${item.deliveryDate}
                     </td>
                     <td class="p-4 align-top text-center">
                         ${getStatusBadge(p, hasEdit && p < 4)}
@@ -478,7 +516,7 @@
         }
 
         // ==========================================
-        // 🔍 FILTER
+        // 🔍 FILTER & DASHBOARD
         // ==========================================
         function syncFilters(source) {
             const searchVal = document.getElementById(`search-${source}`).value;
@@ -498,26 +536,30 @@
                 const branchStr = String(item.branch || '').toLowerCase();
                 const matchesSearch = doStr.includes(searchQuery) || branchStr.includes(searchQuery);
                 
+                // Filter วันที่โดยใช้ filterDate (dd/mm/yy) ที่ทำไว้ใน normalizeData
                 let matchesDate = true;
-                if(dateQuery && item.timestamp) {
-                    const itemDate = parseDateToISO(item.timestamp);
-                    matchesDate = itemDate === dateQuery;
+                if(dateQuery) {
+                    matchesDate = item.filterDate === dateQuery;
                 }
                 
                 return matchesSearch && matchesDate;
             });
+            
+            updateDashboards(filtered);
             renderMobileList(filtered);
             renderDesktopTable(filtered);
         }
 
-        function updateDashboards(summary, items) {
-            if(!summary) return;
-            document.getElementById('m-dash-total').innerText = summary.total || 0;
-            document.getElementById('m-dash-shipped').innerText = summary.shipped || 0;
-            document.getElementById('d-dash-total').innerText = summary.total || 0;
-            document.getElementById('d-dash-shipped').innerText = summary.shipped || 0;
+        function updateDashboards(items) {
+            let total = items.length;
+            let shipped = items.filter(i => calculateProgress(i) === 4).length;
             
-            if(items && items.length > 0) {
+            document.getElementById('m-dash-total').innerText = total;
+            document.getElementById('m-dash-shipped').innerText = shipped;
+            document.getElementById('d-dash-total').innerText = total;
+            document.getElementById('d-dash-shipped').innerText = shipped;
+            
+            if(items.length > 0) {
                 const mList = document.getElementById('m-latest-updates');
                 mList.innerHTML = items.slice(0,5).map(i => {
                     let color = calculateProgress(i) === 4 ? 'bg-green-500' : 'bg-gray-400';
@@ -531,6 +573,9 @@
             }
         }
         
+        // ==========================================
+        // 🎮 TABS
+        // ==========================================
         function switchDesktopTab(tab) {
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
             document.getElementById(`d-nav-${tab}`).classList.add('active');
