@@ -47,11 +47,10 @@
 <body>
 
     <!-- =========================== -->
-    <!-- 📱 MOBILE VIEW (Visible on Small Screens) -->
+    <!-- 📱 MOBILE VIEW -->
     <!-- =========================== -->
     <div id="mobile-view" class="md:hidden flex flex-col min-h-screen pb-20 bg-coke-gray">
         
-        <!-- Mobile Header -->
         <header class="bg-coke-red text-white p-6 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
             <div class="flex justify-between items-start mb-4">
                 <div>
@@ -70,26 +69,21 @@
                     <input type="text" id="m-search-input" onkeyup="syncFilters('mobile')" placeholder="ค้นหา สาขา..." class="w-full text-sm outline-none text-gray-700">
                 </div>
                 <div class="w-1/3 bg-white rounded-full overflow-hidden shadow-sm flex items-center justify-center px-2">
-                    <input type="text" id="m-date-input" onkeyup="syncFilters('mobile')" placeholder="วว/ดด/ปป" class="w-full text-xs text-center outline-none bg-white text-gray-700 font-medium">
+                    <input type="text" id="m-date-input" onkeyup="syncFilters('mobile')" placeholder="ดูทั้งหมด" class="w-full text-xs text-center outline-none bg-white text-gray-700 font-medium placeholder-gray-400">
                 </div>
             </div>
         </header>
 
-        <!-- Mobile Content -->
         <main class="p-4 flex-1 space-y-4">
-            
-            <!-- Skeleton Loading -->
             <div id="m-loading" class="space-y-4">
                 <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
                 <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
             </div>
 
-            <!-- Page 1: Tracking List -->
             <div id="m-page-tracking" class="mobile-page block space-y-4">
                 <div id="m-list-container" class="space-y-3"></div>
             </div>
 
-            <!-- Page 2: Dashboard -->
             <div id="m-page-dashboard" class="mobile-page hidden space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-white p-4 rounded-2xl shadow-sm border-t-4 border-coke-red">
@@ -121,7 +115,6 @@
             </div>
         </main>
 
-        <!-- Mobile Bottom Nav -->
         <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-100 flex justify-around py-2 z-40 pb-safe shadow-[0_-5px_15px_rgba(0,0,0,0.03)]">
             <div onclick="switchMobileTab('tracking')" class="mobile-nav-item active flex flex-col items-center text-gray-400 transition-all cursor-pointer w-1/2 py-2">
                 <i class="fas fa-shipping-fast text-lg mb-1 transition-transform"></i>
@@ -135,11 +128,10 @@
     </div>
 
     <!-- =========================== -->
-    <!-- 💻 DESKTOP VIEW (Visible on Large Screens) -->
+    <!-- 💻 DESKTOP VIEW -->
     <!-- =========================== -->
     <div id="desktop-view" class="hidden md:flex min-h-screen bg-gray-50">
         
-        <!-- Sidebar -->
         <aside class="w-64 bg-white shadow-xl z-10 flex flex-col fixed h-full border-r border-gray-200">
             <div class="p-8 bg-coke-red text-white">
                 <h1 class="text-2xl font-black tracking-tight">ROUTING<br>ORDER</h1>
@@ -168,7 +160,6 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="flex-1 ml-64 p-8">
             <div class="flex justify-between items-center mb-8 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <div>
@@ -180,14 +171,13 @@
                         <i class="fas fa-search absolute left-4 top-3 text-gray-400"></i>
                         <input type="text" id="d-search-input" onkeyup="syncFilters('desktop')" placeholder="ค้นหา สาขา..." class="pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm w-64 focus:outline-none focus:border-coke-red focus:ring-1 focus:ring-coke-red bg-gray-50 focus:bg-white transition-all">
                     </div>
-                    <input type="text" id="d-date-input" onkeyup="syncFilters('desktop')" class="border border-gray-200 rounded-full px-4 py-2 text-sm text-center w-32 focus:outline-none focus:border-coke-red bg-gray-50 focus:bg-white transition-all" placeholder="วว/ดด/ปป">
+                    <input type="text" id="d-date-input" onkeyup="syncFilters('desktop')" class="border border-gray-200 rounded-full px-4 py-2 text-sm text-center w-32 focus:outline-none focus:border-coke-red bg-gray-50 focus:bg-white transition-all placeholder-gray-400" placeholder="ดูทั้งหมด">
                     <button onclick="manualRefresh()" class="bg-coke-black hover:bg-gray-800 text-white p-2 px-4 rounded-full transition shadow flex items-center gap-2 text-sm">
                         <i class="fas fa-sync-alt refresh-icon"></i> Refresh
                     </button>
                 </div>
             </div>
 
-            <!-- Page 1: Desktop List (Table) -->
             <div id="d-page-tracking" class="desktop-page block">
                 <div class="bg-white rounded-2xl shadow-sm overflow-hidden min-h-[500px] border border-gray-100">
                     <table class="w-full text-left border-collapse">
@@ -207,7 +197,6 @@
                 </div>
             </div>
 
-            <!-- Page 2: Desktop Dashboard -->
             <div id="d-page-dashboard" class="desktop-page hidden">
                 <div class="grid grid-cols-4 gap-6 mb-8">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-coke-red hover:-translate-y-1 transition-transform duration-300">
@@ -247,31 +236,18 @@
         // ==========================================
         // ⚙️ SETTINGS
         // ==========================================
-        
-        // 🔴🔴🔴 นำ URL ที่ได้จากการ Deploy Web App มาวางที่นี่ 🔴🔴🔴
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz5WY5VRqL41gUZNgiTSoPxV1Yw7_TTkrfVfaGt-M8jwrds0Q-hi3-feioZBw0sCNQF/exec'; 
 
         let globalData = [];
 
         window.onload = async function() {
-            // ตั้งค่าวันที่ปัจจุบัน
-            const d = new Date();
-            const yy = String(d.getFullYear()).slice(-2);
-            const todayStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${yy}`;
-            
-            // Set both inputs
-            document.getElementById('m-date-input').value = todayStr;
-            document.getElementById('d-date-input').value = todayStr;
-
             await initLiff();
             fetchData();
-            
             setInterval(() => fetchData(true), 20000); 
         };
 
         async function initLiff() {
             try {
-                // await liff.init({ liffId: "YOUR_LIFF_ID" });
                 if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     document.getElementById('m-user-display').innerText = profile.displayName;
@@ -288,7 +264,9 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    globalData = json.data;
+                    // Normalize data immediately after fetch
+                    globalData = normalizeData(json.data);
+                    
                     document.getElementById('last-update-desktop').innerText = new Date().toLocaleTimeString('th-TH');
                     applyFilters(); 
                 }
@@ -297,6 +275,70 @@
             } finally {
                 if (!isSilent) toggleLoading(false);
             }
+        }
+
+        // --- 🆕 DATA NORMALIZATION (Frontend Smart Parser) ---
+        function normalizeData(rawData) {
+            return rawData.map(item => {
+                // สร้างข้อมูลวันที่ที่เป็นมาตรฐานจาก timestamp ที่ส่งมา
+                // รองรับทั้ง "30/1/2026, 13:40:31" หรือ ISO string
+                const dObj = parseDate(item.timestamp);
+                
+                let stdTargetDate = item.targetDate; // ค่าเดิม
+                let stdTimestamp = item.timestamp;   // ค่าเดิม
+
+                if (dObj) {
+                    // แปลงเป็น dd/MM/yy สำหรับใช้กรอง (Filter)
+                    const day = String(dObj.getDate()).padStart(2, '0');
+                    const month = String(dObj.getMonth() + 1).padStart(2, '0');
+                    const year = String(dObj.getFullYear()).slice(-2);
+                    stdTargetDate = `${day}/${month}/${year}`;
+
+                    // แปลงเป็น dd/MM/yy HH:mm สำหรับแสดงผล
+                    const hours = String(dObj.getHours()).padStart(2, '0');
+                    const mins = String(dObj.getMinutes()).padStart(2, '0');
+                    stdTimestamp = `${day}/${month}/${year} ${hours}:${mins}`;
+                }
+
+                return {
+                    ...item,
+                    targetDate: stdTargetDate, // Override ด้วยรูปแบบมาตรฐาน
+                    timestamp: stdTimestamp    // Override ด้วยรูปแบบมาตรฐาน
+                };
+            });
+        }
+
+        // ฟังก์ชันแปลง String แปลกๆ ให้เป็น Date Object
+        function parseDate(val) {
+            if (!val) return null;
+            if (val instanceof Date) return val;
+
+            const str = val.toString().trim();
+            // Regex จับรูปแบบ d/m/y หรือ d-m-y พร้อมเวลา (optional)
+            // รองรับปี 4 หลัก (2026) และ 2 หลัก (26)
+            // Group 1=Day, 2=Month, 3=Year, 4=Hour, 5=Min, 6=Sec
+            const regex = /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})(?:[,\sT]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/;
+            const match = str.match(regex);
+
+            if (match) {
+                let day = parseInt(match[1]);
+                let month = parseInt(match[2]) - 1; // JS month 0-11
+                let yearStr = match[3];
+                let year = parseInt(yearStr);
+                
+                // แก้ปี 2 หลัก (เช่น 26 -> 2026)
+                if (yearStr.length === 2) year += 2000;
+                
+                let hour = match[4] ? parseInt(match[4]) : 0;
+                let min = match[5] ? parseInt(match[5]) : 0;
+                let sec = match[6] ? parseInt(match[6]) : 0;
+
+                return new Date(year, month, day, hour, min, sec);
+            }
+            
+            // ถ้าไม่ตรง Format ให้ลองใช้ Date constructor ปกติ
+            const d = new Date(val);
+            return isNaN(d.getTime()) ? null : d;
         }
 
         function syncFilters(source) {
@@ -329,10 +371,7 @@
                 return matchesSearch && matchesDate;
             });
 
-            // Calculate Dashboard
             calculateDashboard(filtered.length > 0 ? filtered : globalData);
-
-            // Render Views
             renderMobileList(filtered);
             renderDesktopTable(filtered);
         }
@@ -348,14 +387,12 @@
                 else if(s === 'เสร็จสิ้น') stats.completed++;
             });
 
-            // Mobile Update
             document.getElementById('m-dash-total').innerText = stats.total;
             document.getElementById('m-dash-completed').innerText = stats.completed;
             document.getElementById('m-dash-new').innerText = stats.new;
             document.getElementById('m-dash-conf').innerText = stats.conf;
             document.getElementById('m-dash-edit').innerText = stats.edit;
 
-            // Desktop Update
             document.getElementById('d-dash-total').innerText = stats.total;
             document.getElementById('d-dash-completed').innerText = stats.completed;
             document.getElementById('d-dash-conf').innerText = stats.conf;
