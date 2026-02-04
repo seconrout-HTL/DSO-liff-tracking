@@ -15,10 +15,9 @@
             theme: {
                 extend: {
                     colors: {
-                        'coke-red': '#F40009',   /* Coca-Cola Red */
-                        'coke-black': '#1E1E1E', /* Dark Black/Gray */
-                        'coke-gray': '#F4F4F4',  /* Light Gray BG */
-                        'coke-dark': '#000000',
+                        'coke-red': '#F40009',   
+                        'coke-black': '#1E1E1E', 
+                        'coke-gray': '#F4F4F4',
                     }
                 }
             }
@@ -32,31 +31,33 @@
         .timeline-line { position: absolute; left: 0; right: 0; top: 20px; height: 3px; background: #E5E7EB; z-index: 0; }
         .timeline-progress { position: absolute; left: 0; top: 20px; height: 3px; background: #F40009; z-index: 1; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        /* Animations */
         .spin-slow { animation: spin 1.5s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        /* Navigation & Sidebar */
-        .sidebar-link { transition: all 0.2s; border-right: 4px solid transparent; }
-        .sidebar-link:hover, .sidebar-link.active { background-color: #FFF0F0; color: #F40009; border-right-color: #F40009; font-weight: bold; }
+        .card-hover:active { transform: scale(0.98); transition: transform 0.1s; }
         
+        /* Desktop Sidebar Active State */
+        .sidebar-link.active { background-color: #ffeaea; color: #F40009; border-right: 4px solid #F40009; font-weight: bold; }
+        
+        /* Mobile Nav Active State */
         .mobile-nav-item.active { color: #F40009; font-weight: bold; }
-        .mobile-nav-item.active i { transform: translateY(-5px); }
-
-        /* Card Hover */
-        .card-hover:active { transform: scale(0.98); }
+        .mobile-nav-item.active i { transform: translateY(-3px); }
     </style>
 </head>
 <body>
 
+    <!-- =========================== -->
+    <!-- 📱 MOBILE VIEW (Visible on Small Screens) -->
+    <!-- =========================== -->
     <div id="mobile-view" class="md:hidden flex flex-col min-h-screen pb-20 bg-coke-gray">
         
+        <!-- Mobile Header -->
         <header class="bg-coke-red text-white p-6 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
             <div class="flex justify-between items-start mb-4">
                 <div>
                     <h1 class="text-xl font-bold tracking-wide">ROUTING ORDER</h1>
-                    <p class="text-[10px] text-white/80 font-light tracking-widest uppercase">Tracking System Management</p>
-                    <p id="user-display-mobile" class="text-xs font-medium mt-1 bg-black/20 inline-block px-2 py-0.5 rounded-md">Guest User</p>
+                    <p class="text-[10px] text-white/80 font-light tracking-widest uppercase">Tracking System</p>
+                    <p id="m-user-display" class="text-xs font-medium mt-1 bg-black/20 inline-block px-2 py-0.5 rounded-md">Guest User</p>
                 </div>
                 <button onclick="manualRefresh()" class="bg-white/20 hover:bg-white/30 p-2 rounded-full w-9 h-9 flex items-center justify-center transition backdrop-blur-sm">
                     <i class="fas fa-sync-alt text-xs refresh-icon"></i>
@@ -66,25 +67,29 @@
             <div class="flex gap-2">
                 <div class="flex-1 bg-white rounded-full overflow-hidden flex items-center px-4 py-2 shadow-sm">
                     <i class="fas fa-search text-gray-400 text-xs mr-2"></i>
-                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา สาขา..." class="w-full text-sm outline-none text-gray-700 placeholder-gray-300">
+                    <input type="text" id="m-search-input" onkeyup="syncFilters('mobile')" placeholder="ค้นหา สาขา..." class="w-full text-sm outline-none text-gray-700">
                 </div>
                 <div class="w-1/3 bg-white rounded-full overflow-hidden shadow-sm flex items-center justify-center px-2">
-                    <input type="date" id="date-mobile" onchange="syncFilters('mobile')" class="w-full text-xs text-center outline-none bg-white text-gray-700 font-medium">
+                    <input type="text" id="m-date-input" onkeyup="syncFilters('mobile')" placeholder="วว/ดด/ปป" class="w-full text-xs text-center outline-none bg-white text-gray-700 font-medium">
                 </div>
             </div>
         </header>
 
-        <main class="p-4 space-y-4 flex-1">
+        <!-- Mobile Content -->
+        <main class="p-4 flex-1 space-y-4">
             
-            <div id="loading-skeleton-mobile" class="space-y-4 hidden">
-                <div class="h-36 bg-gray-200 rounded-2xl animate-pulse"></div>
-                <div class="h-36 bg-gray-200 rounded-2xl animate-pulse"></div>
+            <!-- Skeleton Loading -->
+            <div id="m-loading" class="space-y-4">
+                <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
+                <div class="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>
             </div>
 
+            <!-- Page 1: Tracking List -->
             <div id="m-page-tracking" class="mobile-page block space-y-4">
-                <div id="m-list-container" class="space-y-4"></div>
+                <div id="m-list-container" class="space-y-3"></div>
             </div>
 
+            <!-- Page 2: Dashboard -->
             <div id="m-page-dashboard" class="mobile-page hidden space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-white p-4 rounded-2xl shadow-sm border-t-4 border-coke-red">
@@ -97,40 +102,56 @@
                     </div>
                 </div>
                 <div class="bg-white rounded-2xl shadow-sm p-5">
-                    <h3 class="font-bold text-sm mb-4 text-gray-800 border-l-4 border-coke-red pl-2">ความเคลื่อนไหวล่าสุด</h3>
-                    <div id="m-latest-updates" class="space-y-4"></div>
+                    <h3 class="font-bold text-sm mb-4 text-gray-800 border-l-4 border-coke-red pl-2">สถานะงานวันนี้</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center border-b pb-2 border-gray-50">
+                            <span class="text-xs text-gray-500"><i class="fas fa-circle text-[8px] text-coke-red mr-2"></i>งานใหม่</span>
+                            <span class="font-bold text-coke-red" id="m-dash-new">-</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b pb-2 border-gray-50">
+                            <span class="text-xs text-gray-500"><i class="fas fa-circle text-[8px] text-blue-600 mr-2"></i>ยืนยันแล้ว</span>
+                            <span class="font-bold text-blue-600" id="m-dash-conf">-</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b pb-2 border-gray-50">
+                            <span class="text-xs text-gray-500"><i class="fas fa-circle text-[8px] text-orange-500 mr-2"></i>แก้ไขบิล</span>
+                            <span class="font-bold text-orange-500" id="m-dash-edit">-</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
 
+        <!-- Mobile Bottom Nav -->
         <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-100 flex justify-around py-2 z-40 pb-safe shadow-[0_-5px_15px_rgba(0,0,0,0.03)]">
             <div onclick="switchMobileTab('tracking')" class="mobile-nav-item active flex flex-col items-center text-gray-400 transition-all cursor-pointer w-1/2 py-2">
-                <i class="fas fa-truck-fast text-lg mb-1"></i>
+                <i class="fas fa-shipping-fast text-lg mb-1 transition-transform"></i>
                 <span class="text-[10px] font-medium">ติดตามงาน</span>
             </div>
             <div onclick="switchMobileTab('dashboard')" class="mobile-nav-item flex flex-col items-center text-gray-400 transition-all cursor-pointer w-1/2 py-2">
-                <i class="fas fa-chart-pie text-lg mb-1"></i>
+                <i class="fas fa-chart-pie text-lg mb-1 transition-transform"></i>
                 <span class="text-[10px] font-medium">ภาพรวม</span>
             </div>
         </nav>
     </div>
 
+    <!-- =========================== -->
+    <!-- 💻 DESKTOP VIEW (Visible on Large Screens) -->
+    <!-- =========================== -->
     <div id="desktop-view" class="hidden md:flex min-h-screen bg-gray-50">
         
-        <aside class="w-72 bg-white shadow-xl z-20 flex flex-col fixed h-full border-r border-gray-100">
-            <div class="p-8 bg-coke-red text-white relative overflow-hidden">
-                <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-                
-                <h1 class="text-2xl font-black tracking-tight leading-tight">ROUTING<br>ORDER</h1>
-                <p class="text-[10px] text-white/80 mt-2 font-medium tracking-wider uppercase">Tracking System Management</p>
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-xl z-10 flex flex-col fixed h-full border-r border-gray-200">
+            <div class="p-8 bg-coke-red text-white">
+                <h1 class="text-2xl font-black tracking-tight">ROUTING<br>ORDER</h1>
+                <p class="text-[10px] text-white/80 mt-2 font-medium uppercase tracking-wider">System Management</p>
             </div>
             <nav class="flex-1 mt-6 px-2 space-y-1">
-                <a onclick="switchDesktopTab('tracking')" id="d-nav-tracking" class="sidebar-link active flex items-center px-6 py-4 text-gray-600 cursor-pointer rounded-xl">
-                    <i class="fas fa-list-check w-8 text-lg"></i>
+                <a onclick="switchDesktopTab('tracking')" id="d-nav-tracking" class="sidebar-link active flex items-center px-6 py-4 text-gray-600 cursor-pointer rounded-r-full transition-all hover:bg-red-50">
+                    <i class="fas fa-list-ul w-8"></i>
                     <span class="font-medium">รายการงาน (List)</span>
                 </a>
-                <a onclick="switchDesktopTab('dashboard')" id="d-nav-dashboard" class="sidebar-link flex items-center px-6 py-4 text-gray-600 cursor-pointer rounded-xl">
-                    <i class="fas fa-chart-line w-8 text-lg"></i>
+                <a onclick="switchDesktopTab('dashboard')" id="d-nav-dashboard" class="sidebar-link flex items-center px-6 py-4 text-gray-600 cursor-pointer rounded-r-full transition-all hover:bg-red-50">
+                    <i class="fas fa-chart-line w-8"></i>
                     <span class="font-medium">แดชบอร์ด (Dashboard)</span>
                 </a>
             </nav>
@@ -141,75 +162,79 @@
                     </div>
                     <div>
                         <p class="text-xs text-gray-400">เข้าสู่ระบบโดย</p>
-                        <p id="user-display-desktop" class="font-bold text-sm text-gray-800">Guest User</p>
+                        <p id="d-user-display" class="font-bold text-sm text-gray-800">Guest User</p>
                     </div>
                 </div>
             </div>
         </aside>
 
-        <main class="flex-1 ml-72 p-10">
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 p-8">
             <div class="flex justify-between items-center mb-8 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <div>
                     <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">รายการล่าสุด</h2>
-                    <p class="text-xs text-gray-400 mt-1">ข้อมูลอัปเดตล่าสุด: <span id="last-update-time">-</span></p>
+                    <p class="text-xs text-gray-400 mt-1">อัปเดตล่าสุด: <span id="last-update-desktop">-</span></p>
                 </div>
                 <div class="flex gap-3">
-                    <div class="relative group">
-                        <i class="fas fa-search absolute left-4 top-3 text-gray-400 group-focus-within:text-coke-red transition-colors"></i>
-                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา สาขา..." class="pl-10 pr-4 py-2.5 border border-gray-200 rounded-full text-sm w-72 focus:outline-none focus:border-coke-red focus:ring-1 focus:ring-coke-red transition-all bg-gray-50 focus:bg-white">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-4 top-3 text-gray-400"></i>
+                        <input type="text" id="d-search-input" onkeyup="syncFilters('desktop')" placeholder="ค้นหา สาขา..." class="pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm w-64 focus:outline-none focus:border-coke-red focus:ring-1 focus:ring-coke-red bg-gray-50 focus:bg-white transition-all">
                     </div>
-                    <input type="date" id="date-desktop" onchange="syncFilters('desktop')" class="border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-coke-red cursor-pointer hover:bg-gray-50">
-                    <button onclick="manualRefresh()" class="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-full transition shadow-md flex items-center gap-2">
-                        <i class="fas fa-sync-alt refresh-icon text-xs"></i> <span>Refresh</span>
+                    <input type="text" id="d-date-input" onkeyup="syncFilters('desktop')" class="border border-gray-200 rounded-full px-4 py-2 text-sm text-center w-32 focus:outline-none focus:border-coke-red bg-gray-50 focus:bg-white transition-all" placeholder="วว/ดด/ปป">
+                    <button onclick="manualRefresh()" class="bg-coke-black hover:bg-gray-800 text-white p-2 px-4 rounded-full transition shadow flex items-center gap-2 text-sm">
+                        <i class="fas fa-sync-alt refresh-icon"></i> Refresh
                     </button>
                 </div>
             </div>
 
+            <!-- Page 1: Desktop List (Table) -->
             <div id="d-page-tracking" class="desktop-page block">
-                <div class="bg-white rounded-3xl shadow-sm overflow-hidden min-h-[500px] border border-gray-100">
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden min-h-[500px] border border-gray-100">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
                             <tr>
-                                <th class="p-5 font-bold w-[20%]">วันที่แจ้งงาน (Timestamp)</th>
+                                <th class="p-5 font-bold w-[20%]">วันที่แจ้งงาน</th>
                                 <th class="p-5 font-bold w-[15%]">สาขา</th>
                                 <th class="p-5 font-bold w-[15%]">สถานะปัจจุบัน</th>
-                                <th class="p-5 font-bold w-[35%]">ความคืบหน้า (Progress)</th>
-                                <th class="p-5 text-right font-bold w-[15%]">จำนวน</th>
+                                <th class="p-5 font-bold w-[35%]">Timeline ความคืบหน้า</th>
+                                <th class="p-5 text-right font-bold w-[15%]">จำนวน DO</th>
                             </tr>
                         </thead>
                         <tbody id="d-table-body" class="text-sm divide-y divide-gray-50">
-                            </tbody>
+                            <!-- JS will render here -->
+                        </tbody>
                     </table>
                 </div>
             </div>
 
+            <!-- Page 2: Desktop Dashboard -->
             <div id="d-page-dashboard" class="desktop-page hidden">
                 <div class="grid grid-cols-4 gap-6 mb-8">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-coke-red hover:-translate-y-1 transition-transform duration-300">
                         <h3 class="text-gray-400 text-xs font-bold uppercase tracking-wider">งานทั้งหมด</h3>
                         <div class="flex items-end justify-between mt-2">
-                            <p class="text-4xl font-bold text-gray-800" id="d-dash-total">-</p>
+                            <p class="text-4xl font-black text-gray-800" id="d-dash-total">-</p>
                             <i class="fas fa-clipboard-list text-gray-200 text-3xl"></i>
                         </div>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-orange-500 hover:-translate-y-1 transition-transform duration-300">
                         <h3 class="text-gray-400 text-xs font-bold uppercase tracking-wider">แก้ไขบิล</h3>
                         <div class="flex items-end justify-between mt-2">
-                            <p class="text-4xl font-bold text-orange-600" id="d-dash-edit">-</p>
+                            <p class="text-4xl font-black text-orange-500" id="d-dash-edit">-</p>
                             <i class="fas fa-edit text-orange-100 text-3xl"></i>
                         </div>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-blue-600 hover:-translate-y-1 transition-transform duration-300">
                         <h3 class="text-gray-400 text-xs font-bold uppercase tracking-wider">ยืนยันแล้ว</h3>
                         <div class="flex items-end justify-between mt-2">
-                            <p class="text-4xl font-bold text-blue-600" id="d-dash-conf">-</p>
+                            <p class="text-4xl font-black text-blue-600" id="d-dash-conf">-</p>
                             <i class="fas fa-check-circle text-blue-100 text-3xl"></i>
                         </div>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-black hover:-translate-y-1 transition-transform duration-300">
                         <h3 class="text-gray-400 text-xs font-bold uppercase tracking-wider">เสร็จสิ้น</h3>
                         <div class="flex items-end justify-between mt-2">
-                            <p class="text-4xl font-bold text-black" id="d-dash-completed">-</p>
+                            <p class="text-4xl font-black text-black" id="d-dash-completed">-</p>
                             <i class="fas fa-flag-checkered text-gray-200 text-3xl"></i>
                         </div>
                     </div>
@@ -219,16 +244,28 @@
     </div>
 
     <script>
-        // ใส่ URL ของ Google Apps Script ของคุณที่นี่
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
+        // ==========================================
+        // ⚙️ SETTINGS
+        // ==========================================
         
+        // 🔴🔴🔴 นำ URL ที่ได้จากการ Deploy Web App มาวางที่นี่ 🔴🔴🔴
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz5WY5VRqL41gUZNgiTSoPxV1Yw7_TTkrfVfaGt-M8jwrds0Q-hi3-feioZBw0sCNQF/exec'; 
+
         let globalData = [];
-        let isFirstLoad = true;
-        let isDateAutoSet = false;
 
         window.onload = async function() {
+            // ตั้งค่าวันที่ปัจจุบัน
+            const d = new Date();
+            const yy = String(d.getFullYear()).slice(-2);
+            const todayStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${yy}`;
+            
+            // Set both inputs
+            document.getElementById('m-date-input').value = todayStr;
+            document.getElementById('d-date-input').value = todayStr;
+
             await initLiff();
             fetchData();
+            
             setInterval(() => fetchData(true), 20000); 
         };
 
@@ -237,8 +274,8 @@
                 // await liff.init({ liffId: "YOUR_LIFF_ID" });
                 if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
-                    document.getElementById('user-display-mobile').innerText = profile.displayName;
-                    document.getElementById('user-display-desktop').innerText = profile.displayName;
+                    document.getElementById('m-user-display').innerText = profile.displayName;
+                    document.getElementById('d-user-display').innerText = profile.displayName;
                 }
             } catch (err) { console.log('LIFF Error:', err); }
         }
@@ -251,128 +288,99 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    // **หมายเหตุ:** ข้อมูลจาก Backend ควรมี Key: timestamp, branch, amount, time_bill, time_conf, time_ship, edit_count
                     globalData = json.data;
-                    document.getElementById('last-update-time').innerText = new Date().toLocaleTimeString('th-TH');
-
-                    if (!isDateAutoSet && globalData.length > 0) {
-                        const latestDate = formatInputDate(globalData[0].timestamp); 
-                        if(latestDate) {
-                            document.getElementById('date-mobile').value = latestDate;
-                            document.getElementById('date-desktop').value = latestDate;
-                            isDateAutoSet = true;
-                        }
-                    }
-
+                    document.getElementById('last-update-desktop').innerText = new Date().toLocaleTimeString('th-TH');
                     applyFilters(); 
                 }
             } catch (error) {
                 console.error('Fetch Error:', error);
             } finally {
                 if (!isSilent) toggleLoading(false);
-                isFirstLoad = false;
             }
         }
 
-        // --- 🧠 CORE LOGIC: คำนวณสถานะ ---
-        function calculateStatus(item) {
-            // ดึงค่าและป้องกันค่า null/undefined
-            const tBill = item.time_bill;
-            const tConf = item.time_conf;
-            const tShip = item.time_ship;
-            const editCount = parseInt(item.edit_count || 0);
+        function syncFilters(source) {
+            const mSearch = document.getElementById('m-search-input');
+            const dSearch = document.getElementById('d-search-input');
+            const mDate = document.getElementById('m-date-input');
+            const dDate = document.getElementById('d-date-input');
 
-            // เงื่อนไขตามลำดับความสำคัญ (ย้อนกลับจากจบไปเริ่ม)
-            if (tBill && tConf && tShip && editCount >= 0) {
-                return { 
-                    status: 'completed', 
-                    label: 'เสร็จสิ้น', 
-                    color: 'text-white bg-black', 
-                    barColor: 'bg-black',
-                    timeLabel: tShip,
-                    progress: 100 
-                };
+            if(source === 'mobile') {
+                dSearch.value = mSearch.value;
+                dDate.value = mDate.value;
+            } else {
+                mSearch.value = dSearch.value;
+                mDate.value = dDate.value;
             }
-            if (tBill && tConf && editCount >= 1) {
-                return { 
-                    status: 'edited', 
-                    label: 'แก้ไขบิล', 
-                    color: 'text-white bg-orange-500', 
-                    barColor: 'bg-orange-500',
-                    timeLabel: tConf, // หรือเวลาแก้ไขล่าสุดถ้ามี
-                    progress: 66 
-                };
-            }
-            if (tBill && tConf) {
-                return { 
-                    status: 'confirmed', 
-                    label: 'ยืนยัน', 
-                    color: 'text-white bg-blue-600', 
-                    barColor: 'bg-blue-600',
-                    timeLabel: tConf,
-                    progress: 66 
-                };
-            }
-            if (tBill) {
-                return { 
-                    status: 'new', 
-                    label: 'งานใหม่', 
-                    color: 'text-white bg-coke-red', 
-                    barColor: 'bg-coke-red',
-                    timeLabel: tBill,
-                    progress: 33 
-                };
-            }
-            
-            return { status: 'pending', label: 'รอข้อมูล', color: 'text-gray-500 bg-gray-200', barColor: 'bg-gray-200', timeLabel: '-', progress: 0 };
+            applyFilters();
         }
 
         function applyFilters() {
-            const searchVal = document.getElementById('search-mobile').value.toLowerCase();
-            const dateVal = document.getElementById('date-mobile').value; // YYYY-MM-DD
+            const searchVal = document.getElementById('m-search-input').value.toLowerCase();
+            const dateVal = document.getElementById('m-date-input').value;
 
             const filtered = globalData.filter(item => {
                 const branchStr = String(item.branch || '').toLowerCase();
+                const targetDate = String(item.targetDate || '');
+                
                 const matchesSearch = branchStr.includes(searchVal);
+                const matchesDate = dateVal === '' || targetDate === dateVal;
                 
-                // ตรวจสอบวันที่ (สมมติ timestamp มาเป็น "2023-10-27 10:30:00" หรือ Date String)
-                let itemDate = '';
-                if(item.timestamp) {
-                    // พยายามตัดเอาเฉพาะ YYYY-MM-DD
-                    const d = new Date(item.timestamp);
-                    if(!isNaN(d)) itemDate = d.toISOString().split('T')[0];
-                    else itemDate = item.timestamp.substring(0, 10); // กรณีเป็น String ตรงๆ
-                }
-                
-                const matchesDate = !dateVal || itemDate === dateVal;
                 return matchesSearch && matchesDate;
             });
 
-            // คำนวณยอด Dashboard จากข้อมูลที่ Filter แล้ว หรือทั้งหมดตามต้องการ
-            calculateDashboard(globalData); // ใช้ globalData ถ้ายอดรวมต้องการทั้งหมด ไม่ใช่แค่ที่ค้นหา
-            
+            // Calculate Dashboard
+            calculateDashboard(filtered.length > 0 ? filtered : globalData);
+
+            // Render Views
             renderMobileList(filtered);
             renderDesktopTable(filtered);
         }
 
         function calculateDashboard(data) {
-            let stats = { total: data.length, completed: 0, edited: 0, confirmed: 0 };
+            let stats = { total: data.length, new: 0, conf: 0, edit: 0, completed: 0 };
             
             data.forEach(item => {
-                const s = calculateStatus(item).status;
-                if(s === 'completed') stats.completed++;
-                else if(s === 'edited') stats.edited++;
-                else if(s === 'confirmed') stats.confirmed++;
+                const s = calculateStatus(item).label;
+                if(s === 'งานใหม่') stats.new++;
+                else if(s === 'ยืนยัน') stats.conf++;
+                else if(s === 'แก้ไขบิล') stats.edit++;
+                else if(s === 'เสร็จสิ้น') stats.completed++;
             });
 
-            // Update UI
+            // Mobile Update
             document.getElementById('m-dash-total').innerText = stats.total;
             document.getElementById('m-dash-completed').innerText = stats.completed;
-            
+            document.getElementById('m-dash-new').innerText = stats.new;
+            document.getElementById('m-dash-conf').innerText = stats.conf;
+            document.getElementById('m-dash-edit').innerText = stats.edit;
+
+            // Desktop Update
             document.getElementById('d-dash-total').innerText = stats.total;
-            document.getElementById('d-dash-edit').innerText = stats.edited;
-            document.getElementById('d-dash-conf').innerText = stats.confirmed;
             document.getElementById('d-dash-completed').innerText = stats.completed;
+            document.getElementById('d-dash-conf').innerText = stats.conf;
+            document.getElementById('d-dash-edit').innerText = stats.edit;
+        }
+
+        function calculateStatus(item) {
+            const tBill = item.timeBill;
+            const tConf = item.timeConf;
+            const tShip = item.timeShip;
+            const editCount = parseInt(item.editCount || 0);
+
+            if (tBill && tConf && tShip && editCount >= 0) {
+                return { label: 'เสร็จสิ้น', color: 'bg-black', textColor: 'text-black', timeLabel: tShip, progress: 100, barColor: 'bg-black' };
+            }
+            if (tBill && tConf && editCount >= 1) {
+                return { label: 'แก้ไขบิล', color: 'bg-orange-500', textColor: 'text-orange-500', timeLabel: tConf, progress: 66, barColor: 'bg-orange-500' };
+            }
+            if (tBill && tConf) {
+                return { label: 'ยืนยัน', color: 'bg-blue-600', textColor: 'text-blue-600', timeLabel: tConf, progress: 66, barColor: 'bg-blue-600' };
+            }
+            if (tBill) {
+                return { label: 'งานใหม่', color: 'bg-coke-red', textColor: 'text-coke-red', timeLabel: tBill, progress: 33, barColor: 'bg-coke-red' };
+            }
+            return { label: 'รอข้อมูล', color: 'bg-gray-300', textColor: 'text-gray-400', timeLabel: '-', progress: 0, barColor: 'bg-gray-300' };
         }
 
         // --- 📱 MOBILE RENDER ---
@@ -385,12 +393,13 @@
             
             container.innerHTML = data.map(item => {
                 const state = calculateStatus(item);
-                
-                // Logic การแสดง Timeline Points
-                const isBill = !!item.time_bill;
-                const isConf = !!item.time_conf;
-                const isEdit = state.status === 'edited';
-                const isShip = !!item.time_ship;
+                const isBill = !!item.timeBill;
+                const isConf = !!item.timeConf;
+                const isShip = !!item.timeShip;
+                const isEdit = state.label === 'แก้ไขบิล';
+
+                let diffBadge = '';
+                if(item.diff2 && item.diff2 !== '-') diffBadge = `<div class="mt-1 text-[9px] text-green-600 bg-green-50 inline-block px-1 rounded"><i class="fas fa-stopwatch mr-1"></i>ใช้เวลาส่ง ${item.diff2} น.</div>`;
 
                 return `
                 <div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-100 relative overflow-hidden card-hover">
@@ -398,14 +407,15 @@
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded font-bold">${item.branch}</span>
-                                <span class="${state.color} text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm">${state.label}</span>
+                                <span class="${state.color} text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm">${state.label}</span>
                             </div>
                             <h3 class="text-md font-bold text-gray-800">${item.timestamp}</h3>
-                            <p class="text-[10px] text-gray-400 mt-1">เวลาล่าสุด: <span class="font-mono text-coke-red">${state.timeLabel}</span></p>
+                            <div class="text-[10px] text-gray-400 mt-1">เวลาล่าสุด: <span class="font-mono ${state.textColor} font-bold">${state.timeLabel}</span></div>
+                            ${diffBadge}
                         </div>
                         <div class="text-right">
-                             <p class="text-xl font-black text-gray-800">${item.amount}</p>
-                             <p class="text-[9px] text-gray-400">จำนวน</p>
+                             <p class="text-2xl font-black text-gray-800">${item.currentAmount}</p>
+                             <p class="text-[9px] text-gray-400">DO Total</p>
                         </div>
                     </div>
                     
@@ -413,11 +423,12 @@
                         <div class="timeline-line"></div>
                         <div class="timeline-progress" style="width: ${state.progress}%"></div>
                         <div class="flex justify-between relative z-10 text-[9px] font-bold text-center">
-                            ${renderStepMobile('เปิดบิล', item.time_bill, isBill, 'bg-coke-red')}
-                            ${renderStepMobile(isEdit ? 'แก้ไขบิล' : 'ยืนยัน', item.time_conf, isConf, isEdit ? 'bg-orange-500' : 'bg-blue-600')}
-                            ${renderStepMobile('เสร็จสิ้น', item.time_ship, isShip, 'bg-black')}
+                            ${renderStepMobile('เปิดบิล', item.timeBill, isBill, 'bg-coke-red')}
+                            ${renderStepMobile(isEdit ? 'แก้ไขบิล' : 'ยืนยัน', item.timeConf, isConf, isEdit ? 'bg-orange-500' : 'bg-blue-600')}
+                            ${renderStepMobile('เสร็จสิ้น', item.timeShip, isShip, 'bg-black')}
                         </div>
                     </div>
+                    ${item.note ? `<div class="mt-3 pt-2 border-t border-dashed border-gray-200 text-[10px] text-gray-500"><i class="fas fa-info-circle text-orange-400 mr-1"></i>${item.note}</div>` : ''}
                 </div>`;
             }).join('');
         }
@@ -429,6 +440,7 @@
             <div class="w-1/3 flex flex-col items-center">
                 <div class="w-3 h-3 ${circleColor} rounded-full border-2 border-white shadow-sm mb-1.5 transition-colors duration-500"></div>
                 <span class="${textColor} transition-colors">${label}</span>
+                <span class="font-normal text-gray-400 scale-90 block font-mono">${time||'-'}</span>
             </div>`;
         }
 
@@ -442,7 +454,6 @@
 
             tbody.innerHTML = data.map(item => {
                 const state = calculateStatus(item);
-                
                 return `
                 <tr class="hover:bg-red-50/30 transition border-b border-gray-50 last:border-0 group">
                     <td class="p-5 font-bold text-gray-700">
@@ -455,60 +466,27 @@
                     </td>
                     <td class="p-5 text-gray-600 font-medium">${item.branch}</td>
                     <td class="p-5">
-                        <span class="px-3 py-1 rounded-full text-xs font-bold shadow-sm ${state.color}">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold shadow-sm ${state.color} text-white">
                             ${state.label}
                         </span>
                         <div class="text-[10px] text-gray-400 mt-1 ml-1 font-mono">${state.timeLabel}</div>
                     </td>
                     <td class="p-5 align-middle">
                         <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden shadow-inner">
-                            <div class="${state.barColor} h-full rounded-full transition-all duration-700 relative" style="width: ${state.progress}%">
-                                <div class="absolute right-0 top-0 bottom-0 w-2 bg-white/30 animate-pulse"></div>
-                            </div>
+                            <div class="${state.barColor} h-full rounded-full transition-all duration-700 relative" style="width: ${state.progress}%"></div>
                         </div>
                         <div class="flex justify-between text-[10px] text-gray-400 mt-1 font-mono">
-                           <span>Bill: ${item.time_bill||'-'}</span>
-                           <span>Conf: ${item.time_conf||'-'}</span>
-                           <span>Ship: ${item.time_ship||'-'}</span>
+                           <span>Bill: ${item.timeBill||'-'}</span>
+                           <span>Conf: ${item.timeConf||'-'}</span>
+                           <span>Ship: ${item.timeShip||'-'}</span>
                         </div>
                     </td>
-                    <td class="p-5 text-right font-black text-gray-800 text-lg">${item.amount}</td>
+                    <td class="p-5 text-right font-black text-gray-800 text-lg">${item.currentAmount}</td>
                 </tr>`;
             }).join('');
         }
 
-        // --- 🔧 UTILS ---
-        function formatInputDate(dateStr) {
-            if(!dateStr) return null;
-            const d = new Date(dateStr);
-            if(isNaN(d)) return null;
-            return d.toISOString().split('T')[0];
-        }
-
-        function toggleLoading(isLoading) {
-            const icons = document.querySelectorAll('.refresh-icon');
-            icons.forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
-            
-            if(isFirstLoad) {
-                const skeleton = document.getElementById('loading-skeleton-mobile');
-                const list = document.getElementById('m-list-container');
-                if(isLoading) {
-                    skeleton.classList.remove('hidden');
-                    list.classList.add('hidden');
-                } else {
-                    skeleton.classList.add('hidden');
-                    list.classList.remove('hidden');
-                }
-            }
-        }
-
-        function syncFilters(source) {
-            const target = source === 'mobile' ? 'desktop' : 'mobile';
-            document.getElementById(`search-${target}`).value = document.getElementById(`search-${source}`).value;
-            document.getElementById(`date-${target}`).value = document.getElementById(`date-${source}`).value;
-            applyFilters();
-        }
-
+        // --- 🎮 TABS & UI ---
         function switchMobileTab(tab) {
             document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
             event.currentTarget.classList.add('active');
@@ -522,9 +500,27 @@
             document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
             document.getElementById(`d-page-${tab}`).classList.remove('hidden');
             
-            // Update Title
             const titles = { 'tracking': 'รายการล่าสุด', 'dashboard': 'ภาพรวมระบบ' };
             document.getElementById('desktop-page-title').innerText = titles[tab];
+        }
+
+        function toggleLoading(isLoading) {
+            const icons = document.querySelectorAll('.refresh-icon');
+            icons.forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
+            
+            const mLoading = document.getElementById('m-loading');
+            const mList = document.getElementById('m-list-container');
+            
+            // Show skeleton only on initial load for mobile
+            if(globalData.length === 0) {
+                if(isLoading) {
+                    mLoading.classList.remove('hidden');
+                    mList.classList.add('hidden');
+                } else {
+                    mLoading.classList.add('hidden');
+                    mList.classList.remove('hidden');
+                }
+            }
         }
 
         function manualRefresh() {
