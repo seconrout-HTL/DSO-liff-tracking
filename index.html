@@ -35,7 +35,7 @@
         .timeline-line-progress { position: absolute; top: 18px; left: 12%; height: 3px; background-color: #007A33; z-index: 0; transition: width 0.8s ease; border-radius: 99px; }
         
         /* Animations */
-        .spin-slow { animation: spin 1.5s linear infinite; }
+        .spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
         /* Sidebar Link Active State */
@@ -48,9 +48,7 @@
 </head>
 <body>
 
-    <!-- =========================== -->
-    <!-- 📱 MOBILE VIEW -->
-    <!-- =========================== -->
+    <!-- MOBILE VIEW -->
     <div id="mobile-view" class="md:hidden flex flex-col min-h-screen pb-20">
         <header class="bg-ht-red text-white p-5 rounded-b-3xl shadow-lg sticky top-0 z-50">
             <div class="flex justify-between items-center mb-4">
@@ -65,10 +63,10 @@
             <div class="flex gap-2">
                 <div class="flex-1 bg-white rounded-xl overflow-hidden flex items-center px-3 shadow-sm">
                     <i class="fas fa-search text-gray-400 text-xs"></i>
-                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหา DO, สาขา..." class="w-full p-2 text-xs outline-none text-gray-700">
+                    <input type="text" id="search-mobile" onkeyup="syncFilters('mobile')" placeholder="ค้นหาสาขา..." class="w-full p-2 text-xs outline-none text-gray-700">
                 </div>
                 <div class="w-1/3 bg-white rounded-xl overflow-hidden shadow-sm">
-                    <input type="text" id="date-mobile" onkeyup="syncFilters('mobile')" placeholder="ดูทั้งหมด" class="w-full p-2 text-xs text-center outline-none bg-white text-gray-700">
+                    <input type="date" id="date-mobile" onchange="syncFilters('mobile')" class="w-full p-2 text-xs text-center outline-none bg-white text-gray-700">
                 </div>
             </div>
         </header>
@@ -80,7 +78,7 @@
             </div>
 
             <div id="m-page-tracking" class="mobile-page block space-y-4">
-                <h2 class="text-sm font-bold text-gray-600 px-1">งานล่าสุด (Recent order)</h2>
+                <h2 class="text-sm font-bold text-gray-600 px-1">งานล่าสุด (Recent List)</h2>
                 <div id="m-list-container"></div>
             </div>
 
@@ -96,8 +94,21 @@
                     </div>
                 </div>
                 <div class="bg-white rounded-xl shadow-sm p-4">
-                    <h3 class="font-bold text-sm mb-3 text-gray-800">อัปเดตล่าสุด</h3>
-                    <div id="m-latest-updates" class="space-y-3"></div>
+                    <h3 class="font-bold text-sm mb-3 text-gray-800">สถานะงาน</h3>
+                    <div class="space-y-3">
+                         <div class="flex justify-between items-center border-b pb-2 border-gray-50">
+                            <span class="text-xs text-gray-500"><i class="fas fa-circle text-[8px] text-gray-400 mr-2"></i>งานใหม่</span>
+                            <span class="font-bold text-gray-600" id="m-dash-new">-</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b pb-2 border-gray-50">
+                            <span class="text-xs text-gray-500"><i class="fas fa-circle text-[8px] text-blue-500 mr-2"></i>ยืนยันแล้ว</span>
+                            <span class="font-bold text-blue-500" id="m-dash-conf">-</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b pb-2 border-gray-50">
+                            <span class="text-xs text-gray-500"><i class="fas fa-circle text-[8px] text-orange-500 mr-2"></i>แก้ไขบิล</span>
+                            <span class="font-bold text-orange-500" id="m-dash-edit">-</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -112,9 +123,7 @@
         </nav>
     </div>
 
-    <!-- =========================== -->
-    <!-- 💻 DESKTOP VIEW -->
-    <!-- =========================== -->
+    <!-- DESKTOP VIEW -->
     <div id="desktop-view" class="hidden md:flex min-h-screen bg-gray-50">
         
         <aside class="w-64 bg-white shadow-xl z-10 flex flex-col fixed h-full">
@@ -124,7 +133,7 @@
             </div>
             <nav class="flex-1 mt-6">
                 <a onclick="switchDesktopTab('tracking')" id="d-nav-tracking" class="sidebar-link active flex items-center px-6 py-4 text-gray-600 cursor-pointer">
-                    <i class="fas fa-list-ul w-6"></i><span class="font-medium ml-3">งานล่าสุด (Recent order)</span>
+                    <i class="fas fa-list-ul w-6"></i><span class="font-medium ml-3">งานล่าสุด (List)</span>
                 </a>
                 <a onclick="switchDesktopTab('dashboard')" id="d-nav-dashboard" class="sidebar-link flex items-center px-6 py-4 text-gray-600 cursor-pointer">
                     <i class="fas fa-chart-line w-6"></i><span class="font-medium ml-3">แดชบอร์ด (Dashboard)</span>
@@ -135,13 +144,13 @@
 
         <main class="flex-1 ml-64 p-8">
             <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
-                <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">งานล่าสุด (Recent order)</h2>
+                <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">งานล่าสุด (Recent List)</h2>
                 <div class="flex gap-3">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหา DO, สาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
+                        <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหาสาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
                     </div>
-                    <input type="text" id="date-desktop" onkeyup="syncFilters('desktop')" placeholder="ดูทั้งหมด" class="border rounded-lg px-4 py-2 text-sm text-center text-gray-600 focus:outline-none focus:border-ht-red w-32">
+                    <input type="date" id="date-desktop" onchange="syncFilters('desktop')" class="border rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-ht-red text-center">
                     <button onclick="manualRefresh()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 transition"><i class="fas fa-sync-alt refresh-icon"></i></button>
                 </div>
             </div>
@@ -151,17 +160,15 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                             <tr>
-                                <th class="p-4 font-semibold w-[15%]">Creating Date</th>
-                                <th class="p-4 font-semibold w-[5%] text-center">สาขา</th>
+                                <th class="p-4 font-semibold w-[15%]">Timestamp</th>
+                                <th class="p-4 font-semibold w-[10%] text-center">สาขา</th>
                                 <th class="p-4 font-semibold w-[10%] text-center">Delivery Date</th>
-                                <th class="p-4 font-semibold w-[10%] text-center">สถานะล่าสุด</th>
-                                <th class="p-4 font-semibold w-[40%] text-center">ความคืบหน้า (Timeline)</th>
-                                <th class="p-4 text-right font-semibold w-[10%]">จำนวนบิล</th>
-                                <th class="p-4 text-right font-semibold w-[10%] text-ht-blue">ยอดจัดส่ง (Shipment)</th>
+                                <th class="p-4 font-semibold w-[10%] text-center">สถานะ</th>
+                                <th class="p-4 font-semibold w-[40%] text-center">Timeline</th>
+                                <th class="p-4 text-right font-semibold w-[15%]">จำนวนบิล</th>
                             </tr>
                         </thead>
                         <tbody id="d-table-body" class="text-sm divide-y divide-gray-100">
-                            <!-- Rows will be injected here -->
                         </tbody>
                     </table>
                 </div>
@@ -177,6 +184,10 @@
                         <h3 class="text-gray-400 text-xs font-bold uppercase">เสร็จสิ้น</h3>
                         <p class="text-3xl font-bold text-green-600 mt-2" id="d-dash-shipped">-</p>
                     </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">ยืนยันแล้ว</h3>
+                        <p class="text-3xl font-bold text-blue-500 mt-2" id="d-dash-conf">-</p>
+                    </div>
                 </div>
             </div>
         </main>
@@ -184,9 +195,9 @@
 
     <script>
         // ==========================================
-        // ⚙️ SETTINGS
+        // ⚙️ SETTINGS (Routing Order API)
         // ==========================================
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwhT9JmFVh9tb82g-N82jsmWN0rK-pcJKCRc3FFv4wwRjtPROcZu0WQtpDIWvHBSpyf/exec'; 
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz5WY5VRqL41gUZNgiTSoPxV1Yw7_TTkrfVfaGt-M8jwrds0Q-hi3-feioZBw0sCNQF/exec'; 
         
         let globalData = [];
         let isFirstLoad = true;
@@ -217,9 +228,8 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    // Normalize data: แปลงชื่อคอลัมน์ และ แปลงวันที่ให้เป็นมาตรฐาน
-                    globalData = normalizeData(json.data);
-                    
+                    // Map Data from Routing Order structure to UI structure
+                    globalData = json.data.map(mapRoutingOrderData);
                     applyFilters(); 
                 }
             } catch (error) {
@@ -230,95 +240,56 @@
             }
         }
 
-        // 🆕 ฟังก์ชันใหม่: แปลงข้อมูลดิบให้เป็นรูปแบบมาตรฐานและจัดการวันที่
-        function normalizeData(rawData) {
-            return rawData.map(item => {
-                // 1. ดึงค่าจาก Key ที่อาจจะเป็นชื่อคอลัมน์เดิม หรือชื่อใหม่
-                const rawTimestamp = item.Timestamp || item.timestamp;
-                const rawDelivery = item['Delivery Date'] || item.Delivery_Date || item.deliveryDate;
+        // 🔧 MAPPER: แปลงข้อมูลจาก API Routing Order ให้เข้ากับ UI ใหม่
+        function mapRoutingOrderData(item) {
+            // Helper parsing for date
+            const dObj = parseDateObject(item.timestamp);
+            let displayDate = item.timestamp;
+            let isoDate = '';
+
+            if (dObj) {
+                const day = String(dObj.getDate()).padStart(2, '0');
+                const month = String(dObj.getMonth() + 1).padStart(2, '0');
+                const year = dObj.getFullYear();
+                const hours = String(dObj.getHours()).padStart(2, '0');
+                const mins = String(dObj.getMinutes()).padStart(2, '0');
                 
-                // 2. ใช้ Smart Parser แปลงวันที่
-                const tsDateObj = parseSmartDate(rawTimestamp);
-                const delDateObj = parseSmartDate(rawDelivery);
+                displayDate = `${day}/${month}/${year} ${hours}:${mins}`;
+                isoDate = `${year}-${month}-${day}`; // YYYY-MM-DD for date input comparison
+            }
 
-                // 3. จัดรูปแบบวันที่เพื่อใช้แสดงผล (Display) และใช้กรอง (Filter)
-                let displayTs = '-', filterDate = '';
-                if (tsDateObj) {
-                    const d = String(tsDateObj.getDate()).padStart(2, '0');
-                    const m = String(tsDateObj.getMonth() + 1).padStart(2, '0');
-                    const y = tsDateObj.getFullYear();
-                    const h = String(tsDateObj.getHours()).padStart(2, '0');
-                    const min = String(tsDateObj.getMinutes()).padStart(2, '0');
-                    
-                    displayTs = `${d}/${m}/${y} ${h}:${min}`; // สำหรับแสดงบนหน้าเว็บ
-                    filterDate = `${d}/${m}/${y.toString().slice(-2)}`; // สำหรับ Filter (dd/mm/yy)
-                } else {
-                    displayTs = rawTimestamp || '-'; // ถ้าแปลงไม่ได้ ให้ใช้ค่าเดิม
-                }
-
-                let displayDelivery = '-';
-                if (delDateObj) {
-                    const d = String(delDateObj.getDate()).padStart(2, '0');
-                    const m = String(delDateObj.getMonth() + 1).padStart(2, '0');
-                    const y = delDateObj.getFullYear();
-                    // แสดงผลเป็น yyyy (2026) เพื่อความชัดเจน
-                    displayDelivery = `${d}/${m}/${y}`;
-                } else {
-                    displayDelivery = rawDelivery || '-';
-                }
-
-                return {
-                    // Standard Fields
-                    timestamp: displayTs,
-                    filterDate: filterDate, // เอาไว้ใช้กับ Search Date
-                    branch: item.Branch || item.branch,
-                    doNumber: item.DO_Num || item.doNumber,
-                    deliveryDate: displayDelivery,
-                    
-                    // Amounts
-                    amount: item.Amt_Bill || item.amount,
-                    shipmentAmount: item.Amt_Ship || item.shipmentAmount,
-
-                    // Timeline Data
-                    bill: { time: item.Time_Bill, by: item.Admin_Name },
-                    conf: { time: item.Time_Conf, by: item.Disp_Name },
-                    ship: { time: item.Time_Ship, by: item.Ship_Name },
-
-                    // Meta
-                    editCount: item['Edit Count'] || item.editCount || 0,
-                    note: item.Note || item.note
-                };
-            });
+            return {
+                timestamp: displayDate,
+                isoDate: isoDate, // Use for strict date filtering with input[type="date"]
+                branch: item.branch || '-',
+                deliveryDate: item.targetDate || '-', // Routing Order calls it targetDate
+                
+                // Timeline Data
+                bill: { time: item.timeBill, by: '-' },
+                conf: { time: item.timeConf, by: '-' },
+                ship: { time: item.timeShip, by: '-' },
+                
+                // Amounts
+                amount: item.currentAmount || '-',
+                
+                // Meta
+                editCount: parseInt(item.editCount || 0),
+                note: item.note
+            };
         }
-
-        // 🆕 ฟังก์ชัน Smart Date Parser รองรับรูปแบบ dd/mm/yy (04/02/26) และ dd/mm/yyyy
-        function parseSmartDate(val) {
+        
+        function parseDateObject(val) {
             if (!val) return null;
             if (val instanceof Date) return val;
-
             const str = val.toString().trim();
-            // Regex จับรูปแบบ d/m/y, d-m-y, yyyy-mm-dd พร้อมเวลา
-            // รองรับปี 2 หลัก (26) และ 4 หลัก (2026)
+            // Regex for d/m/y H:M
             const regex = /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})(?:[,\sT]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/;
             const match = str.match(regex);
-
             if (match) {
-                let day = parseInt(match[1]);
-                let month = parseInt(match[2]) - 1; // JS month 0-11
-                let yearStr = match[3];
-                let year = parseInt(yearStr);
-                
-                // ⚠️ แก้ปี 2 หลัก: ถ้าเจอ 26 -> 2026
-                if (yearStr.length === 2) year += 2000;
-                
-                let hour = match[4] ? parseInt(match[4]) : 0;
-                let min = match[5] ? parseInt(match[5]) : 0;
-                let sec = match[6] ? parseInt(match[6]) : 0;
-
-                return new Date(year, month, day, hour, min, sec);
+                let year = parseInt(match[3]);
+                if (match[3].length === 2) year += 2000;
+                return new Date(year, parseInt(match[2])-1, parseInt(match[1]), match[4]?parseInt(match[4]):0, match[5]?parseInt(match[5]):0);
             }
-            
-            // Fallback: ลองใช้ Date constructor
             const d = new Date(val);
             return isNaN(d.getTime()) ? null : d;
         }
@@ -333,30 +304,18 @@
         }
 
         // ==========================================
-        // 🛠 FORMATTERS & HELPERS
+        // 🛠 HELPERS
         // ==========================================
-        function parseTime(val) {
-            if (!val) return '-';
-            // ถ้าเป็น ISO String หรือมี T
-            if (String(val).includes('T')) {
-                const d = new Date(val);
-                if (!isNaN(d.getTime())) {
-                    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
-                }
-            }
-            // ถ้าเป็น Text ธรรมดา ตัดเอาแค่ 5 ตัวแรก (HH:mm)
-            return String(val).substring(0, 5);
-        }
-
         function calculateProgress(item) {
-            if (item.ship.time) return 4; // เสร็จสิ้น
-            if (item.conf.time) return 2; // ยืนยันแล้ว
-            return 1; // งานใหม่
+            if (item.ship.time) return 4; // Completed
+            if (item.conf.time) return 2; // Confirmed
+            if (item.bill.time) return 1; // New
+            return 0;
         }
 
         function getStatusBadge(progress, isEdit) {
             if (progress >= 4) return '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
-            if (isEdit) return '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">มีการแก้ไข</span>';
+            if (isEdit) return '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">แก้ไขบิล</span>';
             if (progress === 2) return '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
             return '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
         }
@@ -373,21 +332,19 @@
             
             container.innerHTML = data.map(item => {
                 const p = calculateProgress(item);
-                const hasEdit = (item.editCount > 0) || (item.note && item.note !== '');
+                const hasEdit = (item.editCount > 0);
 
                 let width = '0%';
-                if (p === 2) width = '33%';
-                else if (p === 3 || (p === 2 && hasEdit)) width = '66%'; 
-                else if (p >= 4) width = '100%';
-
-                const shipmentVal = item.shipmentAmount || '-';
+                if (p >= 4) width = '100%';
+                else if (p === 3 || (p === 2 && hasEdit)) width = '64%'; 
+                else if (p === 2) width = '38%';
 
                 return `
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 mb-3 transition active:scale-[0.99]">
                     <div class="flex justify-between mb-2">
                         <div>
                             <div class="font-bold text-gray-800 text-lg tracking-tight">${item.timestamp}</div>
-                            <div class="text-xs text-gray-400 mt-0.5">DO: ${item.doNumber} <span class="mx-1">•</span> <span class="font-bold text-gray-500">${item.branch}</span></div>
+                            <div class="text-xs text-gray-400 mt-0.5"><span class="font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">${item.branch}</span></div>
                         </div>
                         <div class="text-right">
                              <div class="text-xl font-bold text-ht-red">${item.amount}</div>
@@ -398,9 +355,6 @@
                     <div class="flex gap-2 mb-4">
                          <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 flex-1">
                             <i class="fas fa-truck text-gray-400 mr-1"></i>Deliver: <span class="font-medium ml-1 text-gray-700">${item.deliveryDate}</span>
-                        </div>
-                        <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 text-center min-w-[80px]">
-                            Shipment<br><span class="font-bold text-lg">${shipmentVal}</span>
                         </div>
                     </div>
                     
@@ -414,6 +368,7 @@
                             ${renderMobileNode('เสร็จสิ้น', item.ship, p>=4, 'bg-green-600')}
                         </div>
                     </div>
+                    ${item.note ? `<div class="mt-2 text-[10px] text-gray-400 bg-yellow-50 p-2 rounded border border-yellow-100"><i class="far fa-comment-dots mr-1"></i>${item.note}</div>` : ''}
                 </div>`;
             }).join('');
         }
@@ -426,8 +381,7 @@
             <div class="flex flex-col items-center w-1/4">
                 <div class="${circle} rounded-full mb-1"></div>
                 <span class="${text}">${label}</span>
-                <span class="text-gray-400 scale-90">${parseTime(detail?.time)}</span>
-                <span class="text-gray-400 scale-75 truncate w-full">${detail?.by || ''}</span>
+                <span class="text-gray-400 scale-90">${detail?.time || '-'}</span>
             </div>`;
         }
 
@@ -437,29 +391,27 @@
         function renderDesktopTable(data) {
             const tbody = document.getElementById('d-table-body');
             if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-gray-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-gray-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
                 return;
             }
 
             tbody.innerHTML = data.map(item => {
                 const p = calculateProgress(item);
-                const hasEdit = (item.editCount > 0) || (item.note && item.note !== '');
+                const hasEdit = (item.editCount > 0);
 
+                // Adjusted bar widths to hit the center of nodes correctly based on 12% offset
                 let barWidth = '0%';
-                if (p === 2) barWidth = '33%';
-                else if (p === 3) barWidth = '66%'; 
-                else if (p >= 4) barWidth = '100%';
-
-                const shipmentVal = item.shipmentAmount || '-';
+                if (p >= 4) barWidth = '76%'; // Completed (Full line)
+                else if (p === 3 || (p === 2 && hasEdit)) barWidth = '52%'; // Edit Bill (Approx 50% + offset)
+                else if (p === 2) barWidth = '26%'; // Confirmed (Approx 25% + offset)
 
                 return `
                 <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0 group">
                     <td class="p-4 align-top">
                         <div class="font-bold text-gray-800 text-lg">${item.timestamp}</div>
-                        <div class="text-xs text-gray-400">DO: ${item.doNumber}</div>
-                    </td>
+                         </td>
                     <td class="p-4 align-top text-center">
-                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm border border-gray-200 font-medium">${item.branch || '-'}</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm border border-gray-200 font-medium">${item.branch}</span>
                     </td>
                     <td class="p-4 align-top text-center text-gray-600 font-medium">
                         ${item.deliveryDate}
@@ -480,7 +432,6 @@
                         </div>
                     </td>
                     <td class="p-4 align-top text-right font-bold text-ht-red text-lg">${item.amount}</td>
-                    <td class="p-4 align-top text-right font-bold text-ht-blue text-lg">${shipmentVal}</td>
                 </tr>`;
             }).join('');
         }
@@ -497,8 +448,7 @@
                 </div>
                 <div class="text-[10px] text-center w-full">
                     <div class="${labelColor}">${label}</div>
-                    <div class="text-gray-400 font-mono scale-90">${parseTime(detail?.time)}</div>
-                    <div class="text-gray-500 scale-90 truncate max-w-[80px] mx-auto" title="${detail?.by||''}">${detail?.by || '-'}</div>
+                    <div class="text-gray-400 font-mono scale-90">${detail?.time || '-'}</div>
                 </div>
             </div>`;
         }
@@ -535,56 +485,56 @@
             const dateQuery = document.getElementById('date-mobile').value;
             
             const filtered = globalData.filter(item => {
-                const doStr = String(item.doNumber || '').toLowerCase(); 
                 const branchStr = String(item.branch || '').toLowerCase();
-                const matchesSearch = doStr.includes(searchQuery) || branchStr.includes(searchQuery);
+                const matchesSearch = branchStr.includes(searchQuery);
                 
-                // Filter วันที่โดยใช้ filterDate (dd/mm/yy) ที่ทำไว้ใน normalizeData
                 let matchesDate = true;
                 if(dateQuery) {
-                    matchesDate = item.filterDate === dateQuery;
+                    // Compare date input (YYYY-MM-DD) with item's isoDate (YYYY-MM-DD)
+                    matchesDate = item.isoDate === dateQuery;
                 }
                 
                 return matchesSearch && matchesDate;
             });
             
-            updateDashboards(filtered);
+            updateDashboard(filtered.length > 0 ? filtered : globalData);
             renderMobileList(filtered);
             renderDesktopTable(filtered);
         }
 
-        function updateDashboards(items) {
-            let total = items.length;
-            let shipped = items.filter(i => calculateProgress(i) === 4).length;
+        function updateDashboard(data) {
+            let stats = { total: data.length, new: 0, conf: 0, edit: 0, shipped: 0 };
             
-            document.getElementById('m-dash-total').innerText = total;
-            document.getElementById('m-dash-shipped').innerText = shipped;
-            document.getElementById('d-dash-total').innerText = total;
-            document.getElementById('d-dash-shipped').innerText = shipped;
+            data.forEach(item => {
+                const p = calculateProgress(item);
+                const hasEdit = item.editCount > 0;
+                
+                if (p >= 4) stats.shipped++;
+                else if (hasEdit) stats.edit++;
+                else if (p === 2) stats.conf++;
+                else stats.new++;
+            });
+
+            // Update DOM
+            const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
             
-            if(items.length > 0) {
-                const mList = document.getElementById('m-latest-updates');
-                mList.innerHTML = items.slice(0,5).map(i => {
-                    let color = calculateProgress(i) === 4 ? 'bg-green-500' : 'bg-gray-400';
-                    return `
-                    <div class="flex items-center gap-3 text-xs border-b border-gray-50 pb-2 last:border-0 last:pb-0">
-                        <div class="w-2 h-2 rounded-full ${color}"></div>
-                        <div class="flex-1 text-gray-700 font-medium">DO ${i.doNumber} <span class="text-gray-400 font-normal">(${i.branch})</span></div>
-                        <div class="text-gray-400 font-mono text-[10px]">${parseTime(i.bill?.time)}</div>
-                    </div>`;
-                }).join('');
-            }
+            setTxt('m-dash-total', stats.total);
+            setTxt('m-dash-shipped', stats.shipped);
+            setTxt('m-dash-new', stats.new);
+            setTxt('m-dash-conf', stats.conf);
+            setTxt('m-dash-edit', stats.edit);
+
+            setTxt('d-dash-total', stats.total);
+            setTxt('d-dash-shipped', stats.shipped);
+            setTxt('d-dash-conf', stats.conf);
         }
         
-        // ==========================================
-        // 🎮 TABS
-        // ==========================================
         function switchDesktopTab(tab) {
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
             document.getElementById(`d-nav-${tab}`).classList.add('active');
             document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
             document.getElementById(`d-page-${tab}`).classList.remove('hidden');
-            document.getElementById('desktop-page-title').innerText = tab === 'tracking' ? 'งานล่าสุด (Recent order)' : 'แดชบอร์ด (Dashboard)';
+            document.getElementById('desktop-page-title').innerText = tab === 'tracking' ? 'งานล่าสุด (Recent List)' : 'แดชบอร์ด (Dashboard)';
         }
         function switchMobileTab(tab) {
             document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
