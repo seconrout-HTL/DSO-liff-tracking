@@ -44,6 +44,21 @@
         
         /* Mobile Nav Active State */
         .mobile-nav-item.active { color: #E41E2B; font-weight: bold; }
+        
+        /* Queue Badge */
+        .queue-badge {
+            background: linear-gradient(135deg, #E41E2B 0%, #ff4b55 100%);
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(228, 30, 43, 0.2);
+        }
+
+        /* Sort Header Hover */
+        th.sortable:hover {
+            background-color: #f9fafb;
+            color: #E41E2B;
+        }
     </style>
 </head>
 <body>
@@ -78,7 +93,21 @@
             </div>
 
             <div id="m-page-tracking" class="mobile-page block space-y-4">
-                <h2 class="text-sm font-bold text-gray-600 px-1">งานล่าสุด (Recent List)</h2>
+                <div class="flex justify-between items-center px-1">
+                    <h2 class="text-sm font-bold text-gray-600">งานล่าสุด (Recent List)</h2>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-sort-amount-down text-gray-400 text-xs"></i>
+                        <select id="mobile-sort-select" onchange="handleSortMobile()" class="text-xs border-none bg-transparent text-gray-500 font-medium outline-none focus:ring-0">
+                            <option value="default">ค่าเริ่มต้น (Default)</option>
+                            <option value="timestamp_desc">เวลาล่าสุด (Newest)</option>
+                            <option value="timestamp_asc">เวลาเก่าสุด (Oldest)</option>
+                            <option value="queue_asc">ลำดับคิว (Queue)</option>
+                            <option value="branch_asc">สาขา (A-Z)</option>
+                            <option value="amount_desc">ยอดบิลมากสุด</option>
+                            <option value="status_desc">สถานะความคืบหน้า</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="m-list-container"></div>
             </div>
 
@@ -158,14 +187,32 @@
             <div id="d-page-tracking" class="desktop-page block">
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden min-h-[400px]">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase select-none">
                             <tr>
-                                <th class="p-4 font-semibold w-[15%]">Timestamp</th>
-                                <th class="p-4 font-semibold w-[10%] text-center">สาขา</th>
-                                <th class="p-4 font-semibold w-[10%] text-center">Delivery Date</th>
-                                <th class="p-4 font-semibold w-[10%] text-center">สถานะ</th>
-                                <th class="p-4 font-semibold w-[40%] text-center">Timeline</th>
-                                <th class="p-4 text-right font-semibold w-[15%]">จำนวนบิล</th>
+                                <th onclick="handleSort('queue')" class="p-4 font-semibold w-[5%] text-center cursor-pointer sortable group">
+                                    ลำดับ <i id="icon-queue" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
+                                </th>
+                                <th onclick="handleSort('timestamp')" class="p-4 font-semibold w-[15%] cursor-pointer sortable group">
+                                    Timestamp <i id="icon-timestamp" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
+                                </th>
+                                <th onclick="handleSort('branch')" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group">
+                                    สาขา <i id="icon-branch" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
+                                </th>
+                                <th onclick="handleSort('deliveryDate')" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group">
+                                    Delivery Date <i id="icon-deliveryDate" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
+                                </th>
+                                <th onclick="handleSort('status')" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group">
+                                    สถานะ <i id="icon-status" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
+                                </th>
+                                <th onclick="handleSort('status')" class="p-4 font-semibold w-[30%] text-center cursor-pointer sortable group">
+                                    Timeline
+                                </th>
+                                <th onclick="handleSort('amount')" class="p-4 text-right font-semibold w-[10%] cursor-pointer sortable group">
+                                    จำนวนบิล <i id="icon-amount" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
+                                </th>
+                                <th onclick="handleSort('shipment')" class="p-4 text-right font-semibold w-[10%] text-ht-blue cursor-pointer sortable group">
+                                    จำนวน shipment <i id="icon-shipment" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="d-table-body" class="text-sm divide-y divide-gray-100">
@@ -197,13 +244,15 @@
         // ==========================================
         // ⚙️ SETTINGS (Routing Order API)
         // ==========================================
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz5WY5VRqL41gUZNgiTSoPxV1Yw7_TTkrfVfaGt-M8jwrds0Q-hi3-feioZBw0sCNQF/exec'; 
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbye4O5UK9BStgguYheDYRLh5gD6aT7womHgFw_QjCJbnTafjneAGMKPJYb6eIsfM-AF/exec'; 
         
         let globalData = [];
         let isFirstLoad = true;
+        let sortState = { column: 'default', direction: 'asc' }; // default sort state
 
         window.onload = async function() {
             await initLiff();
+            setDefaultDate(); // ตั้งค่าวันที่เป็นวันนี้
             fetchData();
             setInterval(() => fetchData(true), 20000); 
         };
@@ -228,8 +277,8 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    // Map Data from Routing Order structure to UI structure
-                    globalData = json.data.map(mapRoutingOrderData);
+                    let mappedData = json.data.map(mapRoutingOrderData);
+                    globalData = calculateDailyQueues(mappedData);
                     applyFilters(); 
                 }
             } catch (error) {
@@ -240,12 +289,133 @@
             }
         }
 
-        // 🔧 MAPPER: แปลงข้อมูลจาก API Routing Order ให้เข้ากับ UI ใหม่
+        function setDefaultDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+            
+            const mDate = document.getElementById('date-mobile');
+            const dDate = document.getElementById('date-desktop');
+            
+            if(mDate) mDate.value = today;
+            if(dDate) dDate.value = today;
+        }
+
+        // ==========================================
+        // 🔃 SORTING LOGIC
+        // ==========================================
+        function handleSort(column) {
+            // Toggle direction if same column, otherwise default to desc for numbers/dates, asc for text
+            if (sortState.column === column) {
+                sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortState.column = column;
+                // Default direction based on type
+                if (['timestamp', 'amount', 'shipment', 'queue', 'status'].includes(column)) {
+                    sortState.direction = 'desc';
+                } else {
+                    sortState.direction = 'asc';
+                }
+            }
+            updateSortIcons();
+            applyFilters();
+        }
+
+        function handleSortMobile() {
+            const val = document.getElementById('mobile-sort-select').value;
+            if (val === 'default') {
+                sortState = { column: 'default', direction: 'asc' };
+            } else {
+                const [col, dir] = val.split('_');
+                sortState = { column: col, direction: dir };
+            }
+            applyFilters();
+        }
+
+        function updateSortIcons() {
+            // Reset all icons
+            document.querySelectorAll('th i').forEach(i => i.className = 'fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red');
+            
+            // Set active icon
+            if (sortState.column !== 'default') {
+                const icon = document.getElementById(`icon-${sortState.column}`);
+                if (icon) {
+                    icon.className = `fas fa-sort-${sortState.direction === 'asc' ? 'up' : 'down'} text-ht-red ml-1`;
+                }
+            }
+        }
+
+        function sortData(data, column, direction) {
+            const dir = direction === 'asc' ? 1 : -1;
+            
+            return data.sort((a, b) => {
+                let valA, valB;
+
+                if (column === 'default') {
+                    // Default logic: Group Priority then Latest Queue
+                    const groupA = getSortGroup(a);
+                    const groupB = getSortGroup(b);
+                    if (groupA !== groupB) return groupA - groupB;
+                    return b.rawTimestamp - a.rawTimestamp;
+                }
+
+                switch(column) {
+                    case 'queue': 
+                        valA = parseInt(a.queueNo.replace('#', '')) || 0;
+                        valB = parseInt(b.queueNo.replace('#', '')) || 0;
+                        break;
+                    case 'timestamp':
+                        valA = a.rawTimestamp;
+                        valB = b.rawTimestamp;
+                        break;
+                    case 'branch':
+                        valA = a.branch.toLowerCase();
+                        valB = b.branch.toLowerCase();
+                        break;
+                    case 'deliveryDate':
+                        valA = a.isoDate || '';
+                        valB = b.isoDate || '';
+                        break;
+                    case 'status':
+                        // Use progress value (0-4)
+                        valA = calculateProgress(a);
+                        valB = calculateProgress(b);
+                        break;
+                    case 'amount':
+                        valA = parseFloat(String(a.amount).replace(/,/g, '')) || 0;
+                        valB = parseFloat(String(b.amount).replace(/,/g, '')) || 0;
+                        break;
+                    case 'shipment':
+                        valA = parseFloat(String(a.shipmentAmount).replace(/,/g, '')) || 0;
+                        valB = parseFloat(String(b.shipmentAmount).replace(/,/g, '')) || 0;
+                        break;
+                    default: 
+                        return 0;
+                }
+
+                if (valA < valB) return -1 * dir;
+                if (valA > valB) return 1 * dir;
+                return 0;
+            });
+        }
+
+        function getSortGroup(item) {
+            const p = calculateProgress(item);
+            if (p >= 4) return 3; // Completed
+            if (p >= 2) return 2; // Confirmed/Edit
+            return 1; // New
+        }
+
+        // ==========================================
+        // 🛠 MAPPER & HELPERS
+        // ==========================================
         function mapRoutingOrderData(item) {
-            // Helper parsing for date
             const dObj = parseDateObject(item.timestamp);
             let displayDate = item.timestamp;
             let isoDate = '';
+            let rawTimestamp = 0;
 
             if (dObj) {
                 const day = String(dObj.getDate()).padStart(2, '0');
@@ -255,34 +425,41 @@
                 const mins = String(dObj.getMinutes()).padStart(2, '0');
                 
                 displayDate = `${day}/${month}/${year} ${hours}:${mins}`;
-                isoDate = `${year}-${month}-${day}`; // YYYY-MM-DD for date input comparison
+                isoDate = `${year}-${month}-${day}`; 
+                rawTimestamp = dObj.getTime();
             }
 
             return {
                 timestamp: displayDate,
-                isoDate: isoDate, // Use for strict date filtering with input[type="date"]
+                isoDate: isoDate, 
+                rawTimestamp: rawTimestamp, 
                 branch: item.branch || '-',
-                deliveryDate: item.targetDate || '-', // Routing Order calls it targetDate
-                
-                // Timeline Data
+                deliveryDate: item.targetDate || '-', 
                 bill: { time: item.timeBill, by: '-' },
                 conf: { time: item.timeConf, by: '-' },
                 ship: { time: item.timeShip, by: '-' },
-                
-                // Amounts
                 amount: item.currentAmount || '-',
-                
-                // Meta
+                shipmentAmount: item.Amt_Ship || item.shipmentAmount || '-', 
                 editCount: parseInt(item.editCount || 0),
                 note: item.note
             };
+        }
+        
+        function calculateDailyQueues(data) {
+            data.sort((a, b) => a.rawTimestamp - b.rawTimestamp);
+            const queueMap = {};
+            return data.map(item => {
+                if (!item.isoDate) return { ...item, queueNo: '-' };
+                if (!queueMap[item.isoDate]) queueMap[item.isoDate] = 1; else queueMap[item.isoDate]++;
+                const q = String(queueMap[item.isoDate]).padStart(2, '0');
+                return { ...item, queueNo: `#${q}` };
+            });
         }
         
         function parseDateObject(val) {
             if (!val) return null;
             if (val instanceof Date) return val;
             const str = val.toString().trim();
-            // Regex for d/m/y H:M
             const regex = /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})(?:[,\sT]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/;
             const match = str.match(regex);
             if (match) {
@@ -303,13 +480,10 @@
             }
         }
 
-        // ==========================================
-        // 🛠 HELPERS
-        // ==========================================
         function calculateProgress(item) {
-            if (item.ship.time) return 4; // Completed
-            if (item.conf.time) return 2; // Confirmed
-            if (item.bill.time) return 1; // New
+            if (item.ship.time) return 4; 
+            if (item.conf.time) return 2; 
+            if (item.bill.time) return 1; 
             return 0;
         }
 
@@ -318,6 +492,59 @@
             if (isEdit) return '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">แก้ไขบิล</span>';
             if (progress === 2) return '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
             return '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
+        }
+
+        // ==========================================
+        // 🔍 FILTER & DASHBOARD
+        // ==========================================
+        function syncFilters(source) {
+            const searchVal = document.getElementById(`search-${source}`).value;
+            const dateVal = document.getElementById(`date-${source}`).value;
+            const target = source === 'mobile' ? 'desktop' : 'mobile';
+            document.getElementById(`search-${target}`).value = searchVal;
+            document.getElementById(`date-${target}`).value = dateVal;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
+            const dateQuery = document.getElementById('date-mobile').value;
+            
+            let filtered = globalData.filter(item => {
+                const branchStr = String(item.branch || '').toLowerCase();
+                const matchesSearch = branchStr.includes(searchQuery);
+                let matchesDate = true;
+                if(dateQuery) matchesDate = item.isoDate === dateQuery;
+                return matchesSearch && matchesDate;
+            });
+            
+            // Apply Sort
+            filtered = sortData(filtered, sortState.column, sortState.direction);
+
+            updateDashboard(filtered.length > 0 ? filtered : globalData);
+            renderMobileList(filtered);
+            renderDesktopTable(filtered);
+        }
+
+        function updateDashboard(data) {
+            let stats = { total: data.length, new: 0, conf: 0, edit: 0, shipped: 0 };
+            data.forEach(item => {
+                const p = calculateProgress(item);
+                const hasEdit = item.editCount > 0;
+                if (p >= 4) stats.shipped++;
+                else if (hasEdit) stats.edit++;
+                else if (p === 2) stats.conf++;
+                else stats.new++;
+            });
+            const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+            setTxt('m-dash-total', stats.total);
+            setTxt('m-dash-shipped', stats.shipped);
+            setTxt('m-dash-new', stats.new);
+            setTxt('m-dash-conf', stats.conf);
+            setTxt('m-dash-edit', stats.edit);
+            setTxt('d-dash-total', stats.total);
+            setTxt('d-dash-shipped', stats.shipped);
+            setTxt('d-dash-conf', stats.conf);
         }
 
         // ==========================================
@@ -333,7 +560,6 @@
             container.innerHTML = data.map(item => {
                 const p = calculateProgress(item);
                 const hasEdit = (item.editCount > 0);
-
                 let width = '0%';
                 if (p >= 4) width = '100%';
                 else if (p === 3 || (p === 2 && hasEdit)) width = '64%'; 
@@ -343,21 +569,26 @@
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 mb-3 transition active:scale-[0.99]">
                     <div class="flex justify-between mb-2">
                         <div>
-                            <div class="font-bold text-gray-800 text-lg tracking-tight">${item.timestamp}</div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="queue-badge text-[10px] px-2 py-0.5">${item.queueNo}</span>
+                                <div class="font-bold text-gray-800 text-lg tracking-tight">${item.timestamp}</div>
+                            </div>
                             <div class="text-xs text-gray-400 mt-0.5"><span class="font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">${item.branch}</span></div>
                         </div>
                         <div class="text-right">
-                             <div class="text-xl font-bold text-ht-red">${item.amount}</div>
+                             <div class="text-xs text-gray-400">บิล</div>
+                             <div class="text-xl font-bold text-ht-red leading-none">${item.amount}</div>
                              ${getStatusBadge(p, hasEdit && p < 4)}
                         </div>
                     </div>
-                    
                     <div class="flex gap-2 mb-4">
                          <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 flex-1">
                             <i class="fas fa-truck text-gray-400 mr-1"></i>Deliver: <span class="font-medium ml-1 text-gray-700">${item.deliveryDate}</span>
                         </div>
+                        <div class="text-xs text-white bg-ht-blue p-2 rounded border border-blue-600 min-w-[80px] text-center">
+                            Shipment<br><span class="font-bold text-lg">${item.shipmentAmount}</span>
+                        </div>
                     </div>
-                    
                     <div class="relative px-1 pb-2 mt-2">
                         <div class="absolute left-0 right-0 top-[6px] h-[2px] bg-gray-100 z-0 rounded-full"></div>
                         <div class="absolute left-0 top-[6px] h-[2px] bg-ht-green z-0 transition-all duration-700 rounded-full" style="width: ${width}"></div>
@@ -391,22 +622,23 @@
         function renderDesktopTable(data) {
             const tbody = document.getElementById('d-table-body');
             if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-gray-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="p-10 text-center text-gray-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
                 return;
             }
 
             tbody.innerHTML = data.map(item => {
                 const p = calculateProgress(item);
                 const hasEdit = (item.editCount > 0);
-
-                // Adjusted bar widths to hit the center of nodes correctly based on 12% offset
                 let barWidth = '0%';
-                if (p >= 4) barWidth = '76%'; // Completed (Full line)
-                else if (p === 3 || (p === 2 && hasEdit)) barWidth = '52%'; // Edit Bill (Approx 50% + offset)
-                else if (p === 2) barWidth = '26%'; // Confirmed (Approx 25% + offset)
+                if (p >= 4) barWidth = '76%'; 
+                else if (p === 3 || (p === 2 && hasEdit)) barWidth = '52%'; 
+                else if (p === 2) barWidth = '26%'; 
 
                 return `
                 <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0 group">
+                    <td class="p-4 align-top text-center">
+                        <span class="queue-badge px-3 py-1 text-xs">${item.queueNo}</span>
+                    </td>
                     <td class="p-4 align-top">
                         <div class="font-bold text-gray-800 text-lg">${item.timestamp}</div>
                          </td>
@@ -432,6 +664,7 @@
                         </div>
                     </td>
                     <td class="p-4 align-top text-right font-bold text-ht-red text-lg">${item.amount}</td>
+                    <td class="p-4 align-top text-right font-bold text-ht-blue text-lg">${item.shipmentAmount}</td>
                 </tr>`;
             }).join('');
         }
@@ -466,67 +699,6 @@
                     ${note ? `<div class="text-gray-400 scale-90 cursor-help" title="${note}"><i class="far fa-comment-dots"></i></div>` : ''}
                 </div>
             </div>`;
-        }
-
-        // ==========================================
-        // 🔍 FILTER & DASHBOARD
-        // ==========================================
-        function syncFilters(source) {
-            const searchVal = document.getElementById(`search-${source}`).value;
-            const dateVal = document.getElementById(`date-${source}`).value;
-            const target = source === 'mobile' ? 'desktop' : 'mobile';
-            document.getElementById(`search-${target}`).value = searchVal;
-            document.getElementById(`date-${target}`).value = dateVal;
-            applyFilters();
-        }
-
-        function applyFilters() {
-            const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
-            const dateQuery = document.getElementById('date-mobile').value;
-            
-            const filtered = globalData.filter(item => {
-                const branchStr = String(item.branch || '').toLowerCase();
-                const matchesSearch = branchStr.includes(searchQuery);
-                
-                let matchesDate = true;
-                if(dateQuery) {
-                    // Compare date input (YYYY-MM-DD) with item's isoDate (YYYY-MM-DD)
-                    matchesDate = item.isoDate === dateQuery;
-                }
-                
-                return matchesSearch && matchesDate;
-            });
-            
-            updateDashboard(filtered.length > 0 ? filtered : globalData);
-            renderMobileList(filtered);
-            renderDesktopTable(filtered);
-        }
-
-        function updateDashboard(data) {
-            let stats = { total: data.length, new: 0, conf: 0, edit: 0, shipped: 0 };
-            
-            data.forEach(item => {
-                const p = calculateProgress(item);
-                const hasEdit = item.editCount > 0;
-                
-                if (p >= 4) stats.shipped++;
-                else if (hasEdit) stats.edit++;
-                else if (p === 2) stats.conf++;
-                else stats.new++;
-            });
-
-            // Update DOM
-            const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-            
-            setTxt('m-dash-total', stats.total);
-            setTxt('m-dash-shipped', stats.shipped);
-            setTxt('m-dash-new', stats.new);
-            setTxt('m-dash-conf', stats.conf);
-            setTxt('m-dash-edit', stats.edit);
-
-            setTxt('d-dash-total', stats.total);
-            setTxt('d-dash-shipped', stats.shipped);
-            setTxt('d-dash-conf', stats.conf);
         }
         
         function switchDesktopTab(tab) {
