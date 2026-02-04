@@ -59,6 +59,15 @@
             background-color: #f9fafb;
             color: #E41E2B;
         }
+
+        /* Filter Checkbox Custom */
+        .filter-checkbox:checked + div {
+            background-color: #E41E2B;
+            border-color: #E41E2B;
+        }
+        .filter-checkbox:checked + div svg {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -71,9 +80,14 @@
                     <h1 class="text-xl font-bold">Fleet Order</h1>
                     <p id="user-display-mobile" class="text-xs text-red-100 opacity-90">Guest User</p>
                 </div>
-                <button onclick="manualRefresh()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition hover:bg-white/30">
-                    <i class="fas fa-sync-alt text-xs refresh-icon"></i>
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="openMobileFilter()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition hover:bg-white/30">
+                        <i class="fas fa-filter text-xs"></i>
+                    </button>
+                    <button onclick="manualRefresh()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition hover:bg-white/30">
+                        <i class="fas fa-sync-alt text-xs refresh-icon"></i>
+                    </button>
+                </div>
             </div>
             <div class="flex gap-2">
                 <div class="flex-1 bg-white rounded-xl overflow-hidden flex items-center px-3 shadow-sm">
@@ -85,6 +99,32 @@
                 </div>
             </div>
         </header>
+
+        <!-- Mobile Filter Modal -->
+        <div id="mobile-filter-modal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl">
+                <h3 class="font-bold text-lg mb-4 text-gray-800">กรองสถานะงาน</h3>
+                <div class="space-y-3 mb-6">
+                    <label class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <input type="checkbox" class="w-5 h-5 text-ht-red rounded focus:ring-ht-red" checked onchange="toggleStatusFilter('new')" id="m-chk-new">
+                        <span class="text-sm text-gray-700">งานใหม่ (New)</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <input type="checkbox" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-600" checked onchange="toggleStatusFilter('conf')" id="m-chk-conf">
+                        <span class="text-sm text-gray-700">ยืนยันแล้ว (Confirmed)</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <input type="checkbox" class="w-5 h-5 text-orange-500 rounded focus:ring-orange-500" checked onchange="toggleStatusFilter('edit')" id="m-chk-edit">
+                        <span class="text-sm text-gray-700">แก้ไขบิล (Edit)</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
+                        <input type="checkbox" class="w-5 h-5 text-green-600 rounded focus:ring-green-600" checked onchange="toggleStatusFilter('ship')" id="m-chk-ship">
+                        <span class="text-sm text-gray-700">เสร็จสิ้น (Shipment)</span>
+                    </label>
+                </div>
+                <button onclick="closeMobileFilter()" class="w-full bg-ht-red text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200">ตกลง</button>
+            </div>
+        </div>
 
         <main class="p-4 space-y-4">
             <div id="loading-skeleton-mobile" class="space-y-4 hidden">
@@ -98,13 +138,11 @@
                     <div class="flex items-center gap-2">
                         <i class="fas fa-sort-amount-down text-gray-400 text-xs"></i>
                         <select id="mobile-sort-select" onchange="handleSortMobile()" class="text-xs border-none bg-transparent text-gray-500 font-medium outline-none focus:ring-0">
-                            <option value="default">ค่าเริ่มต้น (Default)</option>
-                            <option value="timestamp_desc">เวลาล่าสุด (Newest)</option>
+                            <option value="default">ค่าเริ่มต้น (Latest)</option>
                             <option value="timestamp_asc">เวลาเก่าสุด (Oldest)</option>
                             <option value="queue_asc">ลำดับคิว (Queue)</option>
                             <option value="branch_asc">สาขา (A-Z)</option>
                             <option value="amount_desc">ยอดบิลมากสุด</option>
-                            <option value="status_desc">สถานะความคืบหน้า</option>
                         </select>
                     </div>
                 </div>
@@ -174,7 +212,34 @@
         <main class="flex-1 ml-64 p-8">
             <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
                 <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">งานล่าสุด (Recent List)</h2>
-                <div class="flex gap-3">
+                <div class="flex gap-3 relative">
+                    <!-- Filter Button Desktop -->
+                    <div class="relative">
+                        <button onclick="toggleDesktopFilter()" class="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-600 hover:border-ht-red transition">
+                            <i class="fas fa-filter"></i> กรองสถานะ
+                        </button>
+                        <div id="desktop-filter-dropdown" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 hidden z-50 p-3">
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                    <input type="checkbox" class="rounded text-ht-red focus:ring-ht-red" checked onchange="toggleStatusFilter('new')" id="d-chk-new">
+                                    <span class="text-sm">งานใหม่</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                    <input type="checkbox" class="rounded text-blue-600 focus:ring-blue-600" checked onchange="toggleStatusFilter('conf')" id="d-chk-conf">
+                                    <span class="text-sm">ยืนยันแล้ว</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                    <input type="checkbox" class="rounded text-orange-500 focus:ring-orange-500" checked onchange="toggleStatusFilter('edit')" id="d-chk-edit">
+                                    <span class="text-sm">แก้ไขบิล</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                    <input type="checkbox" class="rounded text-green-600 focus:ring-green-600" checked onchange="toggleStatusFilter('ship')" id="d-chk-ship">
+                                    <span class="text-sm">เสร็จสิ้น</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                         <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหาสาขา..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
@@ -249,6 +314,7 @@
         let globalData = [];
         let isFirstLoad = true;
         let sortState = { column: 'default', direction: 'asc' }; // default sort state
+        let activeFilters = { new: true, conf: true, edit: true, ship: true };
 
         window.onload = async function() {
             await initLiff();
@@ -278,7 +344,7 @@
                 
                 if (json.status === 'success') {
                     let mappedData = json.data.map(mapRoutingOrderData);
-                    globalData = calculateDailyQueues(mappedData);
+                    globalData = calculateQueueLogic(mappedData);
                     applyFilters(); 
                 }
             } catch (error) {
@@ -307,12 +373,10 @@
         // 🔃 SORTING LOGIC
         // ==========================================
         function handleSort(column) {
-            // Toggle direction if same column, otherwise default to desc for numbers/dates, asc for text
             if (sortState.column === column) {
                 sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
             } else {
                 sortState.column = column;
-                // Default direction based on type
                 if (['timestamp', 'amount', 'shipment', 'queue', 'status'].includes(column)) {
                     sortState.direction = 'desc';
                 } else {
@@ -335,10 +399,7 @@
         }
 
         function updateSortIcons() {
-            // Reset all icons
             document.querySelectorAll('th i').forEach(i => i.className = 'fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red');
-            
-            // Set active icon
             if (sortState.column !== 'default') {
                 const icon = document.getElementById(`icon-${sortState.column}`);
                 if (icon) {
@@ -354,10 +415,7 @@
                 let valA, valB;
 
                 if (column === 'default') {
-                    // Default logic: Group Priority then Latest Queue
-                    const groupA = getSortGroup(a);
-                    const groupB = getSortGroup(b);
-                    if (groupA !== groupB) return groupA - groupB;
+                    // Default logic: Timestamp Descending (Newest First)
                     return b.rawTimestamp - a.rawTimestamp;
                 }
 
@@ -379,7 +437,6 @@
                         valB = b.isoDate || '';
                         break;
                     case 'status':
-                        // Use progress value (0-4)
                         valA = calculateProgress(a);
                         valB = calculateProgress(b);
                         break;
@@ -401,11 +458,76 @@
             });
         }
 
-        function getSortGroup(item) {
+        // ==========================================
+        // 🔍 FILTER Logic
+        // ==========================================
+        function openMobileFilter() { document.getElementById('mobile-filter-modal').classList.remove('hidden'); }
+        function closeMobileFilter() { document.getElementById('mobile-filter-modal').classList.add('hidden'); applyFilters(); }
+        function toggleDesktopFilter() { document.getElementById('desktop-filter-dropdown').classList.toggle('hidden'); }
+        
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('button') && !event.target.closest('#desktop-filter-dropdown')) {
+                document.getElementById('desktop-filter-dropdown')?.classList.add('hidden');
+            }
+        }
+
+        function toggleStatusFilter(key) {
+            // Update state
+            const isChecked = document.getElementById(`m-chk-${key}`).checked;
+            activeFilters[key] = isChecked;
+            // Sync desktop checkboxes
+            document.getElementById(`d-chk-${key}`).checked = isChecked;
+            // Sync mobile checkboxes
+            document.getElementById(`m-chk-${key}`).checked = isChecked;
+            
+            if (window.innerWidth >= 768) {
+                applyFilters(); // Apply immediately on desktop
+            }
+        }
+
+        function getStatusCode(item) {
             const p = calculateProgress(item);
-            if (p >= 4) return 3; // Completed
-            if (p >= 2) return 2; // Confirmed/Edit
-            return 1; // New
+            const hasEdit = item.editCount > 0;
+            if (p >= 4) return 'ship';
+            if (p === 3 || (p === 2 && hasEdit)) return 'edit';
+            if (p === 2) return 'conf';
+            return 'new';
+        }
+
+        function syncFilters(source) {
+            const searchVal = document.getElementById(`search-${source}`).value;
+            const dateVal = document.getElementById(`date-${source}`).value;
+            const target = source === 'mobile' ? 'desktop' : 'mobile';
+            document.getElementById(`search-${target}`).value = searchVal;
+            document.getElementById(`date-${target}`).value = dateVal;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
+            const dateQuery = document.getElementById('date-mobile').value;
+            
+            let filtered = globalData.filter(item => {
+                const branchStr = String(item.branch || '').toLowerCase();
+                const matchesSearch = branchStr.includes(searchQuery);
+                
+                let matchesDate = true;
+                if(dateQuery) matchesDate = item.isoDate === dateQuery;
+
+                // Status Filter
+                const status = getStatusCode(item);
+                const matchesStatus = activeFilters[status];
+
+                return matchesSearch && matchesDate && matchesStatus;
+            });
+            
+            // Apply Sort
+            filtered = sortData(filtered, sortState.column, sortState.direction);
+
+            updateDashboard(filtered.length > 0 ? filtered : globalData);
+            renderMobileList(filtered);
+            renderDesktopTable(filtered);
         }
 
         // ==========================================
@@ -445,15 +567,38 @@
             };
         }
         
-        function calculateDailyQueues(data) {
+        function calculateQueueLogic(data) {
+            // 1. Calculate Daily ID (Queue #) - based on creation time ASC
             data.sort((a, b) => a.rawTimestamp - b.rawTimestamp);
             const queueMap = {};
-            return data.map(item => {
-                if (!item.isoDate) return { ...item, queueNo: '-' };
-                if (!queueMap[item.isoDate]) queueMap[item.isoDate] = 1; else queueMap[item.isoDate]++;
+            const queueWaitMap = {}; // store last "new" index for each day
+
+            data.forEach(item => {
+                if (!item.isoDate) {
+                    item.queueNo = '-';
+                    item.queueWait = -1;
+                    return;
+                }
+                
+                // Assign Queue No (ID)
+                if (!queueMap[item.isoDate]) queueMap[item.isoDate] = 0;
+                queueMap[item.isoDate]++;
                 const q = String(queueMap[item.isoDate]).padStart(2, '0');
-                return { ...item, queueNo: `#${q}` };
+                item.queueNo = `#${q}`;
+
+                // Calculate "Waiting Queue" for NEW jobs only
+                // Logic: Count only active "New" status jobs for the day, ordered by time.
+                const status = getStatusCode(item);
+                if (status === 'new') {
+                    if (!queueWaitMap[item.isoDate]) queueWaitMap[item.isoDate] = 0;
+                    item.queueWait = queueWaitMap[item.isoDate]; // Current Index
+                    queueWaitMap[item.isoDate]++; // Increment for next new item
+                } else {
+                    item.queueWait = -1; // Not in wait queue
+                }
             });
+
+            return data;
         }
         
         function parseDateObject(val) {
@@ -480,50 +625,32 @@
             }
         }
 
+        // เพิ่มฟังก์ชันนี้กลับเข้ามาเพื่อให้ระบบทำงานได้ถูกต้อง
         function calculateProgress(item) {
-            if (item.ship.time) return 4; 
-            if (item.conf.time) return 2; 
-            if (item.bill.time) return 1; 
+            if (item.ship && item.ship.time) return 4; 
+            if (item.conf && item.conf.time) return 2; 
+            if (item.bill && item.bill.time) return 1; 
             return 0;
         }
 
-        function getStatusBadge(progress, isEdit) {
-            if (progress >= 4) return '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
-            if (isEdit) return '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">แก้ไขบิล</span>';
-            if (progress === 2) return '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
+        function getStatusBadge(item, isMobile = false) {
+            const p = calculateProgress(item);
+            const isEdit = item.editCount > 0;
+            
+            if (p >= 4) return '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">เสร็จสิ้น</span>';
+            if (isEdit && p < 4) return '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">แก้ไขบิล</span>';
+            if (p === 2) return '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
+            
+            // Special for New Job: Show "New Job" badge + "Remaining" count below
+            if (item.queueWait >= 0) {
+                const align = isMobile ? 'items-end' : 'items-center';
+                return `
+                <div class="flex flex-col ${align}">
+                    <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>
+                    <span class="text-[10px] text-red-500 font-bold mt-1 whitespace-nowrap">เหลืออีก ${item.queueWait} งาน</span>
+                </div>`;
+            }
             return '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
-        }
-
-        // ==========================================
-        // 🔍 FILTER & DASHBOARD
-        // ==========================================
-        function syncFilters(source) {
-            const searchVal = document.getElementById(`search-${source}`).value;
-            const dateVal = document.getElementById(`date-${source}`).value;
-            const target = source === 'mobile' ? 'desktop' : 'mobile';
-            document.getElementById(`search-${target}`).value = searchVal;
-            document.getElementById(`date-${target}`).value = dateVal;
-            applyFilters();
-        }
-
-        function applyFilters() {
-            const searchQuery = document.getElementById('search-mobile').value.toLowerCase();
-            const dateQuery = document.getElementById('date-mobile').value;
-            
-            let filtered = globalData.filter(item => {
-                const branchStr = String(item.branch || '').toLowerCase();
-                const matchesSearch = branchStr.includes(searchQuery);
-                let matchesDate = true;
-                if(dateQuery) matchesDate = item.isoDate === dateQuery;
-                return matchesSearch && matchesDate;
-            });
-            
-            // Apply Sort
-            filtered = sortData(filtered, sortState.column, sortState.direction);
-
-            updateDashboard(filtered.length > 0 ? filtered : globalData);
-            renderMobileList(filtered);
-            renderDesktopTable(filtered);
         }
 
         function updateDashboard(data) {
@@ -578,7 +705,7 @@
                         <div class="text-right">
                              <div class="text-xs text-gray-400">บิล</div>
                              <div class="text-xl font-bold text-ht-red leading-none">${item.amount}</div>
-                             ${getStatusBadge(p, hasEdit && p < 4)}
+                             ${getStatusBadge(item, true)}
                         </div>
                     </div>
                     <div class="flex gap-2 mb-4">
@@ -649,7 +776,7 @@
                         ${item.deliveryDate}
                     </td>
                     <td class="p-4 align-top text-center">
-                        ${getStatusBadge(p, hasEdit && p < 4)}
+                        ${getStatusBadge(item, false)}
                     </td>
                     <td class="p-4 align-middle">
                         <div class="timeline-container">
