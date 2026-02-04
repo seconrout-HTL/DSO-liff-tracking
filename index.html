@@ -261,6 +261,7 @@
                     const d = String(delDateObj.getDate()).padStart(2, '0');
                     const m = String(delDateObj.getMonth() + 1).padStart(2, '0');
                     const y = delDateObj.getFullYear();
+                    // แสดงผลเป็น yyyy (2026) เพื่อความชัดเจน
                     displayDelivery = `${d}/${m}/${y}`;
                 } else {
                     displayDelivery = rawDelivery || '-';
@@ -290,13 +291,14 @@
             });
         }
 
-        // 🆕 ฟังก์ชัน Smart Date Parser (รองรับรูปแบบ 30/1/2026, 13:40:31)
+        // 🆕 ฟังก์ชัน Smart Date Parser รองรับรูปแบบ dd/mm/yy (04/02/26) และ dd/mm/yyyy
         function parseSmartDate(val) {
             if (!val) return null;
             if (val instanceof Date) return val;
 
             const str = val.toString().trim();
             // Regex จับรูปแบบ d/m/y, d-m-y, yyyy-mm-dd พร้อมเวลา
+            // รองรับปี 2 หลัก (26) และ 4 หลัก (2026)
             const regex = /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})(?:[,\sT]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/;
             const match = str.match(regex);
 
@@ -306,7 +308,8 @@
                 let yearStr = match[3];
                 let year = parseInt(yearStr);
                 
-                if (yearStr.length === 2) year += 2000; // แก้ปี 2 หลัก
+                // ⚠️ แก้ปี 2 หลัก: ถ้าเจอ 26 -> 2026
+                if (yearStr.length === 2) year += 2000;
                 
                 let hour = match[4] ? parseInt(match[4]) : 0;
                 let min = match[5] ? parseInt(match[5]) : 0;
