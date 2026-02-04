@@ -106,19 +106,19 @@
                 <h3 class="font-bold text-lg mb-4 text-gray-800">กรองสถานะงาน</h3>
                 <div class="space-y-3 mb-6">
                     <label class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                        <input type="checkbox" class="w-5 h-5 text-ht-red rounded focus:ring-ht-red" checked onchange="toggleStatusFilter('new')" id="m-chk-new">
+                        <input type="checkbox" class="w-5 h-5 text-ht-red rounded focus:ring-ht-red" checked onchange="toggleStatusFilter('new', this.checked)" id="m-chk-new">
                         <span class="text-sm text-gray-700">งานใหม่ (New)</span>
                     </label>
                     <label class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                        <input type="checkbox" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-600" checked onchange="toggleStatusFilter('conf')" id="m-chk-conf">
+                        <input type="checkbox" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-600" checked onchange="toggleStatusFilter('conf', this.checked)" id="m-chk-conf">
                         <span class="text-sm text-gray-700">ยืนยันแล้ว (Confirmed)</span>
                     </label>
                     <label class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                        <input type="checkbox" class="w-5 h-5 text-orange-500 rounded focus:ring-orange-500" checked onchange="toggleStatusFilter('edit')" id="m-chk-edit">
+                        <input type="checkbox" class="w-5 h-5 text-orange-500 rounded focus:ring-orange-500" checked onchange="toggleStatusFilter('edit', this.checked)" id="m-chk-edit">
                         <span class="text-sm text-gray-700">แก้ไขบิล (Edit)</span>
                     </label>
                     <label class="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                        <input type="checkbox" class="w-5 h-5 text-green-600 rounded focus:ring-green-600" checked onchange="toggleStatusFilter('ship')" id="m-chk-ship">
+                        <input type="checkbox" class="w-5 h-5 text-green-600 rounded focus:ring-green-600" checked onchange="toggleStatusFilter('ship', this.checked)" id="m-chk-ship">
                         <span class="text-sm text-gray-700">เสร็จสิ้น (Shipment)</span>
                     </label>
                 </div>
@@ -138,7 +138,7 @@
                     <div class="flex items-center gap-2">
                         <i class="fas fa-sort-amount-down text-gray-400 text-xs"></i>
                         <select id="mobile-sort-select" onchange="handleSortMobile()" class="text-xs border-none bg-transparent text-gray-500 font-medium outline-none focus:ring-0">
-                            <option value="default">ค่าเริ่มต้น (Latest)</option>
+                            <option value="default">ค่าเริ่มต้น (คิวล่าสุด)</option>
                             <option value="timestamp_asc">เวลาเก่าสุด (Oldest)</option>
                             <option value="queue_asc">ลำดับคิว (Queue)</option>
                             <option value="branch_asc">สาขา (A-Z)</option>
@@ -210,31 +210,49 @@
         </aside>
 
         <main class="flex-1 ml-64 p-8">
-            <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
+            <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm relative z-20">
                 <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">งานล่าสุด (Recent List)</h2>
                 <div class="flex gap-3 relative">
-                    <!-- Filter Button Desktop -->
+                    
+                    <!-- NEW CUSTOM FILTER BUTTON -->
                     <div class="relative">
-                        <button onclick="toggleDesktopFilter()" class="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-600 hover:border-ht-red transition">
-                            <i class="fas fa-filter"></i> กรองสถานะ
+                        <button id="desktop-filter-btn" onclick="toggleDesktopFilter(event)" class="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-600 hover:border-ht-red transition h-full shadow-sm hover:shadow active:scale-95">
+                            <i class="fas fa-filter text-ht-red"></i> 
+                            <span>ตัวกรอง</span>
+                            <i class="fas fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
                         </button>
-                        <div id="desktop-filter-dropdown" class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 hidden z-50 p-3">
-                            <div class="space-y-2">
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                                    <input type="checkbox" class="rounded text-ht-red focus:ring-ht-red" checked onchange="toggleStatusFilter('new')" id="d-chk-new">
-                                    <span class="text-sm">งานใหม่</span>
+                        
+                        <!-- Dropdown Menu -->
+                        <div id="desktop-filter-dropdown" class="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 hidden z-50 p-4 transform origin-top-left transition-all duration-200">
+                            <div class="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider">สถานะที่แสดง</div>
+                            <div class="space-y-3">
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <div class="relative flex items-center">
+                                        <input type="checkbox" class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-gray-300 shadow-sm checked:border-ht-red checked:bg-ht-red transition-all" checked onchange="toggleStatusFilter('new', this.checked)" id="d-chk-new">
+                                        <i class="fas fa-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] text-white opacity-0 peer-checked:opacity-100"></i>
+                                    </div>
+                                    <span class="text-sm text-gray-600 group-hover:text-ht-red transition-colors">งานใหม่ (New)</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                                    <input type="checkbox" class="rounded text-blue-600 focus:ring-blue-600" checked onchange="toggleStatusFilter('conf')" id="d-chk-conf">
-                                    <span class="text-sm">ยืนยันแล้ว</span>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <div class="relative flex items-center">
+                                        <input type="checkbox" class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-gray-300 shadow-sm checked:border-blue-600 checked:bg-blue-600 transition-all" checked onchange="toggleStatusFilter('conf', this.checked)" id="d-chk-conf">
+                                        <i class="fas fa-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] text-white opacity-0 peer-checked:opacity-100"></i>
+                                    </div>
+                                    <span class="text-sm text-gray-600 group-hover:text-blue-600 transition-colors">ยืนยันแล้ว (Confirmed)</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                                    <input type="checkbox" class="rounded text-orange-500 focus:ring-orange-500" checked onchange="toggleStatusFilter('edit')" id="d-chk-edit">
-                                    <span class="text-sm">แก้ไขบิล</span>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <div class="relative flex items-center">
+                                        <input type="checkbox" class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-gray-300 shadow-sm checked:border-orange-500 checked:bg-orange-500 transition-all" checked onchange="toggleStatusFilter('edit', this.checked)" id="d-chk-edit">
+                                        <i class="fas fa-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] text-white opacity-0 peer-checked:opacity-100"></i>
+                                    </div>
+                                    <span class="text-sm text-gray-600 group-hover:text-orange-500 transition-colors">แก้ไขบิล (Edit)</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                                    <input type="checkbox" class="rounded text-green-600 focus:ring-green-600" checked onchange="toggleStatusFilter('ship')" id="d-chk-ship">
-                                    <span class="text-sm">เสร็จสิ้น</span>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <div class="relative flex items-center">
+                                        <input type="checkbox" class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-gray-300 shadow-sm checked:border-green-600 checked:bg-green-600 transition-all" checked onchange="toggleStatusFilter('ship', this.checked)" id="d-chk-ship">
+                                        <i class="fas fa-check absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] text-white opacity-0 peer-checked:opacity-100"></i>
+                                    </div>
+                                    <span class="text-sm text-gray-600 group-hover:text-green-600 transition-colors">เสร็จสิ้น (Shipment)</span>
                                 </label>
                             </div>
                         </div>
@@ -250,7 +268,8 @@
             </div>
 
             <div id="d-page-tracking" class="desktop-page block">
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden min-h-[400px]">
+                <!-- ตารางข้อมูล -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden min-h-[400px] relative z-0">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 text-gray-500 text-xs uppercase select-none">
                             <tr>
@@ -415,7 +434,7 @@
                 let valA, valB;
 
                 if (column === 'default') {
-                    // Default logic: Timestamp Descending (Newest First)
+                    // Default logic: เรียงคิวท้ายสุดขึ้นก่อน (Timestamp Descending)
                     return b.rawTimestamp - a.rawTimestamp;
                 }
 
@@ -463,26 +482,36 @@
         // ==========================================
         function openMobileFilter() { document.getElementById('mobile-filter-modal').classList.remove('hidden'); }
         function closeMobileFilter() { document.getElementById('mobile-filter-modal').classList.add('hidden'); applyFilters(); }
-        function toggleDesktopFilter() { document.getElementById('desktop-filter-dropdown').classList.toggle('hidden'); }
         
-        // Close dropdown when clicking outside
+        function toggleDesktopFilter(event) { 
+            event.stopPropagation(); // หยุดการส่ง event ต่อ (ป้องกัน window.onclick ทำงานทันที)
+            const dropdown = document.getElementById('desktop-filter-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+        
+        // ปิด Dropdown เมื่อคลิกพื้นที่อื่น
         window.onclick = function(event) {
-            if (!event.target.matches('button') && !event.target.closest('#desktop-filter-dropdown')) {
-                document.getElementById('desktop-filter-dropdown')?.classList.add('hidden');
+            const dropdown = document.getElementById('desktop-filter-dropdown');
+            const button = document.getElementById('desktop-filter-btn');
+            
+            // ถ้าคลิกนอกปุ่ม และ นอก dropdown ให้ปิด
+            if (button && dropdown && !button.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.add('hidden');
             }
         }
 
-        function toggleStatusFilter(key) {
+        function toggleStatusFilter(key, isChecked) {
             // Update state
-            const isChecked = document.getElementById(`m-chk-${key}`).checked;
             activeFilters[key] = isChecked;
-            // Sync desktop checkboxes
-            document.getElementById(`d-chk-${key}`).checked = isChecked;
-            // Sync mobile checkboxes
-            document.getElementById(`m-chk-${key}`).checked = isChecked;
+            
+            // Sync Checkboxes (Desktop <-> Mobile)
+            const dChk = document.getElementById(`d-chk-${key}`);
+            const mChk = document.getElementById(`m-chk-${key}`);
+            if(dChk) dChk.checked = isChecked;
+            if(mChk) mChk.checked = isChecked;
             
             if (window.innerWidth >= 768) {
-                applyFilters(); // Apply immediately on desktop
+                applyFilters(); // Desktop: Apply immediately
             }
         }
 
@@ -515,7 +544,7 @@
                 let matchesDate = true;
                 if(dateQuery) matchesDate = item.isoDate === dateQuery;
 
-                // Status Filter
+                // Status Filter Logic (ใช้ activeFilters ทั้ง Mobile/Desktop แล้ว)
                 const status = getStatusCode(item);
                 const matchesStatus = activeFilters[status];
 
