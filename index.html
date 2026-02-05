@@ -7,6 +7,7 @@
     
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     
@@ -20,6 +21,7 @@
                         'ht-orange': '#F59E0B',
                         'ht-blue': '#0056b3',
                         'ht-gray': '#F4F4F4',
+                        'excel-green': '#1D6F42',
                     }
                 }
             }
@@ -60,14 +62,12 @@
             color: #E41E2B;
         }
 
-        /* Filter Checkbox Custom */
-        .filter-checkbox:checked + div {
-            background-color: #E41E2B;
-            border-color: #E41E2B;
-        }
-        .filter-checkbox:checked + div svg {
-            display: block;
-        }
+        /* Modal Animation */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 0.2s, transform 0.2s; }
+        
+        /* Table Sticky Header */
+        .sticky-header th { position: sticky; top: 0; background-color: #f9fafb; z-index: 10; }
     </style>
 </head>
 <body>
@@ -81,6 +81,9 @@
                     <p id="user-display-mobile" class="text-xs text-red-100 opacity-90">Guest User</p>
                 </div>
                 <div class="flex gap-2">
+                    <button onclick="openExportModal()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition hover:bg-white/30">
+                        <i class="fas fa-file-excel text-xs"></i>
+                    </button>
                     <button onclick="openMobileFilter()" class="bg-white/20 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition hover:bg-white/30">
                         <i class="fas fa-filter text-xs"></i>
                     </button>
@@ -150,31 +153,60 @@
             </div>
 
             <div id="m-page-dashboard" class="mobile-page hidden space-y-4">
+                <!-- Dashboard Cards -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-red">
                         <p class="text-[10px] text-gray-400">งานทั้งหมด</p>
                         <h2 class="text-2xl font-bold text-gray-800" id="m-dash-total">-</h2>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-orange-500">
+                        <p class="text-[10px] text-gray-400">งานใหม่</p>
+                        <h2 class="text-2xl font-bold text-orange-500" id="m-dash-new">-</h2>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-blue-500">
+                        <p class="text-[10px] text-gray-400">ยืนยันแล้ว</p>
+                        <h2 class="text-2xl font-bold text-blue-500" id="m-dash-conf">-</h2>
                     </div>
                     <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 border-ht-green">
                         <p class="text-[10px] text-gray-400">เสร็จสิ้น</p>
                         <h2 class="text-2xl font-bold text-ht-green" id="m-dash-shipped">-</h2>
                     </div>
                 </div>
+
+                <!-- Frequency Chart -->
+                <div class="bg-white rounded-xl shadow-sm p-4 overflow-hidden">
+                    <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-blue-500 pl-2">ความถี่การแจ้งงาน (กราฟเส้น)</h3>
+                    <div class="h-64">
+                        <canvas id="m-freq-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Frequency Table (Optional / Detailed) -->
+                <div class="bg-white rounded-xl shadow-sm p-4 overflow-hidden mt-2">
+                    <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-gray-400 pl-2">ตารางความถี่</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-center border-collapse">
+                            <thead class="bg-gray-100 text-gray-600">
+                                <tr>
+                                    <th class="p-2 text-left">วันที่</th>
+                                    <th class="p-2 text-[10px]">&lt;16:00</th>
+                                    <th class="p-2 text-[10px]">16-17</th>
+                                    <th class="p-2 text-[10px]">17-17:30</th>
+                                    <th class="p-2 text-[10px]">17:30-18</th>
+                                    <th class="p-2 text-[10px]">18-18:30</th>
+                                    <th class="p-2 text-[10px]">&gt;18:31</th>
+                                </tr>
+                            </thead>
+                            <tbody id="m-freq-table-body" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Branch Status Table -->
                 <div class="bg-white rounded-xl shadow-sm p-4">
-                    <h3 class="font-bold text-sm mb-3 text-gray-800">สถานะงาน</h3>
-                    <div class="space-y-3">
-                         <div class="flex justify-between items-center border-b pb-2 border-gray-50">
-                            <span class="text-xs text-gray-500"><i class="fas fa-circle text-[8px] text-gray-400 mr-2"></i>งานใหม่</span>
-                            <span class="font-bold text-gray-600" id="m-dash-new">-</span>
-                        </div>
-                        <div class="flex justify-between items-center border-b pb-2 border-gray-50">
-                            <span class="text-xs text-gray-500"><i class="fas fa-circle text-[8px] text-blue-500 mr-2"></i>ยืนยันแล้ว</span>
-                            <span class="font-bold text-blue-500" id="m-dash-conf">-</span>
-                        </div>
-                        <div class="flex justify-between items-center border-b pb-2 border-gray-50">
-                            <span class="text-xs text-gray-500"><i class="fas fa-circle text-[8px] text-orange-500 mr-2"></i>แก้ไขบิล</span>
-                            <span class="font-bold text-orange-500" id="m-dash-edit">-</span>
-                        </div>
+                    <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-ht-red pl-2">สถานะรายสาขา (ประจำวัน)</h3>
+                    <div id="m-branch-status-container" class="space-y-4">
+                        <!-- Content rendered by JS -->
                     </div>
                 </div>
             </div>
@@ -214,7 +246,13 @@
                 <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">งานล่าสุด (Recent List)</h2>
                 <div class="flex gap-3 relative">
                     
-                    <!-- NEW CUSTOM FILTER BUTTON -->
+                    <!-- Export Button -->
+                    <button onclick="openExportModal()" class="flex items-center gap-2 bg-excel-green text-white px-4 py-2 rounded-lg text-sm hover:bg-green-800 transition shadow-sm hover:shadow active:scale-95">
+                        <i class="fas fa-file-excel"></i> 
+                        <span>Export Excel</span>
+                    </button>
+
+                    <!-- CUSTOM FILTER BUTTON -->
                     <div class="relative">
                         <button id="desktop-filter-btn" onclick="toggleDesktopFilter(event)" class="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-600 hover:border-ht-red transition h-full shadow-sm hover:shadow active:scale-95">
                             <i class="fas fa-filter text-ht-red"></i> 
@@ -268,7 +306,7 @@
             </div>
 
             <div id="d-page-tracking" class="desktop-page block">
-                <!-- ตารางข้อมูล -->
+                <!-- ตารางข้อมูลหลัก -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden min-h-[400px] relative z-0">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 text-gray-500 text-xs uppercase select-none">
@@ -311,33 +349,114 @@
                         <h3 class="text-gray-400 text-xs font-bold uppercase">งานทั้งหมด</h3>
                         <p class="text-3xl font-bold text-gray-800 mt-2" id="d-dash-total">-</p>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-ht-green">
-                        <h3 class="text-gray-400 text-xs font-bold uppercase">เสร็จสิ้น</h3>
-                        <p class="text-3xl font-bold text-green-600 mt-2" id="d-dash-shipped">-</p>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">งานใหม่</h3>
+                        <p class="text-3xl font-bold text-orange-500 mt-2" id="d-dash-new">-</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
                         <h3 class="text-gray-400 text-xs font-bold uppercase">ยืนยันแล้ว</h3>
                         <p class="text-3xl font-bold text-blue-500 mt-2" id="d-dash-conf">-</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-ht-green">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase">เสร็จสิ้น</h3>
+                        <p class="text-3xl font-bold text-green-600 mt-2" id="d-dash-shipped">-</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Frequency Chart -->
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-blue-500 pl-3">ความถี่การแจ้งงาน (กราฟเส้น)</h3>
+                        <div class="h-80">
+                            <canvas id="d-freq-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Branch Status Table -->
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-ht-red pl-3">สถานะรายสาขา (Branch Status)</h3>
+                        <div id="d-branch-status-container" class="space-y-2 h-[300px] overflow-y-auto pr-2">
+                            <!-- JS Content -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Detail Table (สำหรับ Dashboard) -->
+                <div class="bg-white rounded-xl shadow-sm p-6 mt-6 overflow-hidden">
+                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-gray-400 pl-3">รายงานรายละเอียด (Detail Report)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left border-collapse">
+                            <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
+                                <tr>
+                                    <th class="p-3">สาขา</th>
+                                    <th class="p-3">วันที่แจ้ง</th>
+                                    <th class="p-3">วันที่ส่ง</th>
+                                    <th class="p-3 text-center">เวลาแจ้ง</th>
+                                    <th class="p-3 text-center">เวลายืนยัน</th>
+                                    <th class="p-3 text-center">เวลาส่ง</th>
+                                    <th class="p-3 text-right">จำนวน Shipment</th>
+                                    <th class="p-3 text-center">ดำเนินการ (นาที)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="d-detail-table-body" class="divide-y divide-gray-100 text-gray-700">
+                                <!-- JS จะใส่ข้อมูลที่นี่ -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Export Date Range Modal -->
+    <div id="export-modal" class="fixed inset-0 bg-black/60 z-[70] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all scale-95 opacity-0" id="export-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-file-excel text-excel-green text-2xl"></i> ส่งออกข้อมูล (Export)
+                </h3>
+                <button onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มต้น (Start Date)</label>
+                    <input type="date" id="export-start" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-excel-green focus:border-excel-green outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">วันที่สิ้นสุด (End Date)</label>
+                    <input type="date" id="export-end" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-excel-green focus:border-excel-green outline-none transition">
+                </div>
+            </div>
+
+            <div class="mt-8 flex gap-3">
+                <button onclick="closeExportModal()" class="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition">ยกเลิก</button>
+                <button onclick="confirmExport()" class="flex-1 bg-excel-green text-white py-2.5 rounded-lg font-bold hover:bg-green-800 transition shadow-lg shadow-green-100 flex justify-center items-center gap-2">
+                    <i class="fas fa-download"></i> ดาวน์โหลด
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==========================================
-        // ⚙️ SETTINGS (Routing Order API)
+        // ⚙️ SETTINGS
         // ==========================================
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbye4O5UK9BStgguYheDYRLh5gD6aT7womHgFw_QjCJbnTafjneAGMKPJYb6eIsfM-AF/exec'; 
         
         let globalData = [];
+        let uniqueBranches = new Set();
         let isFirstLoad = true;
-        let sortState = { column: 'default', direction: 'asc' }; // default sort state
+        let sortState = { column: 'default', direction: 'asc' };
         let activeFilters = { new: true, conf: true, edit: true, ship: true };
+        let freqChartInstance = null;
+        let mFreqChartInstance = null;
 
         window.onload = async function() {
             await initLiff();
-            setDefaultDate(); // ตั้งค่าวันที่เป็นวันนี้
+            setDefaultDate();
             fetchData();
             setInterval(() => fetchData(true), 20000); 
         };
@@ -353,7 +472,7 @@
         }
 
         // ==========================================
-        // 🔄 DATA FETCHING & LOGIC
+        // 🔄 DATA FETCHING
         // ==========================================
         async function fetchData(isSilent = false) {
             if (!isSilent) toggleLoading(true);
@@ -364,6 +483,10 @@
                 if (json.status === 'success') {
                     let mappedData = json.data.map(mapRoutingOrderData);
                     globalData = calculateQueueLogic(mappedData);
+                    
+                    // Collect all unique branches seen in history
+                    mappedData.forEach(item => { if(item.branch && item.branch !== '-') uniqueBranches.add(item.branch); });
+                    
                     applyFilters(); 
                 }
             } catch (error) {
@@ -374,6 +497,219 @@
             }
         }
 
+        // ==========================================
+        // 📊 DASHBOARD & LOGIC
+        // ==========================================
+        function updateDashboard(data) {
+            let stats = { total: data.length, new: 0, conf: 0, edit: 0, shipped: 0 };
+            data.forEach(item => {
+                const p = calculateProgress(item);
+                const hasEdit = item.editCount > 0;
+                if (p >= 4) {
+                    stats.shipped++;
+                } else if (p === 2) {
+                    // Confirmed status (regardless of whether it was edited or not)
+                    stats.conf++;
+                    if (hasEdit) stats.edit++; // Can still track edits if needed
+                } else {
+                    stats.new++;
+                }
+            });
+            const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+            
+            // Mobile Cards
+            setTxt('m-dash-total', stats.total);
+            setTxt('m-dash-new', stats.new);
+            setTxt('m-dash-conf', stats.conf);
+            setTxt('m-dash-shipped', stats.shipped);
+
+            // Desktop Cards
+            setTxt('d-dash-total', stats.total);
+            setTxt('d-dash-new', stats.new);
+            setTxt('d-dash-conf', stats.conf);
+            setTxt('d-dash-shipped', stats.shipped);
+        }
+
+        function renderDashboardTables(filteredData) {
+            // แก้ไข: ส่ง filteredData ไปยังกราฟแทน globalData เพื่อให้กราฟแสดงตามวันที่เลือก
+            renderFrequencyChart(filteredData); 
+            
+            renderFrequencyTable(globalData); // ตารางความถี่ให้แสดงประวัติรวม (Global) เพื่อเปรียบเทียบ
+            renderBranchStatusTable(filteredData); // ตารางสถานะสาขาแสดงตามวันที่เลือก
+            renderDetailTable(filteredData); // ตารางรายละเอียดแสดงตามวันที่เลือก
+        }
+
+        function renderFrequencyTable(allData) {
+            // Group by Date & Time Slot
+            const freqMap = {};
+            allData.forEach(item => {
+                if(!item.isoDate) return;
+                if(!freqMap[item.isoDate]) freqMap[item.isoDate] = { d: item.timestamp.split(' ')[0], s1:0, s2:0, s3:0, s4:0, s5:0, s6:0 };
+                
+                const timeParts = item.timestamp.split(' ')[1].split(':');
+                const h = parseInt(timeParts[0]);
+                const m = parseInt(timeParts[1]);
+                const minutes = h * 60 + m;
+                
+                // Slots: <16:00, 16:01-17:00, 17:01-17:30, 17:31-18:00, 18:01-18:30, >18:31
+                if (minutes <= 960) freqMap[item.isoDate].s1++;
+                else if (minutes <= 1020) freqMap[item.isoDate].s2++;
+                else if (minutes <= 1050) freqMap[item.isoDate].s3++;
+                else if (minutes <= 1080) freqMap[item.isoDate].s4++;
+                else if (minutes <= 1110) freqMap[item.isoDate].s5++;
+                else freqMap[item.isoDate].s6++;
+            });
+
+            // Convert to array and sort by date desc
+            const freqArr = Object.values(freqMap).sort((a,b) => b.d.localeCompare(a.d)).slice(0, 10); // Show last 10 days
+
+            const createRow = (row) => `
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="p-2 text-left font-medium text-gray-700">${row.d}</td>
+                    <td class="p-2 text-gray-500">${row.s1 || '-'}</td>
+                    <td class="p-2 text-gray-500">${row.s2 || '-'}</td>
+                    <td class="p-2 text-gray-500">${row.s3 || '-'}</td>
+                    <td class="p-2 text-gray-500">${row.s4 || '-'}</td>
+                    <td class="p-2 text-gray-500">${row.s5 || '-'}</td>
+                    <td class="p-2 text-gray-500">${row.s6 || '-'}</td>
+                </tr>
+            `;
+
+            const rows = freqArr.map(createRow).join('');
+            
+            const mBody = document.getElementById('m-freq-table-body');
+            const dBody = document.getElementById('d-freq-table-body');
+            if(mBody) mBody.innerHTML = rows || '<tr><td colspan="7" class="p-4 text-center text-gray-400">ไม่มีข้อมูล</td></tr>';
+            if(dBody) dBody.innerHTML = rows || '<tr><td colspan="7" class="p-4 text-center text-gray-400">ไม่มีข้อมูล</td></tr>';
+        }
+
+        function renderFrequencyChart(allData) {
+            // Prepare Data
+            const freqMap = {};
+            allData.forEach(item => {
+                if(!item.isoDate) return;
+                if(!freqMap[item.isoDate]) freqMap[item.isoDate] = { d: item.timestamp.split(' ')[0], s1:0, s2:0, s3:0, s4:0, s5:0, s6:0 };
+                
+                const timeParts = item.timestamp.split(' ')[1].split(':');
+                const h = parseInt(timeParts[0]);
+                const m = parseInt(timeParts[1]);
+                const minutes = h * 60 + m;
+                
+                if (minutes <= 960) freqMap[item.isoDate].s1++;
+                else if (minutes <= 1020) freqMap[item.isoDate].s2++;
+                else if (minutes <= 1050) freqMap[item.isoDate].s3++;
+                else if (minutes <= 1080) freqMap[item.isoDate].s4++;
+                else if (minutes <= 1110) freqMap[item.isoDate].s5++;
+                else freqMap[item.isoDate].s6++;
+            });
+
+            // Last 7 days sorted ascending for chart
+            const chartData = Object.values(freqMap).sort((a,b) => a.d.localeCompare(b.d)).slice(-7);
+            const labels = chartData.map(item => item.d);
+            
+            const dataS1 = chartData.map(item => item.s1);
+            const dataS2 = chartData.map(item => item.s2);
+            const dataS3 = chartData.map(item => item.s3);
+            const dataS4 = chartData.map(item => item.s4);
+            const dataS5 = chartData.map(item => item.s5);
+            const dataS6 = chartData.map(item => item.s6);
+
+            const datasets = [
+                { label: '<16:00', data: dataS1, borderColor: '#94a3b8', backgroundColor: '#94a3b8', tension: 0.3, fill: false },
+                { label: '16:01-17:00', data: dataS2, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3, fill: false },
+                { label: '17:01-17:30', data: dataS3, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3, fill: false },
+                { label: '17:31-18:00', data: dataS4, borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.3, fill: false },
+                { label: '18:01-18:30', data: dataS5, borderColor: '#1d4ed8', backgroundColor: '#1d4ed8', tension: 0.3, fill: false },
+                { label: '>18:31', data: dataS6, borderColor: '#e41e2b', backgroundColor: '#e41e2b', tension: 0.3, fill: false }
+            ];
+
+            const config = {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                    }
+                }
+            };
+
+            // Mobile Chart
+            const ctxM = document.getElementById('m-freq-chart').getContext('2d');
+            if (mFreqChartInstance) mFreqChartInstance.destroy();
+            mFreqChartInstance = new Chart(ctxM, config);
+
+            // Desktop Chart
+            const ctxD = document.getElementById('d-freq-chart').getContext('2d');
+            if (freqChartInstance) freqChartInstance.destroy();
+            freqChartInstance = new Chart(ctxD, config);
+        }
+
+        function renderBranchStatusTable(currentData) {
+            // 1. Identify Active Branches (In filtered data)
+            const activeBranches = {};
+            currentData.forEach(item => {
+                activeBranches[item.branch] = { status: getStatusCode(item), time: item.timestamp.split(' ')[1] };
+            });
+
+            // 2. Identify Missing Branches (From history but not in current data)
+            const missingBranches = [];
+            uniqueBranches.forEach(b => {
+                if(!activeBranches[b]) missingBranches.push(b);
+            });
+            missingBranches.sort();
+
+            // 3. Generate HTML
+            let html = '';
+            
+            // Section: ยังไม่แจ้งงาน (Moved to Top)
+            if (missingBranches.length > 0) {
+                html += `<div class="mb-2 text-xs font-bold text-red-400">ยังไม่แจ้งงาน (${missingBranches.length})</div>`;
+                html += `<div class="flex flex-wrap gap-2 mb-4">`;
+                missingBranches.forEach(b => {
+                    html += `<span class="px-2 py-1 bg-red-50 text-red-400 text-xs rounded border border-red-100">${b}</span>`;
+                });
+                html += `</div>`;
+            } else {
+                html += `<div class="mb-4 text-center text-xs text-green-500 bg-green-50 p-2 rounded">ครบทุกสาขาแล้ว</div>`;
+            }
+
+            // Section: แจ้งงานแล้ว
+            if (Object.keys(activeBranches).length > 0) {
+                html += `<div class="mb-2 text-xs font-bold text-gray-500">แจ้งงานแล้ว (${Object.keys(activeBranches).length})</div>`;
+                Object.entries(activeBranches).forEach(([name, info]) => {
+                    let color = 'text-gray-600';
+                    let statusTxt = 'งานใหม่';
+                    if(info.status === 'conf') { color = 'text-blue-500'; statusTxt = 'ยืนยันแล้ว'; }
+                    else if(info.status === 'ship') { color = 'text-green-600'; statusTxt = 'เสร็จสิ้น'; }
+                    else if(info.status === 'edit') { color = 'text-orange-500'; statusTxt = 'แก้ไข'; }
+
+                    html += `
+                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg border border-gray-100 mb-1">
+                        <div class="font-bold text-sm text-gray-700">${name}</div>
+                        <div class="text-right">
+                            <div class="text-xs ${color} font-bold">${statusTxt}</div>
+                            <div class="text-[10px] text-gray-400">${info.time} น.</div>
+                        </div>
+                    </div>`;
+                });
+            } else {
+                html += `<div class="p-4 text-center text-sm text-gray-400 bg-gray-50 rounded-lg mb-2">ไม่มีข้อมูลการแจ้งงาน</div>`;
+            }
+
+            const mContainer = document.getElementById('m-branch-status-container');
+            const dContainer = document.getElementById('d-branch-status-container');
+            if(mContainer) mContainer.innerHTML = html;
+            if(dContainer) dContainer.innerHTML = html;
+        }
+
+        // ==========================================
+        // 🔄 FILTER & SORT
+        // ==========================================
         function setDefaultDate() {
             const now = new Date();
             const year = now.getFullYear();
@@ -383,14 +719,15 @@
             
             const mDate = document.getElementById('date-mobile');
             const dDate = document.getElementById('date-desktop');
+            const exStart = document.getElementById('export-start');
+            const exEnd = document.getElementById('export-end');
             
             if(mDate) mDate.value = today;
             if(dDate) dDate.value = today;
+            if(exStart) exStart.value = today;
+            if(exEnd) exEnd.value = today;
         }
 
-        // ==========================================
-        // 🔃 SORTING LOGIC
-        // ==========================================
         function handleSort(column) {
             if (sortState.column === column) {
                 sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
@@ -478,40 +815,34 @@
         }
 
         // ==========================================
-        // 🔍 FILTER Logic
+        // 🔍 FILTER Logic (Combined)
         // ==========================================
         function openMobileFilter() { document.getElementById('mobile-filter-modal').classList.remove('hidden'); }
         function closeMobileFilter() { document.getElementById('mobile-filter-modal').classList.add('hidden'); applyFilters(); }
         
         function toggleDesktopFilter(event) { 
-            event.stopPropagation(); // หยุดการส่ง event ต่อ (ป้องกัน window.onclick ทำงานทันที)
+            event.stopPropagation(); 
             const dropdown = document.getElementById('desktop-filter-dropdown');
             dropdown.classList.toggle('hidden');
         }
         
-        // ปิด Dropdown เมื่อคลิกพื้นที่อื่น
         window.onclick = function(event) {
             const dropdown = document.getElementById('desktop-filter-dropdown');
             const button = document.getElementById('desktop-filter-btn');
-            
-            // ถ้าคลิกนอกปุ่ม และ นอก dropdown ให้ปิด
             if (button && dropdown && !button.contains(event.target) && !dropdown.contains(event.target)) {
                 dropdown.classList.add('hidden');
             }
         }
 
         function toggleStatusFilter(key, isChecked) {
-            // Update state
             activeFilters[key] = isChecked;
-            
-            // Sync Checkboxes (Desktop <-> Mobile)
             const dChk = document.getElementById(`d-chk-${key}`);
             const mChk = document.getElementById(`m-chk-${key}`);
             if(dChk) dChk.checked = isChecked;
             if(mChk) mChk.checked = isChecked;
             
             if (window.innerWidth >= 768) {
-                applyFilters(); // Desktop: Apply immediately
+                applyFilters(); 
             }
         }
 
@@ -544,17 +875,16 @@
                 let matchesDate = true;
                 if(dateQuery) matchesDate = item.isoDate === dateQuery;
 
-                // Status Filter Logic (ใช้ activeFilters ทั้ง Mobile/Desktop แล้ว)
                 const status = getStatusCode(item);
                 const matchesStatus = activeFilters[status];
 
                 return matchesSearch && matchesDate && matchesStatus;
             });
             
-            // Apply Sort
             filtered = sortData(filtered, sortState.column, sortState.direction);
 
-            updateDashboard(filtered.length > 0 ? filtered : globalData);
+            updateDashboard(filtered); // Update Card Stats
+            renderDashboardTables(filtered); // Update New Dashboard Tables
             renderMobileList(filtered);
             renderDesktopTable(filtered);
         }
@@ -592,7 +922,8 @@
                 amount: item.currentAmount || '-',
                 shipmentAmount: item.Amt_Ship || item.shipmentAmount || '-', 
                 editCount: parseInt(item.editCount || 0),
-                note: item.note
+                note: item.note,
+                processingTime: item.diff2 || '-' 
             };
         }
         
@@ -645,16 +976,6 @@
             return isNaN(d.getTime()) ? null : d;
         }
 
-        function toggleLoading(isLoading) {
-            document.querySelectorAll('.refresh-icon').forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
-            if(isFirstLoad) {
-                const skeleton = document.getElementById('loading-skeleton-mobile');
-                const list = document.getElementById('m-list-container');
-                isLoading ? (skeleton.classList.remove('hidden'), list.classList.add('hidden')) : (skeleton.classList.add('hidden'), list.classList.remove('hidden'));
-            }
-        }
-
-        // เพิ่มฟังก์ชันนี้กลับเข้ามาเพื่อให้ระบบทำงานได้ถูกต้อง
         function calculateProgress(item) {
             if (item.ship && item.ship.time) return 4; 
             if (item.conf && item.conf.time) return 2; 
@@ -670,49 +991,154 @@
             if (isEdit && p < 4) return '<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">แก้ไขบิล</span>';
             if (p === 2) return '<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">ยืนยันแล้ว</span>';
             
-            // Special for New Job: Show "New Job" badge + "Remaining" count below
+            // Special for New Job: Show "New Job" badge + "Queue" count below
             if (item.queueWait >= 0) {
                 const align = isMobile ? 'items-end' : 'items-center';
+                
+                // ปรับข้อความให้เข้าใจง่ายที่สุด
+                let queueText = "";
+                let queueColor = "";
+                
+                if (item.queueWait === 0) {
+                    queueText = "ถึงคิวแล้ว";
+                    queueColor = "text-ht-green"; // สีเขียว สื่อว่าพร้อมแล้ว
+                } else {
+                    queueText = `รออีก ${item.queueWait} คิว`;
+                    queueColor = "text-ht-red"; // สีแดง สื่อว่าต้องรอ
+                }
+
                 return `
                 <div class="flex flex-col ${align}">
                     <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>
-                    <span class="text-[10px] text-red-500 font-bold mt-1 whitespace-nowrap">เหลืออีก ${item.queueWait} งาน</span>
+                    <span class="text-[10px] ${queueColor} font-bold mt-1 whitespace-nowrap">${queueText}</span>
                 </div>`;
             }
             return '<span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">งานใหม่</span>';
         }
 
-        function updateDashboard(data) {
-            let stats = { total: data.length, new: 0, conf: 0, edit: 0, shipped: 0 };
-            data.forEach(item => {
-                const p = calculateProgress(item);
-                const hasEdit = item.editCount > 0;
-                if (p >= 4) stats.shipped++;
-                else if (hasEdit) stats.edit++;
-                else if (p === 2) stats.conf++;
-                else stats.new++;
+        // ==========================================
+        // 📤 EXPORT LOGIC
+        // ==========================================
+        function openExportModal() {
+            const modal = document.getElementById('export-modal');
+            const content = document.getElementById('export-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeExportModal() {
+            const modal = document.getElementById('export-modal');
+            const content = document.getElementById('export-modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function confirmExport() {
+            const start = document.getElementById('export-start').value;
+            const end = document.getElementById('export-end').value;
+
+            if (!start || !end) {
+                alert("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด");
+                return;
+            }
+
+            const exportData = globalData.filter(item => {
+                if (!item.isoDate) return false;
+                return item.isoDate >= start && item.isoDate <= end;
             });
-            const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-            setTxt('m-dash-total', stats.total);
-            setTxt('m-dash-shipped', stats.shipped);
-            setTxt('m-dash-new', stats.new);
-            setTxt('m-dash-conf', stats.conf);
-            setTxt('m-dash-edit', stats.edit);
-            setTxt('d-dash-total', stats.total);
-            setTxt('d-dash-shipped', stats.shipped);
-            setTxt('d-dash-conf', stats.conf);
+
+            if (exportData.length === 0) {
+                alert("ไม่พบข้อมูลในช่วงวันที่เลือก");
+                return;
+            }
+
+            let csvContent = "\uFEFF"; 
+            csvContent += "สาขา,วันที่แจ้งงาน,วันที่ส่งสินค้า,เวลาแจ้งงาน,เวลายืนยัน,เวลาออก shipment,จำนวน shipment,ระยะเวลาดำเนินการ (นาที)\n";
+
+            exportData.forEach(row => {
+                const branch = `"${row.branch}"`;
+                const dateParts = row.timestamp.split(' ');
+                const notiDate = dateParts[0] || '-';
+                const notiTime = dateParts[1] ? dateParts[1].replace('น.', '').trim() : '-';
+                
+                const delDate = `"${row.deliveryDate}"`;
+                const confTime = row.conf.time || '-';
+                const shipTime = row.ship.time || '-';
+                const shipAmt = row.shipmentAmount !== '-' ? row.shipmentAmount : '';
+                const duration = row.processingTime !== '-' ? row.processingTime : '';
+
+                csvContent += `${branch},${notiDate},${delDate},${notiTime},${confTime},${shipTime},${shipAmt},${duration}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `FleetOrder_Export_${start}_to_${end}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            closeExportModal();
         }
 
         // ==========================================
-        // 📱 RENDER: MOBILE
+        // 🔍 FILTER Logic (Combined)
         // ==========================================
+        function openMobileFilter() { document.getElementById('mobile-filter-modal').classList.remove('hidden'); }
+        function closeMobileFilter() { document.getElementById('mobile-filter-modal').classList.add('hidden'); applyFilters(); }
+        
+        function toggleDesktopFilter(event) { 
+            event.stopPropagation(); 
+            const dropdown = document.getElementById('desktop-filter-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+        
+        window.onclick = function(event) {
+            const dropdown = document.getElementById('desktop-filter-dropdown');
+            const button = document.getElementById('desktop-filter-btn');
+            if (button && dropdown && !button.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function toggleStatusFilter(key, isChecked) {
+            activeFilters[key] = isChecked;
+            const dChk = document.getElementById(`d-chk-${key}`);
+            const mChk = document.getElementById(`m-chk-${key}`);
+            if(dChk) dChk.checked = isChecked;
+            if(mChk) mChk.checked = isChecked;
+            
+            if (window.innerWidth >= 768) {
+                applyFilters(); 
+            }
+        }
+
+        // ==========================================
+        // UI & HELPERS
+        // ==========================================
+        function toggleLoading(isLoading) {
+            document.querySelectorAll('.refresh-icon').forEach(i => isLoading ? i.classList.add('spin-slow') : i.classList.remove('spin-slow'));
+            if(isFirstLoad) {
+                const skeleton = document.getElementById('loading-skeleton-mobile');
+                const list = document.getElementById('m-list-container');
+                isLoading ? (skeleton.classList.remove('hidden'), list.classList.add('hidden')) : (skeleton.classList.add('hidden'), list.classList.remove('hidden'));
+            }
+        }
+
         function renderMobileList(data) {
             const container = document.getElementById('m-list-container');
             if(data.length === 0) {
                 container.innerHTML = `<div class="text-center py-10 opacity-50"><i class="fas fa-box-open text-4xl mb-2 text-gray-300"></i><p class="text-gray-400 text-sm mt-2">ไม่พบรายการ</p></div>`;
                 return;
             }
-            
             container.innerHTML = data.map(item => {
                 const p = calculateProgress(item);
                 const hasEdit = (item.editCount > 0);
@@ -772,9 +1198,6 @@
             </div>`;
         }
 
-        // ==========================================
-        // 💻 RENDER: DESKTOP
-        // ==========================================
         function renderDesktopTable(data) {
             const tbody = document.getElementById('d-table-body');
             if(data.length === 0) {
@@ -871,6 +1294,33 @@
             document.getElementById(`m-page-${tab}`).classList.remove('hidden');
         }
         function manualRefresh() { toggleLoading(true); fetchData(false); }
+
+        function renderDetailTable(data) {
+            // Render Desktop Detail Table
+            const dBODY = document.getElementById('d-detail-table-body');
+            if(dBODY) {
+                if(data.length === 0) {
+                    dBODY.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-400">ไม่พบข้อมูล</td></tr>';
+                } else {
+                    dBODY.innerHTML = data.map(row => {
+                        const dateParts = row.timestamp.split(' ');
+                        const notiDate = dateParts[0];
+                        const notiTime = dateParts[1] ? dateParts[1].replace('น.', '') : '-';
+                        return `
+                        <tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                            <td class="p-3 font-medium text-gray-800">${row.branch}</td>
+                            <td class="p-3">${notiDate}</td>
+                            <td class="p-3">${row.deliveryDate}</td>
+                            <td class="p-3 text-center text-gray-500">${notiTime}</td>
+                            <td class="p-3 text-center text-gray-500">${row.conf.time || '-'}</td>
+                            <td class="p-3 text-center text-gray-500">${row.ship.time || '-'}</td>
+                            <td class="p-3 text-right font-medium text-blue-600">${row.shipmentAmount}</td>
+                            <td class="p-3 text-center">${row.processingTime}</td>
+                        </tr>`;
+                    }).join('');
+                }
+            }
+        }
     </script>
 </body>
 </html>
