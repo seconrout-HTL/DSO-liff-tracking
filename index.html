@@ -499,11 +499,16 @@
                 // ถ้าไม่มีต้องเพิ่มใน GAS ครับ
                 const response = await fetch(`${GAS_API_URL}?action=getUsers`);
                 const json = await response.json();
+                console.log("Users Data:", json); // Debug: Check Data
+                
                 if (json.status === 'success' && json.data) {
                     json.data.forEach(u => {
-                        // แมป UserId -> Name
-                        if (u.Userid && u.Name) {
-                            userMapping[u.Userid] = u.Name;
+                        // แมป UserId -> Name (รองรับ Case-Insensitive)
+                        const uid = u.Userid || u.userid || u.userId || u.UserID;
+                        const name = u.Name || u.name || u.NAME;
+                        
+                        if (uid && name) {
+                            userMapping[uid] = name;
                         }
                     });
                     // อัพเดทชื่อถ้า LIFF โหลดเสร็จแล้ว
@@ -518,11 +523,19 @@
 
         async function initLiff() {
             try {
+                // ⚠️ สำคัญ: ต้องใส่ LIFF ID ของคุณตรงนี้ ไม่อย่างนั้น liff.init จะไม่ทำงาน
+                // ตัวอย่าง: await liff.init({ liffId: "165xxxxxxx-xxxxxxx" });
+                
+                // หากใส่ LIFF ID แล้ว ให้เอา comment ออกด้านล่างนี้:
+                // await liff.init({ liffId: 'YOUR_LIFF_ID_HERE' });
+
                 if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     currentUserId = profile.userId;
                     // แสดงชื่อชั่วคราวจาก LIFF ก่อน
                     updateUserDisplay(profile.displayName);
+                } else {
+                    console.log("LIFF not initialized or logged in. Check LIFF ID.");
                 }
             } catch (err) { console.log('LIFF Error:', err); }
         }
@@ -537,6 +550,10 @@
             // 2. ถ้าไม่มีใน Mapping แต่มีชื่อจาก LIFF ให้ใช้ชื่อ LIFF
             else if (tempName) {
                 displayName = tempName;
+            } else if (currentUserId) {
+                 // กรณีมี ID แต่ไม่มีชื่อ ให้แสดง ID บางส่วน
+                 // displayName = "ID: " + currentUserId.substring(0, 5) + "...";
+                 // หรือคงไว้เป็น Guest User ถ้ายังโหลดชื่อไม่เสร็จ
             }
             // 3. ถ้าไม่มี currentUserId (Guest) ก็ใช้ Guest
 
