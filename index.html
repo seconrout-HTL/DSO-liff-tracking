@@ -175,7 +175,7 @@
 
                 <!-- Frequency Chart -->
                 <div class="bg-white rounded-xl shadow-sm p-4 overflow-hidden">
-                    <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-blue-500 pl-2">ความถี่การแจ้งงาน (กราฟเส้น)</h3>
+                    <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-blue-500 pl-2">ความถี่การแจ้งงาน (ประจำวัน)</h3>
                     <div class="h-64">
                         <canvas id="m-freq-chart"></canvas>
                     </div>
@@ -366,7 +366,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Frequency Chart -->
                     <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-blue-500 pl-3">ความถี่การแจ้งงาน (กราฟเส้น)</h3>
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-blue-500 pl-3">ความถี่การแจ้งงาน (ประจำวัน)</h3>
                         <div class="h-80">
                             <canvas id="d-freq-chart"></canvas>
                         </div>
@@ -446,6 +446,32 @@
         // ==========================================
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbye4O5UK9BStgguYheDYRLh5gD6aT7womHgFw_QjCJbnTafjneAGMKPJYb6eIsfM-AF/exec'; 
         
+        // --- แมปชื่อสาขา ---
+        const branchNames = {
+            "HY": "สาขาหาดใหญ่",
+            "PP": "สาขาพุนพิน",
+            "NK": "สาขานครศรีฯ",
+            "RN": "สาขาระนอง",
+            "PK": "สาขาภูเก็ต",
+            "TP": "สาขาตะกั่วป่า",
+            "PG": "สาขาพังงา",
+            "PN": "สาขาปัตตานี",
+            "PL": "สาขาพัทลุง",
+            "CP": "สาขาชุมพร",
+            "TR": "สาขาตรัง",
+            "NR": "สาขานราธิวาส",
+            "SM": "สาขาสมุย",
+            "LS": "สาขาหลังสวน",
+            "SR": "สาขาสุราษฯ",
+            "TS": "สาขาทุ่งสง",
+            "YL": "สาขายะลา",
+            "KB": "สาขากระบี่",
+            "ST": "สาขาสตูล",
+            "PKN": "ภูเก็ตกลางคืน",
+            "ISPK": "เกาะยาว",
+            "ISSM": "เกาะพะงัน"
+        };
+        
         let globalData = [];
         let uniqueBranches = new Set();
         let isFirstLoad = true;
@@ -453,22 +479,71 @@
         let activeFilters = { new: true, conf: true, edit: true, ship: true };
         let freqChartInstance = null;
         let mFreqChartInstance = null;
+        
+        // --- ➕ เพิ่มตัวแปรสำหรับ User Mapping ---
+        let userMapping = {};
 
         window.onload = async function() {
             await initLiff();
             setDefaultDate();
             fetchData();
+            // --- ➕ เรียกดึงข้อมูล User ---
+            fetchUsers();
             setInterval(() => fetchData(true), 20000); 
         };
+        
+        // --- ➕ ฟังก์ชันดึง User ---
+        async function fetchUsers() {
+            try {
+                // สมมติว่า GAS รองรับ action=getUsers หรือคืนค่า Users มาพร้อมกับ Tracking Data
+                // ถ้าไม่มีต้องเพิ่มใน GAS ครับ
+                const response = await fetch(`${GAS_API_URL}?action=getUsers`);
+                const json = await response.json();
+                if (json.status === 'success' && json.data) {
+                    json.data.forEach(u => {
+                        // แมป UserId -> Name
+                        if (u.Userid && u.Name) {
+                            userMapping[u.Userid] = u.Name;
+                        }
+                    });
+                    // อัพเดทชื่อถ้า LIFF โหลดเสร็จแล้ว
+                    updateUserDisplay();
+                }
+            } catch (err) {
+                console.log('User fetch error:', err);
+            }
+        }
+        
+        let currentUserId = null;
 
         async function initLiff() {
             try {
                 if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
-                    document.getElementById('user-display-mobile').innerText = profile.displayName;
-                    document.getElementById('user-display-desktop').innerText = profile.displayName;
+                    currentUserId = profile.userId;
+                    // แสดงชื่อชั่วคราวจาก LIFF ก่อน
+                    updateUserDisplay(profile.displayName);
                 }
             } catch (err) { console.log('LIFF Error:', err); }
+        }
+        
+        function updateUserDisplay(tempName) {
+            let displayName = "Guest User";
+            
+            // 1. ถ้ามีชื่อใน Mapping ให้ใช้ชื่อจริง
+            if (currentUserId && userMapping[currentUserId]) {
+                displayName = userMapping[currentUserId];
+            } 
+            // 2. ถ้าไม่มีใน Mapping แต่มีชื่อจาก LIFF ให้ใช้ชื่อ LIFF
+            else if (tempName) {
+                displayName = tempName;
+            }
+            // 3. ถ้าไม่มี currentUserId (Guest) ก็ใช้ Guest
+
+            const mUser = document.getElementById('user-display-mobile');
+            const dUser = document.getElementById('user-display-desktop');
+            if(mUser) mUser.innerText = displayName;
+            if(dUser) dUser.innerText = displayName;
         }
 
         // ==========================================
@@ -531,7 +606,7 @@
         }
 
         function renderDashboardTables(filteredData) {
-            // แก้ไข: ส่ง filteredData ไปยังกราฟแทน globalData เพื่อให้กราฟแสดงตามวันที่เลือก
+            // แก้ไข: ส่ง filteredData ไปยังกราฟเพื่อแสดงกราฟ "1 วัน" ตามข้อมูลที่กรองมาแล้ว
             renderFrequencyChart(filteredData); 
             
             renderFrequencyTable(globalData); // ตารางความถี่ให้แสดงประวัติรวม (Global) เพื่อเปรียบเทียบ
@@ -583,57 +658,61 @@
             if(dBody) dBody.innerHTML = rows || '<tr><td colspan="7" class="p-4 text-center text-gray-400">ไม่มีข้อมูล</td></tr>';
         }
 
-        function renderFrequencyChart(allData) {
-            // Prepare Data
-            const freqMap = {};
-            allData.forEach(item => {
-                if(!item.isoDate) return;
-                if(!freqMap[item.isoDate]) freqMap[item.isoDate] = { d: item.timestamp.split(' ')[0], s1:0, s2:0, s3:0, s4:0, s5:0, s6:0 };
-                
+        // --- 🔄 แก้ไขกราฟเป็นรายวัน (1 วัน) ---
+        function renderFrequencyChart(currentDayData) {
+            // currentDayData คือข้อมูลที่ผ่านการกรองวันที่มาแล้ว (เช่น วันนี้)
+            
+            // 1. Prepare Slots
+            let slots = [0, 0, 0, 0, 0, 0];
+            // 0: <16:00
+            // 1: 16:01-17:00
+            // 2: 17:01-17:30
+            // 3: 17:31-18:00
+            // 4: 18:01-18:30
+            // 5: >18:31
+
+            currentDayData.forEach(item => {
                 const timeParts = item.timestamp.split(' ')[1].split(':');
                 const h = parseInt(timeParts[0]);
                 const m = parseInt(timeParts[1]);
                 const minutes = h * 60 + m;
-                
-                if (minutes <= 960) freqMap[item.isoDate].s1++;
-                else if (minutes <= 1020) freqMap[item.isoDate].s2++;
-                else if (minutes <= 1050) freqMap[item.isoDate].s3++;
-                else if (minutes <= 1080) freqMap[item.isoDate].s4++;
-                else if (minutes <= 1110) freqMap[item.isoDate].s5++;
-                else freqMap[item.isoDate].s6++;
+
+                if (minutes <= 960) slots[0]++;
+                else if (minutes <= 1020) slots[1]++;
+                else if (minutes <= 1050) slots[2]++;
+                else if (minutes <= 1080) slots[3]++;
+                else if (minutes <= 1110) slots[4]++;
+                else slots[5]++;
             });
 
-            // Last 7 days sorted ascending for chart
-            const chartData = Object.values(freqMap).sort((a,b) => a.d.localeCompare(b.d)).slice(-7);
-            const labels = chartData.map(item => item.d);
-            
-            const dataS1 = chartData.map(item => item.s1);
-            const dataS2 = chartData.map(item => item.s2);
-            const dataS3 = chartData.map(item => item.s3);
-            const dataS4 = chartData.map(item => item.s4);
-            const dataS5 = chartData.map(item => item.s5);
-            const dataS6 = chartData.map(item => item.s6);
-
-            const datasets = [
-                { label: '<16:00', data: dataS1, borderColor: '#94a3b8', backgroundColor: '#94a3b8', tension: 0.3, fill: false },
-                { label: '16:01-17:00', data: dataS2, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3, fill: false },
-                { label: '17:01-17:30', data: dataS3, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3, fill: false },
-                { label: '17:31-18:00', data: dataS4, borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.3, fill: false },
-                { label: '18:01-18:30', data: dataS5, borderColor: '#1d4ed8', backgroundColor: '#1d4ed8', tension: 0.3, fill: false },
-                { label: '>18:31', data: dataS6, borderColor: '#e41e2b', backgroundColor: '#e41e2b', tension: 0.3, fill: false }
-            ];
+            // 2. Chart Configuration
+            const labels = ['<16:00', '16-17:00', '17-17:30', '17:30-18', '18-18:30', '>18:30'];
+            const dataset = {
+                label: 'จำนวนงาน (Orders)',
+                data: slots,
+                borderColor: '#E41E2B', // สีแดง Theme
+                backgroundColor: 'rgba(228, 30, 43, 0.1)',
+                tension: 0.3,
+                fill: true,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#E41E2B',
+                pointRadius: 5
+            };
 
             const config = {
                 type: 'line',
-                data: { labels: labels, datasets: datasets },
+                data: { labels: labels, datasets: [dataset] },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true }
+                        y: { 
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 } 
+                        }
                     },
                     plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                        legend: { display: false } // ไม่ต้องโชว์ Legend เพราะมีเส้นเดียว
                     }
                 }
             };
@@ -656,11 +735,17 @@
                 activeBranches[item.branch] = { status: getStatusCode(item), time: item.timestamp.split(' ')[1] };
             });
 
-            // 2. Identify Missing Branches (From history but not in current data)
+            // 2. Identify Missing Branches (From Master List)
             const missingBranches = [];
-            uniqueBranches.forEach(b => {
+            
+            // --- 🔄 เปลี่ยนวิธีตรวจสอบ: เช็คจาก Master Data ทั้งหมดแทน ---
+            const masterBranches = Object.values(branchNames);
+            
+            masterBranches.forEach(b => {
                 if(!activeBranches[b]) missingBranches.push(b);
             });
+            
+            // Sort A-Z
             missingBranches.sort();
 
             // 3. Generate HTML
@@ -910,11 +995,16 @@
                 rawTimestamp = dObj.getTime();
             }
 
+            // --- ➕ ส่วนที่แก้ไข: แปลงรหัสเป็นชื่อสาขา ---
+            const rawBranch = item.branch || '-';
+            const branchName = branchNames[rawBranch] || rawBranch;
+            // -------------------------------------
+
             return {
                 timestamp: displayDate,
                 isoDate: isoDate, 
                 rawTimestamp: rawTimestamp, 
-                branch: item.branch || '-',
+                branch: branchName, // ใช้ชื่อสาขาที่แปลงแล้ว
                 deliveryDate: item.targetDate || '-', 
                 bill: { time: item.timeBill, by: '-' },
                 conf: { time: item.timeConf, by: '-' },
