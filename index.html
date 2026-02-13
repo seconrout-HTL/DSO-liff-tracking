@@ -429,6 +429,11 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">วันที่สิ้นสุด (End Date)</label>
                     <input type="date" id="export-end" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-excel-green focus:border-excel-green outline-none transition">
                 </div>
+                <!-- NEW CHECKBOX FOR CHART EXPORT -->
+                <label class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200 cursor-pointer hover:bg-gray-100 transition">
+                    <input type="checkbox" id="export-include-chart" class="w-5 h-5 text-excel-green rounded focus:ring-excel-green border-gray-300">
+                    <span class="text-sm font-medium text-gray-700">บันทึกรูปกราฟด้วย (Download Chart Image)</span>
+                </label>
             </div>
 
             <div class="mt-8 flex gap-3">
@@ -568,7 +573,8 @@
                 const json = await response.json();
                 
                 if (json.status === 'success') {
-                    let mappedData = json.data.map(mapRoutingOrderData);
+                    // Pass index 'i' to preserve original order
+                    let mappedData = json.data.map((item, i) => mapRoutingOrderData(item, i));
                     globalData = calculateQueueLogic(mappedData);
                     
                     mappedData.forEach(item => { if(item.branch && item.branch !== '-') uniqueBranches.add(item.branch); });
@@ -838,7 +844,11 @@
                 let valA, valB;
 
                 if (column === 'default') {
-                    return b.rawTimestamp - a.rawTimestamp;
+                    // Sort by time first
+                    const timeDiff = b.rawTimestamp - a.rawTimestamp;
+                    if(timeDiff !== 0) return timeDiff;
+                    // If times equal, sort by newest row index (assuming newer row = newer entry)
+                    return b.originalIndex - a.originalIndex;
                 }
 
                 switch(column) {
@@ -958,7 +968,7 @@
         // ==========================================
         // 🛠 MAPPER & HELPERS
         // ==========================================
-        function mapRoutingOrderData(item) {
+        function mapRoutingOrderData(item, index) { // Add index param
             const dObj = parseDateObject(item.timestamp);
             let displayDate = item.timestamp;
             let isoDate = '';
@@ -982,7 +992,8 @@
             return {
                 timestamp: displayDate,
                 isoDate: isoDate, 
-                rawTimestamp: rawTimestamp, 
+                rawTimestamp: rawTimestamp,
+                originalIndex: index || 0, // Store original row index for stable sort
                 branch: branchName, 
                 deliveryDate: item.targetDate || '-', 
                 bill: { time: item.timeBill, by: '-' },
@@ -997,7 +1008,13 @@
         }
         
         function calculateQueueLogic(data) {
-            data.sort((a, b) => a.rawTimestamp - b.rawTimestamp);
+            // Sort by time, then by original row index to ensure stability for same-minute orders
+            data.sort((a, b) => {
+                const timeDiff = a.rawTimestamp - b.rawTimestamp;
+                if(timeDiff !== 0) return timeDiff;
+                return a.originalIndex - b.originalIndex;
+            });
+
             const queueMap = {};
             const queueWaitMap = {}; 
 
@@ -1139,6 +1156,7 @@
                 csvContent += `${branch},${notiDate},${delDate},${notiTime},${confTime},${shipTime},${shipAmt},${duration}\n`;
             });
 
+            // 1. Download CSV
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -1149,38 +1167,40 @@
             link.click();
             document.body.removeChild(link);
 
+            // 2. Download Chart Image (If checked)
+            const includeChart = document.getElementById('export-include-chart').checked;
+            if (includeChart) {
+                downloadChartImage(start, end);
+            }
+
             closeExportModal();
         }
 
-        // ==========================================
-        // 🔍 FILTER Logic (Combined)
-        // ==========================================
-        function openMobileFilter() { document.getElementById('mobile-filter-modal').classList.remove('hidden'); }
-        function closeMobileFilter() { document.getElementById('mobile-filter-modal').classList.add('hidden'); applyFilters(); }
-        
-        function toggleDesktopFilter(event) { 
-            event.stopPropagation(); 
-            const dropdown = document.getElementById('desktop-filter-dropdown');
-            dropdown.classList.toggle('hidden');
-        }
-        
-        window.onclick = function(event) {
-            const dropdown = document.getElementById('desktop-filter-dropdown');
-            const button = document.getElementById('desktop-filter-btn');
-            if (button && dropdown && !button.contains(event.target) && !dropdown.contains(event.target)) {
-                dropdown.classList.add('hidden');
-            }
-        }
+        function downloadChartImage(start, end) {
+            // Determine active canvas (Mobile or Desktop) based on viewport width
+            const canvasId = window.innerWidth >= 768 ? 'd-freq-chart' : 'm-freq-chart';
+            const canvas = document.getElementById(canvasId);
 
-        function toggleStatusFilter(key, isChecked) {
-            activeFilters[key] = isChecked;
-            const dChk = document.getElementById(`d-chk-${key}`);
-            const mChk = document.getElementById(`m-chk-${key}`);
-            if(dChk) dChk.checked = isChecked;
-            if(mChk) mChk.checked = isChecked;
-            
-            if (window.innerWidth >= 768) {
-                applyFilters(); 
+            if (canvas) {
+                // Warning if canvas is hidden (width 0) because user is on 'List' tab
+                if (canvas.width === 0 || canvas.height === 0) {
+                    alert("ไม่สามารถบันทึกรูปกราฟได้ เนื่องจากกราฟถูกซ่อนอยู่\n\nคำแนะนำ: กรุณากดเข้าเมนู 'ภาพรวม (Dashboard)' แล้วลอง Export ใหม่อีกครั้งครับ");
+                    return;
+                }
+
+                try {
+                    const imageLink = document.createElement('a');
+                    imageLink.download = `FleetOrder_Chart_${start}_to_${end}.png`;
+                    imageLink.href = canvas.toDataURL('image/png', 1.0);
+                    document.body.appendChild(imageLink);
+                    imageLink.click();
+                    document.body.removeChild(imageLink);
+                } catch (e) {
+                    console.error("Chart Export Error:", e);
+                    alert("เกิดข้อผิดพลาดในการบันทึกรูปภาพ");
+                }
+            } else {
+                alert("ไม่พบกราฟ");
             }
         }
 
@@ -1362,10 +1382,13 @@
             // Render Desktop Detail Table
             const dBODY = document.getElementById('d-detail-table-body');
             if(dBODY) {
-                if(data.length === 0) {
+                // ⚠️ FIX: Force sort by latest timestamp first for Dashboard
+                const sortedData = [...data].sort((a, b) => b.rawTimestamp - a.rawTimestamp);
+
+                if(sortedData.length === 0) {
                     dBODY.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-400">ไม่พบข้อมูล</td></tr>';
                 } else {
-                    dBODY.innerHTML = data.map(row => {
+                    dBODY.innerHTML = sortedData.map(row => {
                         const dateParts = row.timestamp.split(' ');
                         const notiDate = dateParts[0];
                         const notiTime = dateParts[1] ? dateParts[1].replace('น.', '') : '-';
@@ -1387,5 +1410,3 @@
     </script>
 </body>
 </html>
-
-
