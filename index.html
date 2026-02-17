@@ -238,6 +238,22 @@
                             <h3 class="text-sm font-bold text-gray-700 mb-1">Q: ลำดับคิว (Queue) นับอย่างไร?</h3>
                             <p class="text-xs text-gray-500">A: ระบบนับตามลำดับเวลาที่แจ้งงานเข้ามา (First Come First Serve) หากเวลาเท่ากัน จะยึดตามลำดับการกรอกข้อมูลก่อน-หลัง</p>
                         </div>
+                        <div class="border-b border-gray-100 pb-2">
+                            <h3 class="text-sm font-bold text-gray-700 mb-1">Q: สถานะงานมีกี่ประเภท?</h3>
+                            <p class="text-xs text-gray-500">A: มี 4 สถานะหลักๆ คือ งานใหม่ (รอตรวจสอบ), ยืนยันแล้ว (รับเรื่อง), แก้ไขบิล (มีปรับปรุง), และเสร็จสิ้น (Shipment)</p>
+                        </div>
+                        <div class="border-b border-gray-100 pb-2">
+                            <h3 class="text-sm font-bold text-gray-700 mb-1">Q: หากพบข้อมูลผิดพลาดต้องทำอย่างไร?</h3>
+                            <p class="text-xs text-gray-500">A: สามารถแจ้งปัญหาได้ทาง LINE หรือติดต่อทีม IT โดยระบุรายละเอียด: สาขา, วันที่, และปัญหาที่พบ</p>
+                        </div>
+                        <div class="border-b border-gray-100 pb-2">
+                            <h3 class="text-sm font-bold text-gray-700 mb-1">Q: ทำไมบางรายการแสดง "แก้ไขบิล"?</h3>
+                            <p class="text-xs text-gray-500">A: เมื่อมีการแก้ไขข้อมูลหลังจากยืนยันแล้ว ระบบจะแสดงสถานะนี้เพื่อให้ทราบว่ามีการปรับปรุงข้อมูล</p>
+                        </div>
+                        <div class="border-b border-gray-100 pb-2">
+                            <h3 class="text-sm font-bold text-gray-700 mb-1">Q: ข้อมูลจากวันที่ผ่านมาสามารถดูได้ไหม?</h3>
+                            <p class="text-xs text-gray-500">A: สามารถดูได้โดยเปลี่ยนวันที่ในช่องค้นหา หรือใช้ฟังก์ชัน Export เพื่อดึงข้อมูลย้อนหลัง</p>
+                        </div>
                     </div>
                 </div>
 
@@ -381,7 +397,7 @@
                                     สาขา <i id="icon-branch" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
                                 </th>
                                 <th onclick="handleSort('deliveryDate')" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group">
-                                    Delivery Date <i id="icon-deliveryDate" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
+                                    วันที่ส่งสินค้า <i id="icon-deliveryDate" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
                                 </th>
                                 <th onclick="handleSort('status')" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group">
                                     สถานะ <i id="icon-status" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
@@ -534,6 +550,82 @@
                             <div class="accordion-content bg-white px-4">
                                 <div class="py-4 text-sm text-gray-600">
                                     <p>กราฟความถี่แสดงปริมาณงานที่แจ้งเข้ามาในช่วงเวลาต่างๆ ของวันปัจจุบัน ช่วยให้ทีมงานทราบว่าช่วงเวลาใดมีงานหนาแน่นที่สุด (Peak Hours) เพื่อวางแผนการทำงานได้ดียิ่งขึ้น</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 5 -->
+                        <div class="accordion-item border border-gray-200 rounded-lg overflow-hidden" onclick="toggleAccordion(this)">
+                            <div class="bg-gray-50 p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition">
+                                <h3 class="font-bold text-gray-700">Q: การจัดลำดับคิว (Queue) ทำงานอย่างไร?</h3>
+                                <i class="fas fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                            </div>
+                            <div class="accordion-content bg-white px-4">
+                                <div class="py-4 text-sm text-gray-600">
+                                    <p>ระบบจัดลำดับคิวตามหลักการ <strong>First Come First Serve</strong> โดย:</p>
+                                    <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                                        <li>เรียงตามเวลาที่แจ้งงาน (Timestamp)</li>
+                                        <li>หากเวลาเท่ากัน จะเรียงตามลำดับการบันทึกข้อมูล</li>
+                                        <li>คิวจะรีเซ็ตทุกวัน เริ่มนับใหม่ที่ #01 ทุกเช้า</li>
+                                        <li>สถานะ "ถึงคิวแล้ว" หมายถึงเป็นคิวถัดไปที่จะได้รับการดำเนินการ</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 6 -->
+                        <div class="accordion-item border border-gray-200 rounded-lg overflow-hidden" onclick="toggleAccordion(this)">
+                            <div class="bg-gray-50 p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition">
+                                <h3 class="font-bold text-gray-700">Q: หากพบข้อมูลไม่ถูกต้องต้องแก้ไขอย่างไร?</h3>
+                                <i class="fas fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                            </div>
+                            <div class="accordion-content bg-white px-4">
+                                <div class="py-4 text-sm text-gray-600">
+                                    <p>หากพบข้อมูลที่ไม่ถูกต้อง สามารถดำเนินการได้ดังนี้:</p>
+                                    <ol class="list-decimal list-inside mt-2 space-y-1">
+                                        <li>จดบันทึกรายละเอียด: สาขา, วันที่, ปัญหาที่พบ</li>
+                                        <li>แจ้งปัญหาทาง LINE Official Account ของบริษัท</li>
+                                        <li>ติดต่อทีม IT Support โดยตรง</li>
+                                        <li>ระบุข้อมูลอ้างอิงเพื่อให้ทีมตรวจสอบได้รวดเร็ว</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 7 -->
+                        <div class="accordion-item border border-gray-200 rounded-lg overflow-hidden" onclick="toggleAccordion(this)">
+                            <div class="bg-gray-50 p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition">
+                                <h3 class="font-bold text-gray-700">Q: สามารถดูข้อมูลย้อนหลังได้นานแค่ไหน?</h3>
+                                <i class="fas fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                            </div>
+                            <div class="accordion-content bg-white px-4">
+                                <div class="py-4 text-sm text-gray-600">
+                                    <p>ระบบสามารถจัดเก็บและแสดงข้อมูลได้ดังนี้:</p>
+                                    <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                                        <li>ข้อมูล Dashboard: แสดงเฉพาะข้อมูลวันปัจจุบัน</li>
+                                        <li>การค้นหา/กรอง: สามารถเลือกวันที่ต่างๆ ได้</li>
+                                        <li>ฟังก์ชัน Export: ดึงข้อมูลได้สูงสุด 90 วันย้อนหลัง</li>
+                                        <li>หากต้องการข้อมูลเกิน 90 วัน ติดต่อทีม IT</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 8 -->
+                        <div class="accordion-item border border-gray-200 rounded-lg overflow-hidden" onclick="toggleAccordion(this)">
+                            <div class="bg-gray-50 p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition">
+                                <h3 class="font-bold text-gray-700">Q: ทำไมบางรายการแสดง "แก้ไขบิล"?</h3>
+                                <i class="fas fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                            </div>
+                            <div class="accordion-content bg-white px-4">
+                                <div class="py-4 text-sm text-gray-600">
+                                    <p>สถานะ "แก้ไขบิล" จะปรากฏเมื่อ:</p>
+                                    <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                                        <li>มีการแก้ไขข้อมูลหลังจากยืนยันออเดอร์แล้ว</li>
+                                        <li>มีการปรับปรุงจำนวนบิลหรือรายละเอียดอื่นๆ</li>
+                                        <li>ระบบจะแสดงจำนวนครั้งที่แก้ไขเพื่อความโปร่งใส</li>
+                                        <li>สามารถดูหมายเหตุได้จากไอคอน <i class="far fa-comment-dots"></i> ในตาราง</li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
