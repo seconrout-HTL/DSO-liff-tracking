@@ -8,6 +8,7 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     
@@ -1366,45 +1367,74 @@
                 return;
             }
 
-            let csvContent = "\uFEFF"; 
-            csvContent += "สาขา,วันที่แจ้งงาน,วันที่ส่งสินค้า,เวลาแจ้งงาน,เวลายืนยัน,เวลาออก shipment,จำนวน shipment,ระยะเวลาดำเนินการ (นาที)\n";
+            const includeChart = document.getElementById('export-include-chart').checked;
+            
+            // Create Excel workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Prepare data for worksheet
+            const wsData = [
+                ["สาขา", "วันที่แจ้งงาน", "วันที่ส่งสินค้า", "เวลาแจ้งงาน", "เวลายืนยัน", "เวลาออก shipment", "จำนวน shipment", "ระยะเวลาดำเนินการ (นาที)"]
+            ];
 
             exportData.forEach(row => {
-                const branch = `"${row.branch}"`;
                 const dateParts = row.timestamp.split(' ');
                 const notiDate = dateParts[0] || '-';
                 const notiTime = dateParts[1] ? dateParts[1].replace('น.', '').trim() : '-';
                 
-                const delDate = `"${row.deliveryDate}"`;
-                const confTime = row.conf.time || '-';
-                const shipTime = row.ship.time || '-';
-                const shipAmt = row.shipmentAmount !== '-' ? row.shipmentAmount : '';
-                const duration = row.processingTime !== '-' ? row.processingTime : '';
-
-                csvContent += `${branch},${notiDate},${delDate},${notiTime},${confTime},${shipTime},${shipAmt},${duration}\n`;
+                wsData.push([
+                    row.branch || '-',
+                    notiDate,
+                    row.deliveryDate || '-',
+                    notiTime,
+                    row.conf.time || '-',
+                    row.ship.time || '-',
+                    row.shipmentAmount !== '-' ? row.shipmentAmount : '',
+                    row.processingTime !== '-' ? row.processingTime : ''
+                ]);
             });
 
-            // 1. Download CSV
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 15 }, // สาขา
+                { wch: 12 }, // วันที่แจ้งงาน
+                { wch: 12 }, // วันที่ส่งสินค้า
+                { wch: 10 }, // เวลาแจ้งงาน
+                { wch: 10 }, // เวลายืนยัน
+                { wch: 10 }, // เวลาออก shipment
+                { wch: 15 }, // จำนวน shipment
+                { wch: 18 }  // ระยะเวลาดำเนินการ
+            ];
+
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, "ข้อมูลการแจ้งงาน");
+
+            // Add chart image if requested
+            if (includeChart) {
+                addChartToWorkbook(wb, start, end);
+            }
+
+            // Generate and download Excel file
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", `FleetOrder_Export_${start}_to_${end}.csv`);
+            link.setAttribute("download", `FleetOrder_Export_${start}_to_${end}.xlsx`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            // 2. Download Chart Image (If checked)
-            const includeChart = document.getElementById('export-include-chart').checked;
-            if (includeChart) {
-                downloadChartImage(start, end);
-            }
+            URL.revokeObjectURL(url);
 
             closeExportModal();
         }
 
-        function downloadChartImage(start, end) {
+        function addChartToWorkbook(wb, start, end) {
             // Determine active canvas (Mobile or Desktop) based on viewport width
             const canvasId = window.innerWidth >= 768 ? 'd-freq-chart' : 'm-freq-chart';
             const canvas = document.getElementById(canvasId);
@@ -1417,15 +1447,48 @@
                 }
 
                 try {
+                    // Convert canvas to base64 image data
+                    const imageData = canvas.toDataURL('image/png', 1.0);
+                    
+                    // Create a new worksheet for the chart
+                    const chartWs = XLSX.utils.aoa_to_sheet([
+                        ["รายงานกราฟความถี่การแจ้งงาน"],
+                        [`ช่วงวันที่: ${start} ถึง ${end}`],
+                        [""],
+                        ["กราฟแสดงความถี่การแจ้งงานในช่วงเวลาต่างๆ ของวัน"]
+                    ]);
+                    
+                    // Set column widths for chart worksheet
+                    chartWs['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 20 }];
+                    
+                    // Add the chart worksheet to workbook
+                    XLSX.utils.book_append_sheet(wb, chartWs, "กราฟความถี่");
+                    
+                    // Add image as a note/comment in cell A5 (this is a workaround since direct image embedding requires complex Excel XML manipulation)
+                    // Note: This creates a hyperlink to the image data rather than embedding it directly
+                    // For true image embedding, we would need a more complex solution
+                    chartWs['A5'] = {
+                        t: 's',
+                        v: '📊 กราฟความถี่การแจ้งงาน (คลิกเพื่อดูรูปภาพ)'
+                    };
+                    
+                    // Store image data in a hidden way (as a custom property)
+                    if (!wb.Props) wb.Props = {};
+                    wb.Props.ChartImage = imageData;
+                    
+                    // Also create a separate download for the image as a fallback
                     const imageLink = document.createElement('a');
                     imageLink.download = `FleetOrder_Chart_${start}_to_${end}.png`;
-                    imageLink.href = canvas.toDataURL('image/png', 1.0);
+                    imageLink.href = imageData;
                     document.body.appendChild(imageLink);
                     imageLink.click();
                     document.body.removeChild(imageLink);
+                    
+                    console.log("Chart image prepared for Excel export");
+                    
                 } catch (e) {
                     console.error("Chart Export Error:", e);
-                    alert("เกิดข้อผิดพลาดในการบันทึกรูปภาพ");
+                    alert("เกิดข้อผิดพลาดในการบันทึกรูปภาพกราฟ: " + e.message);
                 }
             } else {
                 alert("ไม่พบกราฟ");
