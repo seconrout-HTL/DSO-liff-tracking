@@ -1374,7 +1374,7 @@
             
             // Prepare data for worksheet
             const wsData = [
-                ["สาขา", "วันที่แจ้งงาน", "วันที่ส่งสินค้า", "เวลาแจ้งงาน", "เวลายืนยัน", "เวลาออก shipment", "จำนวน shipment", "ระยะเวลาดำเนินการ (นาที)"]
+                ["สาขา", "วันที่แจ้งงาน", "วันที่ส่งสินค้า", "เวลาแจ้งงาน", "เวลายืนยัน", "เวลาออก shipment", "จำนวน shipment", "จำนวนการแก้ไข", "หมายเหตุ", "ระยะเวลาดำเนินการ (นาที)"]
             ];
 
             exportData.forEach(row => {
@@ -1382,14 +1382,29 @@
                 const notiDate = dateParts[0] || '-';
                 const notiTime = dateParts[1] ? dateParts[1].replace('น.', '').trim() : '-';
                 
+                // Convert delivery date to Christian calendar (20xx)
+                let deliveryDate = row.deliveryDate || '-';
+                if (deliveryDate !== '-') {
+                    const dateMatch = deliveryDate.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+                    if (dateMatch) {
+                        let year = parseInt(dateMatch[3]);
+                        if (dateMatch[3].length === 2) {
+                            year += 2000; // Convert to 20xx format
+                        }
+                        deliveryDate = `${dateMatch[1]}/${dateMatch[2]}/${year}`;
+                    }
+                }
+                
                 wsData.push([
                     row.branch || '-',
                     notiDate,
-                    row.deliveryDate || '-',
+                    deliveryDate,
                     notiTime,
                     row.conf.time || '-',
                     row.ship.time || '-',
                     row.shipmentAmount !== '-' ? row.shipmentAmount : '',
+                    row.editCount > 0 ? row.editCount.toString() : '0',
+                    row.note || '',
                     row.processingTime !== '-' ? row.processingTime : ''
                 ]);
             });
@@ -1406,6 +1421,8 @@
                 { wch: 10 }, // เวลายืนยัน
                 { wch: 10 }, // เวลาออก shipment
                 { wch: 15 }, // จำนวน shipment
+                { wch: 12 }, // จำนวนการแก้ไข
+                { wch: 25 }, // หมายเหตุ
                 { wch: 18 }  // ระยะเวลาดำเนินการ
             ];
 
