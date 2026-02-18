@@ -1374,13 +1374,13 @@
             
             // Prepare data for worksheet
             const wsData = [
-                ["สาขา", "วันที่แจ้งงาน", "วันที่ส่งสินค้า", "เวลาแจ้งงาน", "เวลายืนยัน", "เวลาออก shipment", "จำนวน shipment", "จำนวนการแก้ไข", "หมายเหตุ", "ระยะเวลาดำเนินการ (นาที)"]
+                ["สาขา", "วันที่แจ้งงาน", "วันที่ส่งสินค้า", "เวลาแจ้งงาน", "เวลายืนยัน", "เวลาออก shipment", "จำนวน shipment", "ระยะเวลาดำเนินการ (นาที)", "จำนวนการแก้ไข", "หมายเหตุ"]
             ];
 
             exportData.forEach(row => {
                 const dateParts = row.timestamp.split(' ');
                 const notiDate = dateParts[0] || '-';
-                const notiTime = dateParts[1] ? dateParts[1].replace('น.', '').trim() : '-';
+                const notiTime = row.bill.time || '-'; // Use Time_Bill for notification time
                 
                 // Convert delivery date to Christian calendar (20xx)
                 let deliveryDate = row.deliveryDate || '-';
@@ -1403,9 +1403,9 @@
                     row.conf.time || '-',
                     row.ship.time || '-',
                     row.shipmentAmount !== '-' ? row.shipmentAmount : '',
+                    row.processingTime !== '-' ? row.processingTime : '',
                     row.editCount > 0 ? row.editCount.toString() : '0',
-                    row.note || '',
-                    row.processingTime !== '-' ? row.processingTime : ''
+                    row.note || ''
                 ]);
             });
 
@@ -1421,9 +1421,9 @@
                 { wch: 10 }, // เวลายืนยัน
                 { wch: 10 }, // เวลาออก shipment
                 { wch: 15 }, // จำนวน shipment
+                { wch: 18 }, // ระยะเวลาดำเนินการ
                 { wch: 12 }, // จำนวนการแก้ไข
-                { wch: 25 }, // หมายเหตุ
-                { wch: 18 }  // ระยะเวลาดำเนินการ
+                { wch: 25 }  // หมายเหตุ
             ];
 
             // Add worksheet to workbook
