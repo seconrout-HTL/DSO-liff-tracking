@@ -1380,7 +1380,7 @@
             exportData.forEach(row => {
                 const dateParts = row.timestamp.split(' ');
                 const notiDate = dateParts[0] || '-';
-                const notiTime = row.bill.time || '-'; // Use Time_Bill for notification time
+                const notiTime = row.bill.time || '-';
                 
                 // Convert delivery date to Christian calendar (20xx)
                 let deliveryDate = row.deliveryDate || '-';
@@ -1403,8 +1403,8 @@
                     row.conf.time || '-',
                     row.ship.time || '-',
                     row.shipmentAmount !== '-' ? row.shipmentAmount : '',
-                    row.processingTime !== '-' ? row.processingTime : '',
                     row.editCount > 0 ? row.editCount.toString() : '0',
+                    row.processingTime !== '-' ? row.processingTime : '',
                     row.note || ''
                 ]);
             });
@@ -1421,9 +1421,9 @@
                 { wch: 10 }, // เวลายืนยัน
                 { wch: 10 }, // เวลาออก shipment
                 { wch: 15 }, // จำนวน shipment
-                { wch: 18 }, // ระยะเวลาดำเนินการ
                 { wch: 12 }, // จำนวนการแก้ไข
-                { wch: 25 }  // หมายเหตุ
+                { wch: 25 }, // หมายเหตุ
+                { wch: 18 }  // ระยะเวลาดำเนินการ
             ];
 
             // Add worksheet to workbook
