@@ -1900,40 +1900,63 @@
                 }
             }
         }
+
         // Report Page Functions
-function switchReportType(type) {
-    // Update button styles
-    if (type === 'daily') {
-        document.getElementById('d-btn-daily').className = 'bg-ht-red text-white p-4 rounded-lg font-medium transition hover:bg-red-600';
-        document.getElementById('d-btn-monthly').className = 'bg-gray-200 text-gray-700 p-4 rounded-lg font-medium transition hover:bg-gray-300';
-        document.getElementById('m-btn-daily').className = 'bg-ht-red text-white p-3 rounded-lg text-sm font-medium transition';
-        document.getElementById('m-btn-monthly').className = 'bg-gray-200 text-gray-700 p-3 rounded-lg text-sm font-medium transition';
+        function switchReportType(type) {
+            // Update button styles
+            if (type === 'daily') {
+                const dBtnDaily = document.getElementById('d-btn-daily');
+                const dBtnMonthly = document.getElementById('d-btn-monthly');
+                const mBtnDaily = document.getElementById('m-btn-daily');
+                const mBtnMonthly = document.getElementById('m-btn-monthly');
                 
-        // Show daily report sections
-        document.getElementById('d-daily-report').classList.remove('hidden');
-        document.getElementById('d-monthly-report').classList.add('hidden');
-        document.getElementById('m-daily-report').classList.remove('hidden');
-        document.getElementById('m-monthly-report').classList.add('hidden');
-    } else {
-        document.getElementById('d-btn-daily').className = 'bg-gray-200 text-gray-700 p-4 rounded-lg font-medium transition hover:bg-gray-300';
-        document.getElementById('d-btn-monthly').className = 'bg-ht-red text-white p-4 rounded-lg font-medium transition hover:bg-red-600';
-        document.getElementById('m-btn-daily').className = 'bg-gray-200 text-gray-700 p-3 rounded-lg text-sm font-medium transition';
-        document.getElementById('m-btn-monthly').className = 'bg-ht-red text-white p-3 rounded-lg text-sm font-medium transition';
+                if (dBtnDaily) dBtnDaily.className = 'bg-ht-red text-white p-4 rounded-lg font-medium transition hover:bg-red-600';
+                if (dBtnMonthly) dBtnMonthly.className = 'bg-gray-200 text-gray-700 p-4 rounded-lg font-medium transition hover:bg-gray-300';
+                if (mBtnDaily) mBtnDaily.className = 'bg-ht-red text-white p-3 rounded-lg text-sm font-medium transition';
+                if (mBtnMonthly) mBtnMonthly.className = 'bg-gray-200 text-gray-700 p-3 rounded-lg text-sm font-medium transition';
                 
-        // Show monthly report sections
-        document.getElementById('d-daily-report').classList.add('hidden');
-        document.getElementById('d-monthly-report').classList.remove('hidden');
-        document.getElementById('m-daily-report').classList.add('hidden');
-        document.getElementById('m-monthly-report').classList.remove('hidden');
-    }
-}
- 
+                // Show daily report sections
+                const dDaily = document.getElementById('d-daily-report');
+                const dMonthly = document.getElementById('d-monthly-report');
+                const mDaily = document.getElementById('m-daily-report');
+                const mMonthly = document.getElementById('m-monthly-report');
+                
+                if (dDaily) dDaily.classList.remove('hidden');
+                if (dMonthly) dMonthly.classList.add('hidden');
+                if (mDaily) mDaily.classList.remove('hidden');
+                if (mMonthly) mMonthly.classList.add('hidden');
+            } else {
+                const dBtnDaily = document.getElementById('d-btn-daily');
+                const dBtnMonthly = document.getElementById('d-btn-monthly');
+                const mBtnDaily = document.getElementById('m-btn-daily');
+                const mBtnMonthly = document.getElementById('m-btn-monthly');
+                
+                if (dBtnDaily) dBtnDaily.className = 'bg-gray-200 text-gray-700 p-4 rounded-lg font-medium transition hover:bg-gray-300';
+                if (dBtnMonthly) dBtnMonthly.className = 'bg-ht-red text-white p-4 rounded-lg font-medium transition hover:bg-red-600';
+                if (mBtnDaily) mBtnDaily.className = 'bg-gray-200 text-gray-700 p-3 rounded-lg text-sm font-medium transition';
+                if (mBtnMonthly) mBtnMonthly.className = 'bg-ht-red text-white p-3 rounded-lg text-sm font-medium transition';
+                
+                // Show monthly report sections
+                const dDaily = document.getElementById('d-daily-report');
+                const dMonthly = document.getElementById('d-monthly-report');
+                const mDaily = document.getElementById('m-daily-report');
+                const mMonthly = document.getElementById('m-monthly-report');
+                
+                if (dDaily) dDaily.classList.add('hidden');
+                if (dMonthly) dMonthly.classList.remove('hidden');
+                if (mDaily) mDaily.classList.add('hidden');
+                if (mMonthly) mMonthly.classList.remove('hidden');
+            }
+        }
+
 // Update desktop tab function to include report tab
 function switchDesktopTab(tab) {
     document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
-    document.getElementById(`d-nav-${tab}`).classList.add('active');
+    const dNavTab = document.getElementById(`d-nav-${tab}`);
+    if (dNavTab) dNavTab.classList.add('active');
     document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
-    document.getElementById(`d-page-${tab}`).classList.remove('hidden');
+    const dPageTab = document.getElementById(`d-page-${tab}`);
+    if (dPageTab) dPageTab.classList.remove('hidden');
             
     // Update Title Based on Tab
     const titles = {
