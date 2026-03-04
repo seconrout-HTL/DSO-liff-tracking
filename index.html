@@ -1863,6 +1863,13 @@
             event.currentTarget.classList.add('active');
             document.querySelectorAll('.mobile-page').forEach(el => el.classList.add('hidden'));
             document.getElementById(`m-page-${tab}`).classList.remove('hidden');
+            
+            // Initialize report page to show daily report by default
+            if (tab === 'report') {
+                setTimeout(() => {
+                    switchReportType('daily');
+                }, 100);
+            }
         }
         
         function toggleAccordion(element) {
@@ -1966,6 +1973,13 @@ function switchDesktopTab(tab) {
         'help': 'ช่วยเหลือ (Help Center)'
     };
     document.getElementById('desktop-page-title').innerText = titles[tab] || 'Fleet Order';
+    
+    // Initialize report page to show daily report by default
+    if (tab === 'report') {
+        setTimeout(() => {
+            switchReportType('daily');
+        }, 100);
+    }
 }
     </script>
 </body>
