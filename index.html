@@ -217,6 +217,112 @@
                 </div>
             </div>
 
+            <div id="m-page-report" class="mobile-page hidden space-y-4">
+                <!-- Report Type Selection -->
+                <div class="bg-white rounded-xl shadow-sm p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-sm text-gray-800 border-l-4 border-ht-red pl-2">เลือกรูปแบบรายงาน</h3>
+                        <button onclick="openExportModal()" class="flex items-center gap-2 bg-excel-green text-white px-3 py-2 rounded-lg text-xs hover:bg-green-800 transition shadow-sm hover:shadow active:scale-95">
+                            <i class="fas fa-file-excel"></i> 
+                            <span>Export Excel</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="switchReportType('daily')" id="m-btn-daily" class="bg-ht-red text-white p-3 rounded-lg text-sm font-medium transition">
+                            <i class="fas fa-calendar-day mb-1"></i>
+                            <div>รายวัน</div>
+                        </button>
+                        <button onclick="switchReportType('monthly')" id="m-btn-monthly" class="bg-gray-200 text-gray-700 p-3 rounded-lg text-sm font-medium transition">
+                            <i class="fas fa-calendar-alt mb-1"></i>
+                            <div>รายเดือน</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Daily Report Section -->
+                <div id="m-daily-report" class="space-y-4">
+                    <div class="bg-white rounded-xl shadow-sm p-4">
+                        <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-blue-500 pl-2">เลือกวันที่</h3>
+                        <input type="date" id="m-report-date" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red">
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-4 overflow-hidden">
+                        <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-gray-400 pl-2">รายงานรายละเอียด (Detail Report)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left border-collapse">
+                                <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
+                                    <tr>
+                                        <th class="p-2">สาขา</th>
+                                        <th class="p-2">วันที่แจ้ง</th>
+                                        <th class="p-2">วันที่ส่ง</th>
+                                        <th class="p-2 text-center">เวลาแจ้ง</th>
+                                        <th class="p-2 text-center">เวลายืนยัน</th>
+                                        <th class="p-2 text-center">เวลาส่ง</th>
+                                        <th class="p-2 text-right">จำนวน Shipment</th>
+                                        <th class="p-2 text-center">ดำเนินการ (นาที)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="m-detail-table-body" class="divide-y divide-gray-100 text-gray-700">
+                                    <!-- JS จะใส่ข้อมูลที่นี่ -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Report Section -->
+                <div id="m-monthly-report" class="space-y-4 hidden">
+                    <div class="bg-white rounded-xl shadow-sm p-4">
+                        <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-blue-500 pl-2">เลือกเดือนและปี</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <select id="m-report-month" class="border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red">
+                                <option value="1">มกราคม</option>
+                                <option value="2">กุมภาพันธ์</option>
+                                <option value="3">มีนาคม</option>
+                                <option value="4">เมษายน</option>
+                                <option value="5">พฤษภาคม</option>
+                                <option value="6">มิถุนายน</option>
+                                <option value="7">กรกฎาคม</option>
+                                <option value="8">สิงหาคม</option>
+                                <option value="9">กันยายน</option>
+                                <option value="10">ตุลาคม</option>
+                                <option value="11">พฤศจิกายน</option>
+                                <option value="12">ธันวาคม</option>
+                            </select>
+                            <input type="number" id="m-report-year" class="border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red" placeholder="ปี (ค.ศ.)" min="2020" max="2030">
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-4">
+                        <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-orange-500 pl-2">กรองตามสาขา</h3>
+                        <select id="m-branch-filter" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red">
+                            <option value="">ทุกสาขา</option>
+                            <!-- JS จะเพิ่มรายการสาขาที่นี่ -->
+                        </select>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-4 overflow-hidden">
+                        <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-gray-400 pl-2">สรุปรายเดือน</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left border-collapse">
+                                <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
+                                    <tr>
+                                        <th class="p-2">สาขา</th>
+                                        <th class="p-2 text-center">เวลาแจ้งเฉลี่ย</th>
+                                        <th class="p-2 text-center">จำนวน DO</th>
+                                        <th class="p-2 text-center">จำนวน SH</th>
+                                        <th class="p-2 text-center">เวลาดำเนินการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="m-monthly-table-body" class="divide-y divide-gray-100 text-gray-700">
+                                    <!-- JS จะใส่ข้อมูลที่นี่ -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="m-page-help" class="mobile-page hidden space-y-4">
                  <div class="bg-white rounded-xl p-5 shadow-sm">
                     <h2 class="font-bold text-lg text-gray-800 mb-4 flex items-center"><i class="fas fa-question-circle text-ht-red mr-2"></i>ช่วยเหลือ & FAQ</h2>
@@ -283,12 +389,15 @@
 
         </main>
 
-        <nav class="fixed bottom-0 w-full bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] grid grid-cols-3 py-3 z-40 pb-safe">
+        <nav class="fixed bottom-0 w-full bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] grid grid-cols-4 py-3 z-40 pb-safe">
             <div onclick="switchMobileTab('tracking')" class="mobile-nav-item active flex flex-col items-center text-gray-400 transition-all cursor-pointer">
                 <i class="fas fa-shipping-fast text-lg mb-1"></i><span class="text-[10px]">งานล่าสุด</span>
             </div>
             <div onclick="switchMobileTab('dashboard')" class="mobile-nav-item flex flex-col items-center text-gray-400 transition-all cursor-pointer">
                 <i class="fas fa-chart-pie text-lg mb-1"></i><span class="text-[10px]">ภาพรวม</span>
+            </div>
+            <div onclick="switchMobileTab('report')" class="mobile-nav-item flex flex-col items-center text-gray-400 transition-all cursor-pointer">
+                <i class="fas fa-file-alt text-lg mb-1"></i><span class="text-[10px]">รายงาน</span>
             </div>
              <div onclick="switchMobileTab('help')" class="mobile-nav-item flex flex-col items-center text-gray-400 transition-all cursor-pointer">
                 <i class="fas fa-question-circle text-lg mb-1"></i><span class="text-[10px]">ช่วยเหลือ</span>
@@ -311,6 +420,9 @@
                 <a onclick="switchDesktopTab('dashboard')" id="d-nav-dashboard" class="sidebar-link flex items-center px-6 py-4 text-gray-600 cursor-pointer">
                     <i class="fas fa-chart-line w-6"></i><span class="font-medium ml-3">แดชบอร์ด (Dashboard)</span>
                 </a>
+                <a onclick="switchDesktopTab('report')" id="d-nav-report" class="sidebar-link flex items-center px-6 py-4 text-gray-600 cursor-pointer">
+                    <i class="fas fa-file-alt w-6"></i><span class="font-medium ml-3">รายงาน (Report)</span>
+                </a>
                  <a onclick="switchDesktopTab('help')" id="d-nav-help" class="sidebar-link flex items-center px-6 py-4 text-gray-600 cursor-pointer">
                     <i class="fas fa-question-circle w-6"></i><span class="font-medium ml-3">ช่วยเหลือ (Help)</span>
                 </a>
@@ -323,12 +435,6 @@
                 <h2 class="text-2xl font-bold text-gray-800" id="desktop-page-title">งานล่าสุด (Recent List)</h2>
                 <div class="flex gap-3 relative">
                     
-                    <!-- Export Button -->
-                    <button onclick="openExportModal()" class="flex items-center gap-2 bg-excel-green text-white px-4 py-2 rounded-lg text-sm hover:bg-green-800 transition shadow-sm hover:shadow active:scale-95">
-                        <i class="fas fa-file-excel"></i> 
-                        <span>Export Excel</span>
-                    </button>
-
                     <!-- CUSTOM FILTER BUTTON -->
                     <div class="relative">
                         <button id="desktop-filter-btn" onclick="toggleDesktopFilter(event)" class="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm text-gray-600 hover:border-ht-red transition h-full shadow-sm hover:shadow active:scale-95">
@@ -458,27 +564,108 @@
                     </div>
                 </div>
 
-                <!-- Desktop Detail Table (สำหรับ Dashboard) -->
-                <div class="bg-white rounded-xl shadow-sm p-6 mt-6 overflow-hidden">
-                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-gray-400 pl-3">รายงานรายละเอียด (Detail Report)</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left border-collapse">
-                            <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
-                                <tr>
-                                    <th class="p-3">สาขา</th>
-                                    <th class="p-3">วันที่แจ้ง</th>
-                                    <th class="p-3">วันที่ส่ง</th>
-                                    <th class="p-3 text-center">เวลาแจ้ง</th>
-                                    <th class="p-3 text-center">เวลายืนยัน</th>
-                                    <th class="p-3 text-center">เวลาส่ง</th>
-                                    <th class="p-3 text-right">จำนวน Shipment</th>
-                                    <th class="p-3 text-center">ดำเนินการ (นาที)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="d-detail-table-body" class="divide-y divide-gray-100 text-gray-700">
-                                <!-- JS จะใส่ข้อมูลที่นี่ -->
-                            </tbody>
-                        </table>
+             <div id="d-page-report" class="desktop-page hidden">
+                <!-- Report Type Selection -->
+                <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-ht-red pl-3">เลือกรูปแบบรายงาน</h3>
+                        <button onclick="openExportModal()" class="flex items-center gap-2 bg-excel-green text-white px-4 py-2 rounded-lg text-sm hover:bg-green-800 transition shadow-sm hover:shadow active:scale-95">
+                            <i class="fas fa-file-excel"></i> 
+                            <span>Export Excel</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="switchReportType('daily')" id="d-btn-daily" class="bg-ht-red text-white p-4 rounded-lg font-medium transition hover:bg-red-600">
+                            <i class="fas fa-calendar-day text-2xl mb-2"></i>
+                            <div>รายวัน</div>
+                        </button>
+                        <button onclick="switchReportType('monthly')" id="d-btn-monthly" class="bg-gray-200 text-gray-700 p-4 rounded-lg font-medium transition hover:bg-gray-300">
+                            <i class="fas fa-calendar-alt text-2xl mb-2"></i>
+                            <div>รายเดือน</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Daily Report Section -->
+                <div id="d-daily-report" class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-blue-500 pl-3">เลือกวันที่</h3>
+                        <input type="date" id="d-report-date" class="w-full max-w-xs border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red">
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 overflow-hidden">
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-gray-400 pl-3">รายงานรายละเอียด (Detail Report)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left border-collapse">
+                                <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
+                                    <tr>
+                                        <th class="p-3">สาขา</th>
+                                        <th class="p-3">วันที่แจ้ง</th>
+                                        <th class="p-3">วันที่ส่ง</th>
+                                        <th class="p-3 text-center">เวลาแจ้ง</th>
+                                        <th class="p-3 text-center">เวลายืนยัน</th>
+                                        <th class="p-3 text-center">เวลาส่ง</th>
+                                        <th class="p-3 text-right">จำนวน Shipment</th>
+                                        <th class="p-3 text-center">ดำเนินการ (นาที)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="d-detail-table-body" class="divide-y divide-gray-100 text-gray-700">
+                                    <!-- JS จะใส่ข้อมูลที่นี่ -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Report Section -->
+                <div id="d-monthly-report" class="space-y-6 hidden">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-blue-500 pl-3">เลือกเดือนและปี</h3>
+                        <div class="grid grid-cols-2 gap-4 max-w-md">
+                            <select id="d-report-month" class="border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red">
+                                <option value="1">มกราคม</option>
+                                <option value="2">กุมภาพันธ์</option>
+                                <option value="3">มีนาคม</option>
+                                <option value="4">เมษายน</option>
+                                <option value="5">พฤษภาคม</option>
+                                <option value="6">มิถุนายน</option>
+                                <option value="7">กรกฎาคม</option>
+                                <option value="8">สิงหาคม</option>
+                                <option value="9">กันยายน</option>
+                                <option value="10">ตุลาคม</option>
+                                <option value="11">พฤศจิกายน</option>
+                                <option value="12">ธันวาคม</option>
+                            </select>
+                            <input type="number" id="d-report-year" class="border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red" placeholder="ปี (ค.ศ.)" min="2020" max="2030">
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-orange-500 pl-3">กรองตามสาขา</h3>
+                        <select id="d-branch-filter" class="w-full max-w-md border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red">
+                            <option value="">ทุกสาขา</option>
+                            <!-- JS จะเพิ่มรายการสาขาที่นี่ -->
+                        </select>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 overflow-hidden">
+                        <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-gray-400 pl-3">สรุปรายเดือน</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left border-collapse">
+                                <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
+                                    <tr>
+                                        <th class="p-3">สาขา</th>
+                                        <th class="p-3 text-center">เวลาแจ้งเฉลี่ย</th>
+                                        <th class="p-3 text-center">จำนวน DO</th>
+                                        <th class="p-3 text-center">จำนวน SH</th>
+                                        <th class="p-3 text-center">เวลาดำเนินการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="d-monthly-table-body" class="divide-y divide-gray-100 text-gray-700">
+                                    <!-- JS จะใส่ข้อมูลที่นี่ -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
