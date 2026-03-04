@@ -1915,6 +1915,50 @@
                 }
             }
         }
+        // Report Page Functions
+function switchReportType(type) {
+    // Update button styles
+    if (type === 'daily') {
+        document.getElementById('d-btn-daily').className = 'bg-ht-red text-white p-4 rounded-lg font-medium transition hover:bg-red-600';
+        document.getElementById('d-btn-monthly').className = 'bg-gray-200 text-gray-700 p-4 rounded-lg font-medium transition hover:bg-gray-300';
+        document.getElementById('m-btn-daily').className = 'bg-ht-red text-white p-3 rounded-lg text-sm font-medium transition';
+        document.getElementById('m-btn-monthly').className = 'bg-gray-200 text-gray-700 p-3 rounded-lg text-sm font-medium transition';
+                
+        // Show daily report sections
+        document.getElementById('d-daily-report').classList.remove('hidden');
+        document.getElementById('d-monthly-report').classList.add('hidden');
+        document.getElementById('m-daily-report').classList.remove('hidden');
+        document.getElementById('m-monthly-report').classList.add('hidden');
+    } else {
+        document.getElementById('d-btn-daily').className = 'bg-gray-200 text-gray-700 p-4 rounded-lg font-medium transition hover:bg-gray-300';
+        document.getElementById('d-btn-monthly').className = 'bg-ht-red text-white p-4 rounded-lg font-medium transition hover:bg-red-600';
+        document.getElementById('m-btn-daily').className = 'bg-gray-200 text-gray-700 p-3 rounded-lg text-sm font-medium transition';
+        document.getElementById('m-btn-monthly').className = 'bg-ht-red text-white p-3 rounded-lg text-sm font-medium transition';
+                
+        // Show monthly report sections
+        document.getElementById('d-daily-report').classList.add('hidden');
+        document.getElementById('d-monthly-report').classList.remove('hidden');
+        document.getElementById('m-daily-report').classList.add('hidden');
+        document.getElementById('m-monthly-report').classList.remove('hidden');
+    }
+}
+ 
+// Update desktop tab function to include report tab
+function switchDesktopTab(tab) {
+    document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+    document.getElementById(`d-nav-${tab}`).classList.add('active');
+    document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
+    document.getElementById(`d-page-${tab}`).classList.remove('hidden');
+            
+    // Update Title Based on Tab
+    const titles = {
+        'tracking': 'งานล่าสุด (Recent List)',
+        'dashboard': 'แดชบอร์ด (Dashboard)',
+        'report': 'รายงาน (Report)',
+        'help': 'ช่วยเหลือ (Help Center)'
+    };
+    document.getElementById('desktop-page-title').innerText = titles[tab] || 'Fleet Order';
+}
     </script>
 </body>
 </html>
