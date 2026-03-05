@@ -243,7 +243,7 @@
                 <div id="m-daily-report" class="space-y-4">
                     <div class="bg-white rounded-xl shadow-sm p-4">
                         <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-blue-500 pl-2">เลือกวันที่</h3>
-                        <input type="date" id="m-report-date" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red">
+                        <input type="date" id="m-report-date" onchange="updateDailyReport('mobile')" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red">
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm p-4 overflow-hidden">
@@ -275,7 +275,7 @@
                     <div class="bg-white rounded-xl shadow-sm p-4">
                         <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-blue-500 pl-2">เลือกเดือนและปี</h3>
                         <div class="grid grid-cols-2 gap-3">
-                            <select id="m-report-month" class="border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red">
+                            <select id="m-report-month" onchange="updateMonthlyReport('mobile')" class="border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red">
                                 <option value="1">มกราคม</option>
                                 <option value="2">กุมภาพันธ์</option>
                                 <option value="3">มีนาคม</option>
@@ -289,13 +289,13 @@
                                 <option value="11">พฤศจิกายน</option>
                                 <option value="12">ธันวาคม</option>
                             </select>
-                            <input type="number" id="m-report-year" class="border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red" placeholder="ปี (ค.ศ.)" min="2020" max="2030">
+                            <input type="number" id="m-report-year" onchange="updateMonthlyReport('mobile')" onkeyup="updateMonthlyReport('mobile')" class="border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red" placeholder="ปี (ค.ศ.)" min="2020" max="2030">
                         </div>
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm p-4">
                         <h3 class="font-bold text-sm mb-3 text-gray-800 border-l-4 border-orange-500 pl-2">กรองตามสาขา</h3>
-                        <select id="m-branch-filter" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red">
+                        <select id="m-branch-filter" onchange="updateMonthlyReport('mobile')" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-700 focus:outline-none focus:border-ht-red">
                             <option value="">ทุกสาขา</option>
                             <!-- JS จะเพิ่มรายการสาขาที่นี่ -->
                         </select>
@@ -563,6 +563,7 @@
                         </div>
                     </div>
                 </div>
+            </div> <!-- เพิ่ม </div> บรรทัดนี้เพื่อปิดส่วนของ d-page-dashboard -->
 
              <div id="d-page-report" class="desktop-page hidden">
                 <!-- Report Type Selection -->
@@ -590,7 +591,7 @@
                 <div id="d-daily-report" class="space-y-6">
                     <div class="bg-white rounded-xl shadow-sm p-6">
                         <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-blue-500 pl-3">เลือกวันที่</h3>
-                        <input type="date" id="d-report-date" class="w-full max-w-xs border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red">
+                        <input type="date" id="d-report-date" onchange="updateDailyReport('desktop')" class="w-full max-w-xs border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red">
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm p-6 overflow-hidden">
@@ -622,7 +623,7 @@
                     <div class="bg-white rounded-xl shadow-sm p-6">
                         <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-blue-500 pl-3">เลือกเดือนและปี</h3>
                         <div class="grid grid-cols-2 gap-4 max-w-md">
-                            <select id="d-report-month" class="border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red">
+                            <select id="d-report-month" onchange="updateMonthlyReport('desktop')" class="border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red">
                                 <option value="1">มกราคม</option>
                                 <option value="2">กุมภาพันธ์</option>
                                 <option value="3">มีนาคม</option>
@@ -636,13 +637,13 @@
                                 <option value="11">พฤศจิกายน</option>
                                 <option value="12">ธันวาคม</option>
                             </select>
-                            <input type="number" id="d-report-year" class="border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red" placeholder="ปี (ค.ศ.)" min="2020" max="2030">
+                            <input type="number" id="d-report-year" onchange="updateMonthlyReport('desktop')" onkeyup="updateMonthlyReport('desktop')" class="border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red" placeholder="ปี (ค.ศ.)" min="2020" max="2030">
                         </div>
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm p-6">
                         <h3 class="font-bold text-lg mb-4 text-gray-800 border-l-4 border-orange-500 pl-3">กรองตามสาขา</h3>
-                        <select id="d-branch-filter" class="w-full max-w-md border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red">
+                        <select id="d-branch-filter" onchange="updateMonthlyReport('desktop')" class="w-full max-w-md border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:border-ht-red">
                             <option value="">ทุกสาขา</option>
                             <!-- JS จะเพิ่มรายการสาขาที่นี่ -->
                         </select>
@@ -819,6 +820,34 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ADDED TIMELINE STATUS FOR DESKTOP -->
+                <div class="bg-white rounded-xl shadow-sm p-8 max-w-4xl mx-auto mt-6">
+                    <h2 class="font-bold text-lg text-gray-800 mb-4 flex items-center border-b pb-4">
+                        <i class="fas fa-info-circle text-blue-500 mr-3"></i>สถานะ Timeline
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                         <div class="flex items-center gap-3">
+                             <div class="w-5 h-5 rounded-full bg-gray-200 border-2 border-gray-300 shadow-sm"></div>
+                             <span class="text-gray-600">งานใหม่ (รอตรวจสอบ)</span>
+                         </div>
+                         <div class="flex items-center gap-3">
+                             <div class="w-5 h-5 rounded-full bg-blue-400 border-2 border-blue-400 shadow-sm"></div>
+                             <span class="text-gray-700 font-bold">ยืนยันแล้ว (รับเรื่อง)</span>
+                         </div>
+                         <div class="flex items-center gap-3">
+                             <div class="w-5 h-5 rounded-full bg-white border-2 border-orange-400 flex items-center justify-center shadow-sm">
+                                 <div class="w-2.5 h-2.5 rounded-full bg-orange-400"></div>
+                             </div>
+                             <span class="text-gray-700 font-bold">แก้ไขบิล (มีปรับปรุง)</span>
+                         </div>
+                         <div class="flex items-center gap-3">
+                             <div class="w-5 h-5 rounded-full bg-green-500 border-2 border-green-500 shadow-sm"></div>
+                             <span class="text-gray-700 font-bold">เสร็จสิ้น (Shipment)</span>
+                         </div>
+                    </div>
+                </div>
+
             </div>
 
         </main>
@@ -996,6 +1025,11 @@
                     mappedData.forEach(item => { if(item.branch && item.branch !== '-') uniqueBranches.add(item.branch); });
                     
                     applyFilters(); 
+                    
+                    // Update Reports explicitly whenever data finishes loading
+                    populateBranchFilters();
+                    updateDailyReport();
+                    updateMonthlyReport();
                 }
             } catch (error) {
                 console.error('Fetch Error:', error);
@@ -1039,7 +1073,7 @@
             renderFrequencyChart(filteredData); 
             renderFrequencyTable(globalData); 
             renderBranchStatusTable(filteredData); 
-            renderDetailTable(filteredData); 
+            // Detail Table rendering removed from here, now triggered explicitly by DailyReport filter
         }
 
         function renderFrequencyTable(allData) {
@@ -1215,6 +1249,22 @@
             if(dDate) dDate.value = today;
             if(exStart) exStart.value = today;
             if(exEnd) exEnd.value = today;
+
+            // Set Report Specific Dates Default
+            const mRepDate = document.getElementById('m-report-date');
+            const dRepDate = document.getElementById('d-report-date');
+            if(mRepDate) mRepDate.value = today;
+            if(dRepDate) dRepDate.value = today;
+
+            const mMonth = document.getElementById('m-report-month');
+            const dMonth = document.getElementById('d-report-month');
+            if(mMonth) mMonth.value = parseInt(month).toString();
+            if(dMonth) dMonth.value = parseInt(month).toString();
+
+            const mYear = document.getElementById('m-report-year');
+            const dYear = document.getElementById('d-report-year');
+            if(mYear) mYear.value = year;
+            if(dYear) dYear.value = year;
         }
 
         function handleSort(column) {
@@ -1878,37 +1928,145 @@
 
         function manualRefresh() { toggleLoading(true); fetchData(false); }
 
-        function renderDetailTable(data) {
-            // Render Desktop Detail Table
-            const dBODY = document.getElementById('d-detail-table-body');
-            if(dBODY) {
-                // ⚠️ FIX: Force sort by latest timestamp first for Dashboard
-                const sortedData = [...data].sort((a, b) => b.rawTimestamp - a.rawTimestamp);
+        // ==========================================
+        // 📄 REPORT LOGIC
+        // ==========================================
+        function populateBranchFilters() {
+            const mFilter = document.getElementById('m-branch-filter');
+            const dFilter = document.getElementById('d-branch-filter');
+            
+            let options = '<option value="">ทุกสาขา</option>';
+            const sortedBranches = Array.from(uniqueBranches).sort();
+            sortedBranches.forEach(b => {
+                options += `<option value="${b}">${b}</option>`;
+            });
 
-                if(sortedData.length === 0) {
-                    dBODY.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-gray-400">ไม่พบข้อมูล</td></tr>';
-                } else {
-                    dBODY.innerHTML = sortedData.map(row => {
-                        const dateParts = row.timestamp.split(' ');
-                        const notiDate = dateParts[0];
-                        const notiTime = dateParts[1] ? dateParts[1].replace('น.', '') : '-';
-                        return `
-                        <tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                            <td class="p-3 font-medium text-gray-800">${row.branch}</td>
-                            <td class="p-3">${notiDate}</td>
-                            <td class="p-3">${row.deliveryDate}</td>
-                            <td class="p-3 text-center text-gray-500">${notiTime}</td>
-                            <td class="p-3 text-center text-gray-500">${row.conf.time || '-'}</td>
-                            <td class="p-3 text-center text-gray-500">${row.ship.time || '-'}</td>
-                            <td class="p-3 text-right font-medium text-blue-600">${row.shipmentAmount}</td>
-                            <td class="p-3 text-center">${row.processingTime}</td>
-                        </tr>`;
-                    }).join('');
-                }
-            }
+            if(mFilter && mFilter.options.length <= 1) mFilter.innerHTML = options;
+            if(dFilter && dFilter.options.length <= 1) dFilter.innerHTML = options;
         }
 
-        // Report Page Functions
+        function updateDailyReport(source) {
+            let activeDate = "";
+            if (source === 'mobile') {
+                activeDate = document.getElementById('m-report-date').value;
+                document.getElementById('d-report-date').value = activeDate; // Sync to desktop
+            } else if (source === 'desktop') {
+                activeDate = document.getElementById('d-report-date').value;
+                document.getElementById('m-report-date').value = activeDate; // Sync to mobile
+            } else {
+                // If called explicitly, decide by layout or just use desktop's date 
+                activeDate = document.getElementById('d-report-date').value || document.getElementById('m-report-date').value;
+            }
+
+            const reportData = globalData.filter(item => item.isoDate === activeDate);
+            renderDetailTable(reportData);
+        }
+
+        function renderDetailTable(data) {
+            const mBODY = document.getElementById('m-detail-table-body');
+            const dBODY = document.getElementById('d-detail-table-body');
+
+            const sortedData = [...data].sort((a, b) => b.rawTimestamp - a.rawTimestamp);
+
+            let html = '';
+            if(sortedData.length === 0) {
+                html = '<tr><td colspan="8" class="p-6 text-center text-gray-400">ไม่พบข้อมูลตามวันที่เลือก</td></tr>';
+            } else {
+                html = sortedData.map(row => {
+                    const dateParts = row.timestamp.split(' ');
+                    const notiDate = dateParts[0];
+                    const notiTime = dateParts[1] ? dateParts[1].replace('น.', '') : '-';
+                    return `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0 text-xs md:text-sm">
+                        <td class="p-2 md:p-3 font-medium text-gray-800">${row.branch}</td>
+                        <td class="p-2 md:p-3">${notiDate}</td>
+                        <td class="p-2 md:p-3">${row.deliveryDate}</td>
+                        <td class="p-2 md:p-3 text-center text-gray-500">${notiTime}</td>
+                        <td class="p-2 md:p-3 text-center text-gray-500">${row.conf.time || '-'}</td>
+                        <td class="p-2 md:p-3 text-center text-gray-500">${row.ship.time || '-'}</td>
+                        <td class="p-2 md:p-3 text-right font-medium text-blue-600">${row.shipmentAmount}</td>
+                        <td class="p-2 md:p-3 text-center">${row.processingTime || '-'}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            if(mBODY) mBODY.innerHTML = html;
+            if(dBODY) dBODY.innerHTML = html;
+        }
+
+        function updateMonthlyReport(source) {
+            let activeMonth, activeYear, activeBranch;
+
+            // Sync inputs between Desktop and Mobile automatically
+            if (source === 'mobile') {
+                activeMonth = document.getElementById('m-report-month').value;
+                activeYear = document.getElementById('m-report-year').value;
+                activeBranch = document.getElementById('m-branch-filter').value;
+                
+                document.getElementById('d-report-month').value = activeMonth;
+                document.getElementById('d-report-year').value = activeYear;
+                document.getElementById('d-branch-filter').value = activeBranch;
+            } else if (source === 'desktop') {
+                activeMonth = document.getElementById('d-report-month').value;
+                activeYear = document.getElementById('d-report-year').value;
+                activeBranch = document.getElementById('d-branch-filter').value;
+                
+                document.getElementById('m-report-month').value = activeMonth;
+                document.getElementById('m-report-year').value = activeYear;
+                document.getElementById('m-branch-filter').value = activeBranch;
+            } else {
+                activeMonth = document.getElementById('d-report-month').value;
+                activeYear = document.getElementById('d-report-year').value;
+                activeBranch = document.getElementById('d-branch-filter').value;
+            }
+
+            if(!activeYear) return;
+
+            // Filter
+            const filtered = globalData.filter(item => {
+                if(!item.isoDate) return false;
+                const [y, m, d] = item.isoDate.split('-');
+                const matchMonth = parseInt(m) === parseInt(activeMonth);
+                const matchYear = parseInt(y) === parseInt(activeYear);
+                const matchBranch = activeBranch === "" || item.branch === activeBranch;
+                return matchMonth && matchYear && matchBranch;
+            });
+
+            // Grouping logic for Monthly Summary
+            const summary = {};
+            filtered.forEach(item => {
+                if(!summary[item.branch]) summary[item.branch] = { do: 0, sh: 0 };
+                summary[item.branch].do++;
+                const sAmt = parseFloat(String(item.shipmentAmount).replace(/,/g, ''));
+                if(!isNaN(sAmt)) summary[item.branch].sh += sAmt;
+            });
+
+            const branches = Object.keys(summary).sort();
+            let html = '';
+
+            if(branches.length === 0) {
+                html = '<tr><td colspan="5" class="p-6 text-center text-gray-400">ไม่พบข้อมูลในเดือนนี้</td></tr>';
+            } else {
+                html = branches.map(b => {
+                    const s = summary[b];
+                    return `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0 text-xs md:text-sm">
+                        <td class="p-2 md:p-3 font-medium text-gray-800">${b}</td>
+                        <td class="p-2 md:p-3 text-center text-gray-500">-</td>
+                        <td class="p-2 md:p-3 text-center text-gray-800">${s.do}</td>
+                        <td class="p-2 md:p-3 text-center font-medium text-blue-600">${s.sh}</td>
+                        <td class="p-2 md:p-3 text-center text-gray-500">-</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            const mBODY = document.getElementById('m-monthly-table-body');
+            const dBODY = document.getElementById('d-monthly-table-body');
+            if(mBODY) mBODY.innerHTML = html;
+            if(dBODY) dBODY.innerHTML = html;
+        }
+
+        // Tab Switching Functions
         function switchReportType(type) {
             // Update button styles
             if (type === 'daily') {
@@ -1956,31 +2114,31 @@
             }
         }
 
-// Update desktop tab function to include report tab
-function switchDesktopTab(tab) {
-    document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
-    const dNavTab = document.getElementById(`d-nav-${tab}`);
-    if (dNavTab) dNavTab.classList.add('active');
-    document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
-    const dPageTab = document.getElementById(`d-page-${tab}`);
-    if (dPageTab) dPageTab.classList.remove('hidden');
+        // Update desktop tab function to include report tab
+        function switchDesktopTab(tab) {
+            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+            const dNavTab = document.getElementById(`d-nav-${tab}`);
+            if (dNavTab) dNavTab.classList.add('active');
+            document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
+            const dPageTab = document.getElementById(`d-page-${tab}`);
+            if (dPageTab) dPageTab.classList.remove('hidden');
+                    
+            // Update Title Based on Tab
+            const titles = {
+                'tracking': 'งานล่าสุด (Recent List)',
+                'dashboard': 'แดชบอร์ด (Dashboard)',
+                'report': 'รายงาน (Report)',
+                'help': 'ช่วยเหลือ (Help Center)'
+            };
+            document.getElementById('desktop-page-title').innerText = titles[tab] || 'Fleet Order';
             
-    // Update Title Based on Tab
-    const titles = {
-        'tracking': 'งานล่าสุด (Recent List)',
-        'dashboard': 'แดชบอร์ด (Dashboard)',
-        'report': 'รายงาน (Report)',
-        'help': 'ช่วยเหลือ (Help Center)'
-    };
-    document.getElementById('desktop-page-title').innerText = titles[tab] || 'Fleet Order';
-    
-    // Initialize report page to show daily report by default
-    if (tab === 'report') {
-        setTimeout(() => {
-            switchReportType('daily');
-        }, 100);
-    }
-}
+            // Initialize report page to show daily report by default
+            if (tab === 'report') {
+                setTimeout(() => {
+                    switchReportType('daily');
+                }, 100);
+            }
+        }
     </script>
 </body>
 </html>
