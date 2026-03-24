@@ -257,7 +257,7 @@
                                         <th class="p-2">วันที่ส่ง</th>
                                         <th class="p-2 text-center">เวลาแจ้ง</th>
                                         <th class="p-2 text-center">เวลายืนยัน</th>
-                                        <th class="p-2 text-center">เวลาส่ง</th>
+                                        <th class="p-2 text-center">เวลาออก shipment</th>
                                         <th class="p-2 text-right">จำนวน Shipment</th>
                                         <th class="p-2 text-center">ดำเนินการ (นาที)</th>
                                     </tr>
@@ -484,6 +484,7 @@
                         <input type="text" id="search-desktop" onkeyup="syncFilters('desktop')" placeholder="ค้นหาสาขา เช่น ภูเก็ต" class="pl-10 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:border-ht-red text-gray-700">
                     </div>
                     <input type="date" id="date-desktop" onchange="syncFilters('desktop')" class="border rounded-lg px-4 py-2 text-sm text-gray-600 focus:outline-none focus:border-ht-red text-center">
+                    
                     <button onclick="manualRefresh()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 transition"><i class="fas fa-sync-alt refresh-icon"></i></button>
                 </div>
             </div>
@@ -513,7 +514,7 @@
                                     Timeline
                                 </th>
                                 <th onclick="handleSort('amount')" class="p-4 text-right font-semibold w-[10%] cursor-pointer sortable group">
-                                    จำนวนบิล <i id="icon-amount" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
+                                    จำนวน DO <i id="icon-amount" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
                                 </th>
                                 <th onclick="handleSort('shipment')" class="p-4 text-right font-semibold w-[10%] text-ht-blue cursor-pointer sortable group">
                                     จำนวน shipment <i id="icon-shipment" class="fas fa-sort text-gray-300 ml-1 group-hover:text-ht-red"></i>
@@ -605,7 +606,7 @@
                                         <th class="p-3">วันที่ส่ง</th>
                                         <th class="p-3 text-center">เวลาแจ้ง</th>
                                         <th class="p-3 text-center">เวลายืนยัน</th>
-                                        <th class="p-3 text-center">เวลาส่ง</th>
+                                        <th class="p-3 text-center">เวลาออก shipment</th>
                                         <th class="p-3 text-right">จำนวน Shipment</th>
                                         <th class="p-3 text-center">ดำเนินการ (นาที)</th>
                                     </tr>
@@ -1786,7 +1787,7 @@
                             <div class="text-xs text-gray-400 mt-0.5"><span class="font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">${item.branch}</span></div>
                         </div>
                         <div class="text-right">
-                             <div class="text-xs text-gray-400">บิล</div>
+                             <div class="text-xs text-gray-400">DO</div>
                              <div class="text-xl font-bold text-ht-red leading-none">${item.amount}</div>
                              ${getStatusBadge(item, true)}
                         </div>
@@ -1975,7 +1976,7 @@
                 html = sortedData.map(row => {
                     const dateParts = row.timestamp.split(' ');
                     const notiDate = dateParts[0];
-                    const notiTime = dateParts[1] ? dateParts[1].replace('น.', '') : '-';
+                    const notiTime = row.bill.time || '-';
                     return `
                     <tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0 text-xs md:text-sm">
                         <td class="p-2 md:p-3 font-medium text-gray-800">${row.branch}</td>
