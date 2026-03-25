@@ -1762,23 +1762,35 @@ let dMapInstance = null;
 let mapLayerGroups = { mobile: null, desktop: null };
 let geoJsonData = null;
 
-// Map Branches to Provinces (English name from thailand.geojson)
-const PROVINCE_MAPPING = {
-    'Chumphon': ['สาขาชุมพร', 'สาขาหลังสวน'],
-    'Ranong': ['สาขาระนอง'],
-    'Surat Thani': ['สาขาพุนพิน', 'สาขาสุราษฎร์ธานี', 'สาขาสมุย', 'เขตเกาะพะงัน'],
-    'Phang Nga': ['สาขาตะกั่วป่า', 'สาขาพังงา', 'เขตเกาะยาว'],
-    'Phuket': ['สาขาภูเก็ต', 'เขตกลางคืน'],
-    'Krabi': ['สาขากระบี่'],
-    'Nakhon Si Thammarat': ['สาขานครศรีธรรมราช', 'สาขาทุ่งสง'],
-    'Trang': ['สาขาตรัง'],
-    'Phatthalung': ['สาขาพัทลุง'],
-    'Satun': ['สาขาสตูล'],
-    'Songkhla': ['สาขาหาดใหญ่'],
-    'Pattani': ['สาขาปัตตานี'],
-    'Yala': ['สาขายะลา'],
-    'Narathiwat': ['สาขานราธิวาส']
+// Map Branches to Provinces for SINGLE-branch provinces (so we use GeoJSON for exact province boundaries)
+const SINGLE_BRANCH_PROVINCES = {
+    'Ranong': 'สาขาระนอง',
+    'Krabi': 'สาขากระบี่',
+    'Trang': 'สาขาตรัง',
+    'Phatthalung': 'สาขาพัทลุง',
+    'Satun': 'สาขาสตูล',
+    'Songkhla': 'สาขาหาดใหญ่',
+    'Pattani': 'สาขาปัตตานี',
+    'Yala': 'สาขายะลา',
+    'Narathiwat': 'สาขานราธิวาส'
 };
+
+// For provinces with MULTIPLE branches, we will use the district-level manual polygons to separate them visually
+const MULTI_BRANCH_AREAS = [
+    { name: 'สาขาชุมพร', prov: 'Chumphon', coords: [[10.85,99.0],[10.85,99.4],[10.35,99.4],[10.35,98.9],[10.55,98.7],[10.85,99.0]] },
+    { name: 'สาขาหลังสวน', prov: 'Chumphon', coords: [[10.35,99.4],[10.35,98.9],[9.85,98.95],[9.85,99.35],[10.35,99.4]] },
+    { name: 'สาขาพุนพิน', prov: 'Surat Thani', coords: [[9.85,98.95],[9.85,99.35],[9.6,99.65],[9.2,99.8],[8.95,99.5],[8.6,99.2],[8.75,98.95],[9.15,98.7],[9.5,98.55],[9.6,98.5],[9.85,98.95]] },
+    { name: 'สาขาสุราษฎร์ธานี', prov: 'Surat Thani', coords: [[9.2,99.1],[9.2,99.5],[9.0,99.45],[8.95,99.15],[9.2,99.1]] },
+    { name: 'สาขาสมุย', type: 'island', prov: 'Surat Thani', center: [9.52,100.06], coords: [[9.58,99.95],[9.58,100.15],[9.44,100.15],[9.44,99.95],[9.58,99.95]] },
+    { name: 'เขตเกาะพะงัน', type: 'island', prov: 'Surat Thani', center: [9.73,100.04], coords: [[9.79,99.97],[9.79,100.1],[9.66,100.1],[9.66,99.97],[9.79,99.97]] },
+    { name: 'สาขาตะกั่วป่า', prov: 'Phang Nga', coords: [[9.15,98.7],[8.75,98.95],[8.6,98.4],[8.55,98.25],[8.85,98.2],[9.15,98.3],[9.15,98.7]] },
+    { name: 'สาขาพังงา', prov: 'Phang Nga', coords: [[8.6,98.4],[8.75,98.95],[8.6,99.2],[8.45,99.0],[8.35,98.65],[8.35,98.45],[8.6,98.4]] },
+    { name: 'เขตเกาะยาว', type: 'island', prov: 'Phang Nga', center: [8.12,98.59], coords: [[8.18,98.55],[8.18,98.63],[8.05,98.63],[8.05,98.55],[8.18,98.55]] },
+    { name: 'สาขานครศรีธรรมราช', prov: 'Nakhon Si Thammarat', coords: [[8.65,99.85],[8.65,100.15],[8.3,100.2],[8.2,99.95],[8.3,99.7],[8.5,99.65],[8.65,99.85]] },
+    { name: 'สาขาทุ่งสง', prov: 'Nakhon Si Thammarat', coords: [[8.3,99.7],[8.2,99.95],[8.3,100.2],[7.95,100.15],[7.75,99.95],[7.8,99.55],[7.95,99.35],[8.1,99.3],[8.35,99.45],[8.3,99.7]] },
+    { name: 'สาขาภูเก็ต', prov: 'Phuket', coords: [[8.15,98.25],[8.15,98.42],[7.76,98.42],[7.76,98.25],[8.15,98.25]] },
+    { name: 'เขตกลางคืน', type: 'circle', prov: 'Phuket', center: [7.878,98.391], radius: 3000 }
+];
 
 const STATUS_COLORS = {
     'new': '#E41E2B',   // Red
@@ -1812,8 +1824,8 @@ async function fetchGeoJson() {
     try {
         const response = await fetch('https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json');
         geoJsonData = await response.json();
-        // Filter to include only Southern Provinces handled by the branches
-        geoJsonData.features = geoJsonData.features.filter(f => PROVINCE_MAPPING[f.properties.name]);
+        // Filter to include ONLY provinces that represent a SINGLE branch
+        geoJsonData.features = geoJsonData.features.filter(f => SINGLE_BRANCH_PROVINCES[f.properties.name]);
     } catch (e) {
         console.error('Failed to fetch GeoJSON', e);
     }
@@ -1821,40 +1833,59 @@ async function fetchGeoJson() {
 }
 
 function renderBranchAreas(map) {
-    if (!geoJsonData) return null;
     const group = L.layerGroup().addTo(map);
     
-    L.geoJSON(geoJsonData, {
-        style: function (feature) {
-            return { fillColor: STATUS_COLORS['empty'], weight: 2, opacity: 1, color: 'white', dashArray: '2', fillOpacity: 0.6 };
-        },
-        onEachFeature: function (feature, layer) {
-            const branchesInProvince = PROVINCE_MAPPING[feature.properties.name] || [];
-            
-            // Generate placeholder popup elements for each branch
-            const branchListHtml = branchesInProvince.map(b => 
-                `<div class="geo-popup-${b.replace(/\\s/g, '')}" style="font-size:11px; margin-top:4px; padding-bottom: 2px; border-bottom: 1px dashed #eee;">
-                    <b>${b}:</b> <span style="color:#9ca3af">ไม่มีงาน</span>
-                </div>`
-            ).join('');
-            
-            layer.bindPopup(`<div style="min-width:160px; font-family:'Sarabun',sans-serif;"><strong style="font-size:14px; color:#374151">จังหวัด ${feature.properties.name}</strong><br><span style="font-size:10px; color:#6b7280">${branchesInProvince.length} สาขา/คลัง</span><hr style="margin:6px 0">${branchListHtml}</div>`);
-            layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'center', className: 'text-xs font-bold text-gray-700 shadow-sm' });
-            
-            layer.on({
-                mouseover: (e) => {
-                    const l = e.target;
-                    l.setStyle({ weight: 3, color: '#f3f4f6', fillOpacity: 0.95 });
-                    l.bringToFront();
-                },
-                mouseout: (e) => {
-                    const obj = mapLayers.find(m => m.layer === e.target);
-                    if (obj) e.target.setStyle(obj.defaultStyle);
-                }
-            });
-            mapLayers.push({ layer, prov: feature.properties.name, defaultStyle: { fillColor: STATUS_COLORS['empty'], fillOpacity: 0.6, weight: 2, color: 'white', dashArray: '2' } });
+    // 1. Render single-branch provinces using real GeoJSON boundaries
+    if (geoJsonData) {
+        L.geoJSON(geoJsonData, {
+            style: function (feature) {
+                return { fillColor: STATUS_COLORS['empty'], weight: 2, opacity: 1, color: 'white', dashArray: '2', fillOpacity: 0.6 };
+            },
+            onEachFeature: function (feature, layer) {
+                const branchName = SINGLE_BRANCH_PROVINCES[feature.properties.name];
+                
+                const popupHtml = `<div class="geo-popup-${branchName.replace(/\\s/g, '')}" style="font-size:11px; margin-top:4px;">
+                    <b>${branchName}:</b> <span style="color:#9ca3af">ไม่มีงาน</span>
+                </div>`;
+                
+                layer.bindPopup(`<div style="min-width:140px; font-family:'Sarabun',sans-serif;"><strong style="font-size:14px; color:#374151">จังหวัด ${feature.properties.name}</strong><hr style="margin:4px 0">${popupHtml}</div>`);
+                layer.bindTooltip(branchName, { permanent: false, direction: 'center', className: 'text-xs font-bold text-gray-700 shadow-sm' });
+                
+                layer.on({
+                    mouseover: (e) => { e.target.setStyle({ weight: 3, color: '#f3f4f6', fillOpacity: 0.95 }); e.target.bringToFront(); },
+                    mouseout: (e) => { const obj = mapLayers.find(m => m.layer === e.target); if (obj) e.target.setStyle(obj.defaultStyle); }
+                });
+                mapLayers.push({ layer, prov: feature.properties.name, branch: branchName, isGeoJson: true, defaultStyle: { fillColor: STATUS_COLORS['empty'], fillOpacity: 0.6, weight: 2, color: 'white', dashArray: '2' } });
+            }
+        }).addTo(group);
+    }
+
+    // 2. Render multi-branch districts inside big provinces using specific manual coordinates
+    MULTI_BRANCH_AREAS.forEach(area => {
+        let layer;
+        const defaultStyle = { fillColor: STATUS_COLORS['empty'], fillOpacity: 0.6, weight: 2, color: 'white', dashArray: '2' };
+        
+        if (area.type === 'circle') {
+            layer = L.circle(area.center, { ...defaultStyle, radius: area.radius }).addTo(group);
+        } else if (area.type === 'island') {
+            layer = L.polygon(area.coords, { ...defaultStyle, dashArray: '5,5' }).addTo(group);
+        } else {
+            layer = L.polygon(area.coords, defaultStyle).addTo(group);
         }
-    }).addTo(group);
+
+        const popupHtml = `<div class="geo-popup-${area.name.replace(/\\s/g, '')}" style="font-size:11px; margin-top:4px;">
+            <b>${area.name}:</b> <span style="color:#9ca3af">ไม่มีงาน</span>
+        </div>`;
+        layer.bindPopup(`<div style="min-width:140px; font-family:'Sarabun',sans-serif;"><strong style="font-size:14px; color:#374151">เขต ${area.name}</strong><br><span style="font-size:10px; color:#6b7280">${area.prov}</span><hr style="margin:4px 0">${popupHtml}</div>`);
+        layer.bindTooltip(area.name, { permanent: false, direction: 'center', className: 'text-xs font-bold text-gray-700 shadow-sm' });
+
+        layer.on({
+            mouseover: (e) => { e.target.setStyle({ weight: 3, color: '#f3f4f6', fillOpacity: 0.95 }); e.target.bringToFront(); },
+            mouseout: (e) => { const obj = mapLayers.find(m => m.layer === e.target); if (obj) e.target.setStyle(obj.defaultStyle); }
+        });
+
+        mapLayers.push({ layer, prov: area.prov, branch: area.name, isGeoJson: false, defaultStyle });
+    });
     
     return group;
 }
@@ -1920,48 +1951,33 @@ function updateMapData(filteredData) {
         else branchCounts[b].new++;
     });
 
-    // 2. Loop through map province layers to color them and update popup HTML
+    // 2. Loop through all map layers to color them and update popup HTML
     mapLayers.forEach(obj => {
-        const provBranches = PROVINCE_MAPPING[obj.prov] || [];
-        let hasNew = false, hasEdit = false, hasConf = false, allShipped = true, hasAnyData = false;
-
-        provBranches.forEach(b => {
-            const count = branchCounts[b];
-            
-            // Update popup elements directly in the DOM if popup is open, 
-            // but also update it for future opens by selecting classes.
-            // Since there can be two maps (mobile/desktop), class selector is used to update all instances.
-            document.querySelectorAll(`.geo-popup-${b.replace(/\\s/g, '')}`).forEach(el => {
-                if(count && count.total > 0) {
-                    el.innerHTML = `<b>${b}:</b> <span><b>${count.total}</b> งาน</span> (<span style="color:#E41E2B">${count.new} ใหม่</span>, <span style="color:#007A33">${count.ship} เสร็จ</span>)`;
-                } else {
-                    el.innerHTML = `<b>${b}:</b> <span style="color:#9ca3af">ไม่มีงานวันนี้</span>`;
-                }
-            });
-
-            if (count && count.total > 0) {
-                hasAnyData = true;
-                if (count.new > 0) hasNew = true;
-                if (count.edit > 0) hasEdit = true;
-                if (count.conf > 0) hasConf = true;
-                if (count.new > 0 || count.edit > 0 || count.conf > 0) allShipped = false;
+        const count = branchCounts[obj.branch];
+        
+        document.querySelectorAll(`.geo-popup-${obj.branch.replace(/\\s/g, '')}`).forEach(el => {
+            if(count && count.total > 0) {
+                el.innerHTML = `<b>${obj.branch}:</b> <span><b>${count.total}</b> งาน</span> (<span style="color:#E41E2B">${count.new} ใหม่</span>, <span style="color:#007A33">${count.ship} เสร็จ</span>)`;
+            } else {
+                el.innerHTML = `<b>${obj.branch}:</b> <span style="color:#9ca3af">ไม่มีงานวันนี้</span>`;
             }
         });
 
-        // Determine priority color
+        const hasAnyData = count && count.total > 0;
         let finalColor = STATUS_COLORS['empty'];
-        let finalOpacity = 0.5;
+        let finalOpacity = obj.isGeoJson ? 0.6 : 0.5;
+
+        // Determine priority color
         if (hasAnyData) {
-            finalOpacity = 0.8;
-            if (hasNew) finalColor = STATUS_COLORS['new'];
-            else if (hasEdit) finalColor = STATUS_COLORS['edit'];
-            else if (hasConf) finalColor = STATUS_COLORS['conf'];
-            else if (allShipped) finalColor = STATUS_COLORS['ship'];
+            finalOpacity = obj.isGeoJson ? 0.8 : 0.75;
+            if (count.new > 0) finalColor = STATUS_COLORS['new'];
+            else if (count.edit > 0) finalColor = STATUS_COLORS['edit'];
+            else if (count.conf > 0) finalColor = STATUS_COLORS['conf'];
+            else finalColor = STATUS_COLORS['ship'];
         }
 
-        const newStyle = { fillColor: finalColor, fillOpacity: finalOpacity, weight: 2, color: 'white', dashArray: hasAnyData ? '' : '2' };
+        const newStyle = { fillColor: finalColor, fillOpacity: finalOpacity, weight: obj.isGeoJson ? 2 : 2, color: 'white', dashArray: hasAnyData ? '' : '2' };
         
-        // Save state so mouseout works properly
         obj.defaultStyle = newStyle;
         obj.layer.setStyle(newStyle);
     });
