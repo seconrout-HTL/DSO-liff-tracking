@@ -9,9 +9,8 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Turf.js for advanced geospatial processing -->
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1787,10 +1786,10 @@ const PROVINCE_SPLIT_CONFIG = {
         { branch: 'สาขานครศรีธรรมราช', type: 'north' },
         { branch: 'สาขาทุ่งสง', type: 'south' }
     ],
-    'Phang Nga': [
-        { branch: 'สาขาตะกั่วป่า', type: 'north', clipMaxY: 8.4 },
-        { branch: 'สาขาพังงา', type: 'south', clipMinY: 8.2, clipMaxY: 8.4 }, // Excludes Koh Yao
-        { branch: 'เขตเกาะยาว', type: 'custom', bbox: [98.4, 7.9, 98.7, 8.18] }
+    'Phangnga': [
+        { branch: 'สาขาตะกั่วป่า', type: 'north', clipMinY: 8.4 },
+        { branch: 'สาขาพังงา', type: 'south', clipMaxY: 8.4, clipMinX: 98.2 }, // Excludes Koh Yao
+        { branch: 'เขตเกาะยาว', type: 'custom', bbox: [98.4, 7.9, 98.7, 8.2] }
     ],
     'Surat Thani': [
         { branch: 'สาขาพุนพิน', type: 'west', clipMaxX: 99.2 },
@@ -1851,7 +1850,7 @@ async function fetchGeoJson() {
 function processMultiBranchProvince(feature) {
     const provName = feature.properties.name;
     const config = PROVINCE_SPLIT_CONFIG[provName];
-    if (!config || !window.turf) return [feature]; // Fallback to full geometry if turf is missing
+    if (!config || !window.turf) return [feature];
 
     let [minX, minY, maxX, maxY] = turf.bbox(feature);
     const midX = minX + (maxX - minX) / 2;
@@ -1860,7 +1859,7 @@ function processMultiBranchProvince(feature) {
     let parts = [];
     
     config.forEach(cfg => {
-        let b = [...turf.bbox(feature)]; // starting BBOX
+        let b = [...turf.bbox(feature)]; 
         
         if (cfg.type === 'custom' && cfg.bbox) {
             b = cfg.bbox;
@@ -1870,7 +1869,6 @@ function processMultiBranchProvince(feature) {
             if (cfg.type === 'east') b[0] = midX;
             if (cfg.type === 'west') b[2] = midX;
             
-            // Apply hard cutoffs
             if (cfg.clipMinX !== undefined) b[0] = cfg.clipMinX;
             if (cfg.clipMinY !== undefined) b[1] = cfg.clipMinY;
             if (cfg.clipMaxX !== undefined) b[2] = cfg.clipMaxX;
@@ -1878,10 +1876,30 @@ function processMultiBranchProvince(feature) {
         }
         
         try {
-            // Clip the polygon by the computed bounding box
-            const clipped = cfg.type === 'all' ? feature : turf.bboxClip(feature, b);
-            
-            if (clipped.geometry && clipped.geometry.coordinates.length > 0) {
+            if (cfg.type === 'all') {
+                const f = JSON.parse(JSON.stringify(feature));
+                f.properties = { ...f.properties, branchName: cfg.branch, customProv: provName };
+                parts.push(f);
+                return;
+            }
+
+            // Fallback strategy for complex MultiPolygons crashing bboxClip
+            let clipped;
+            if (feature.geometry.type === 'MultiPolygon') {
+                const subPolygons = feature.geometry.coordinates.map(coords => turf.polygon(coords));
+                const goodFeatures = [];
+                subPolygons.forEach(poly => {
+                    try {
+                        let c = turf.bboxClip(poly, b);
+                        if (c.geometry && c.geometry.coordinates.length > 0) goodFeatures.push(c.geometry.coordinates);
+                    } catch (e) {}
+                });
+                clipped = turf.multiPolygon(goodFeatures);
+            } else {
+                clipped = turf.bboxClip(feature, b);
+            }
+
+            if (clipped && clipped.geometry && clipped.geometry.coordinates.length > 0) {
                 clipped.properties = { ...feature.properties, branchName: cfg.branch, customProv: provName };
                 parts.push(clipped);
             }
@@ -1889,6 +1907,9 @@ function processMultiBranchProvince(feature) {
             console.error('Turf clip error for', cfg.branch, err);
         }
     });
+
+    // If turf fails to produce any cuts, return original so map is not empty
+    if (parts.length === 0) return [feature];
     
     return parts;
 }
