@@ -2,8 +2,13 @@
 // ⚙️ CONFIG — Settings & Constants
 // ============================================
 
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbw02Dz7EsUdN2NZn6wdvtjbKNTz5_TJfZqSH7QX0jogmTgXn-qui-HIqyHSN0yv_Kfi/exec';
-const LIFF_ID = '2008983827-ZbZI2YWu'; // ⚠️ ใส่ LIFF ID ของคุณที่นี่
+// 🔒 Encoded configuration (Base64)
+const _c = [
+    'aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J3MDJEejdFc1VkTjJOWm42d2R2dGpiS05UejVfVEpmWnFTSDdRWDBqb2dtVGdYbi1xdWktSElxeUhTTjB5dl9LZmkvZXhlYw==',
+    'MjAwODk4MzgyNy1aYlpJMllXdQ=='
+];
+const GAS_API_URL = atob(_c[0]);
+const LIFF_ID     = atob(_c[1]);
 
 // Tailwind config override
 tailwind.config = {
