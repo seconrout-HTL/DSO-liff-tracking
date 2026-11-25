@@ -30,7 +30,7 @@ jobs:
         run: |
           rm -rf _site
           mkdir -p _site
-          cp index.html styles.css security.js config.js data.js ui.js dashboard.js app.js _site/
+          cp index.html styles.css security.js config.js i18n.js data.js ui.js dashboard.js app.js _site/
           cp -R assets _site/assets
 
       - name: Upload artifact

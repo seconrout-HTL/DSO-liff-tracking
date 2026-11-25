@@ -39,20 +39,20 @@ function buildFrequencyChartConfig(slots) {
             labels,
             datasets: [
                 {
-                    label: 'จำนวนงาน (Orders)',
+                    label: t('chartDatasetOrders'),
                     data: [...slots],
-                    backgroundColor: '#2563EB',
-                    hoverBackgroundColor: '#1D4ED8',
+                    backgroundColor: '#007947',
+                    hoverBackgroundColor: '#005F37',
                     borderRadius: 999,
                     borderSkipped: false,
                     barThickness: 14,
                     order: 1
                 },
                 {
-                    label: 'เพดานงาน',
+                    label: t('chartDatasetCap'),
                     data: bgTrack,
-                    backgroundColor: '#EEF2FF',
-                    hoverBackgroundColor: '#E0E7FF',
+                    backgroundColor: '#EBF6F0',
+                    hoverBackgroundColor: '#D8EFE3',
                     borderRadius: 999,
                     borderSkipped: false,
                     barThickness: 14,
@@ -69,7 +69,7 @@ function buildFrequencyChartConfig(slots) {
                     stacked: false,
                     border: { display: false },
                     ticks: { stepSize: 1, color: '#94A3B8', font: { size: 11 } },
-                    grid: { color: '#F1F5F9' }
+                    grid: { color: '#EEF5F1' }
                 },
                 x: {
                     stacked: true,
@@ -160,10 +160,11 @@ function renderFrequencyTable(allData) {
             <td class="p-2.5 text-slate-500">${row.s6 || '-'}</td>
         </tr>`;
     const rows = freqArr.map(createRow).join('');
+    const emptyRow = `<tr><td colspan="7" class="p-4 text-center text-slate-400">${escapeHtml(t('emptyData'))}</td></tr>`;
     const mBody = document.getElementById('m-freq-table-body');
     const dBody = document.getElementById('d-freq-table-body');
-    if (mBody) mBody.innerHTML = rows || '<tr><td colspan="7" class="p-4 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
-    if (dBody) dBody.innerHTML = rows || '<tr><td colspan="7" class="p-4 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
+    if (mBody) mBody.innerHTML = rows || emptyRow;
+    if (dBody) dBody.innerHTML = rows || emptyRow;
 }
 
 // ============================================
@@ -197,41 +198,44 @@ function renderBranchStatusTable(currentData) {
     allKnownBranches.forEach(b => {
         if (b && b !== '-' && isSafeDictKey(b) && !activeBranches[b]) missingBranches.push(b);
     });
-    missingBranches.sort();
+    missingBranches.sort((a, b) => formatBranchName(a).localeCompare(formatBranchName(b)));
 
     let html = '';
     if (missingBranches.length > 0) {
-        html += `<div class="mb-2 text-xs font-semibold text-rose-500">ยังไม่แจ้งงาน (${missingBranches.length})</div>`;
+        html += `<div class="mb-2 text-xs font-semibold text-brand-red">${escapeHtml(t('branchMissing', { n: missingBranches.length }))}</div>`;
         html += `<div class="flex flex-wrap gap-1.5 mb-4">`;
         missingBranches.forEach(b => {
-            const safeBranch = escapeHtml(b);
-            html += `<button type="button" data-action="focus-branch" data-branch="${safeBranch}" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-medium rounded-lg border border-rose-100 transition cursor-pointer">${safeBranch}</button>`;
+            const safeCanon = escapeHtml(b);
+            const safeLabel = escapeHtml(formatBranchName(b));
+            html += `<button type="button" data-action="focus-branch" data-branch="${safeCanon}" class="px-2.5 py-1 badge-urgent-new hover:opacity-85 text-xs font-medium rounded-lg transition cursor-pointer">${safeLabel}</button>`;
         });
         html += `</div>`;
     } else {
-        html += `<div class="mb-4 text-center text-xs font-semibold text-emerald-600 bg-emerald-50 p-2.5 rounded-xl border border-emerald-100">ครบทุกสาขาแล้ว</div>`;
+        html += `<div class="mb-4 text-center text-xs font-semibold text-brand-green bg-brand-green-soft p-2.5 rounded-xl border border-brand-green-border">${escapeHtml(t('branchAllSubmitted'))}</div>`;
     }
 
     const activeEntries = Object.entries(activeBranches);
     if (activeEntries.length > 0) {
-        html += `<div class="mb-2 text-xs font-semibold text-slate-400">แจ้งงานแล้ว (${activeEntries.length})</div>`;
+        html += `<div class="mb-2 text-xs font-semibold text-slate-400">${escapeHtml(t('branchSubmitted', { n: activeEntries.length }))}</div>`;
         activeEntries.forEach(([name, info]) => {
-            let color = 'text-rose-600', barColor = 'bg-rose-500', pct = '30%', statusTxt = 'งานใหม่';
-            if (info.status === 'conf') { color = 'text-blue-600'; barColor = 'bg-blue-500'; pct = '68%'; statusTxt = 'ยืนยันแล้ว'; }
-            else if (info.status === 'ship') { color = 'text-emerald-600'; barColor = 'bg-emerald-500'; pct = '100%'; statusTxt = 'เสร็จสิ้น'; }
-            else if (info.status === 'edit') { color = 'text-amber-600'; barColor = 'bg-amber-500'; pct = '50%'; statusTxt = 'แก้ไขบิล'; }
-            const safeName = escapeHtml(name);
+            let color = 'text-brand-red', barColor = 'bg-brand-red', pct = '30%', statusTxt = t('statusNew');
+            if (info.status === 'conf') { color = 'text-blue-600'; barColor = 'bg-blue-500'; pct = '68%'; statusTxt = t('statusConfirmed'); }
+            else if (info.status === 'ship') { color = 'text-brand-green'; barColor = 'bg-brand-green'; pct = '100%'; statusTxt = t('statusShipped'); }
+            else if (info.status === 'edit') { color = 'text-amber-600'; barColor = 'bg-amber-500'; pct = '50%'; statusTxt = t('statusEdited'); }
+            const safeCanon = escapeHtml(name);
+            const safeDisplay = escapeHtml(formatBranchName(name));
             const safeTime = escapeHtml(info.time || '-');
+            const timeSuffix = info.time ? escapeHtml(t('timeSuffix')) : '';
             html += `
-            <div data-action="focus-branch" data-branch="${safeName}" role="button" tabindex="0" class="p-3 bg-slate-50/70 rounded-xl border border-slate-100 mb-2 hover:bg-blue-50/40 hover:border-blue-200 transition cursor-pointer">
+            <div data-action="focus-branch" data-branch="${safeCanon}" role="button" tabindex="0" class="p-3 bg-slate-50/70 rounded-xl border border-slate-100 mb-2 hover:bg-brand-green-soft/60 hover:border-brand-green-border transition cursor-pointer">
                 <div class="flex justify-between items-center mb-1.5">
                     <div class="font-semibold text-xs text-slate-800 flex items-center gap-1.5">
-                        <span>${safeName}</span>
-                        <span class="px-1.5 py-0.5 bg-white text-slate-600 rounded text-[10px] border border-slate-200">${info.count} งาน</span>
+                        <span>${safeDisplay}</span>
+                        <span class="px-1.5 py-0.5 bg-white text-slate-600 rounded text-[10px] border border-slate-200">${escapeHtml(formatOrderCount(info.count))}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs ${color} font-semibold">${statusTxt}</span>
-                        <span class="text-[11px] text-slate-400">${safeTime} น.</span>
+                        <span class="text-xs ${color} font-semibold">${escapeHtml(statusTxt)}</span>
+                        <span class="text-[11px] text-slate-400">${safeTime}${timeSuffix}</span>
                     </div>
                 </div>
                 <div class="w-full h-1.5 bg-slate-200/70 rounded-full overflow-hidden">
@@ -240,7 +244,7 @@ function renderBranchStatusTable(currentData) {
             </div>`;
         });
     } else {
-        html += `<div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl mb-2">ไม่มีข้อมูลการแจ้งงาน</div>`;
+        html += `<div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl mb-2">${escapeHtml(t('branchNoReports'))}</div>`;
     }
 
     const mContainer = document.getElementById('m-branch-status-container');
@@ -254,7 +258,9 @@ function renderBranchStatusTable(currentData) {
 // ============================================
 
 function populateBranchFilters() {
-    const sortedBranches = Array.from(uniqueBranches).sort();
+    const sortedBranches = Array.from(uniqueBranches).sort((a, b) =>
+        formatBranchName(a).localeCompare(formatBranchName(b))
+    );
     ['m-branch-filter', 'd-branch-filter'].forEach(id => {
         const selectEl = document.getElementById(id);
         if (!selectEl) return;
@@ -263,13 +269,13 @@ function populateBranchFilters() {
 
         const allOpt = document.createElement('option');
         allOpt.value = '';
-        allOpt.textContent = 'ทุกสาขา';
+        allOpt.textContent = t('reportAllBranches');
         selectEl.appendChild(allOpt);
 
         sortedBranches.forEach(b => {
             const opt = document.createElement('option');
             opt.value = b;
-            opt.textContent = b;
+            opt.textContent = formatBranchName(b);
             selectEl.appendChild(opt);
         });
 
@@ -325,7 +331,7 @@ function renderDetailTable(data) {
     const sortedData = [...data].sort((a, b) => b.rawTimestamp - a.rawTimestamp);
     let html = '';
     if (sortedData.length === 0) {
-        html = '<tr><td colspan="8" class="p-6 text-center text-slate-400">ไม่พบข้อมูลตามวันที่เลือก</td></tr>';
+        html = `<tr><td colspan="8" class="p-6 text-center text-slate-400">${escapeHtml(t('emptyDate'))}</td></tr>`;
     } else {
         html = sortedData.map(row => {
             const dateParts = String(row.timestamp || '').split(' ');
@@ -335,13 +341,13 @@ function renderDetailTable(data) {
             const shipTime = escapeHtml((row.ship && row.ship.time) ? row.ship.time : '-');
             return `
             <tr class="hover:bg-slate-50/80 border-b border-slate-100 last:border-0 text-xs md:text-sm transition">
-                <td class="p-2.5 md:p-3.5 font-semibold text-slate-800">${escapeHtml(row.branch)}</td>
+                <td class="p-2.5 md:p-3.5 font-semibold text-slate-800">${escapeHtml(formatBranchName(row.branch))}</td>
                 <td class="p-2.5 md:p-3.5">${notiDate}</td>
                 <td class="p-2.5 md:p-3.5">${escapeHtml(row.deliveryDate)}</td>
                 <td class="p-2.5 md:p-3.5 text-center text-slate-500">${notiTime}</td>
                 <td class="p-2.5 md:p-3.5 text-center text-slate-500">${confTime}</td>
                 <td class="p-2.5 md:p-3.5 text-center text-slate-500">${shipTime}</td>
-                <td class="p-2.5 md:p-3.5 text-right font-semibold text-blue-600">${escapeHtml(row.shipmentAmount)}</td>
+                <td class="p-2.5 md:p-3.5 text-right font-semibold text-brand-green">${escapeHtml(row.shipmentAmount)}</td>
                 <td class="p-2.5 md:p-3.5 text-center">${escapeHtml(row.processingTime || '-')}</td>
             </tr>`;
         }).join('');
@@ -397,14 +403,14 @@ function updateMonthlyReport(source) {
         if (!isNaN(sAmt)) summary[item.branch].sh += sAmt;
     });
 
-    const branches = Object.keys(summary).sort();
+    const branches = Object.keys(summary).sort((a, b) => formatBranchName(a).localeCompare(formatBranchName(b)));
     let html = '';
     if (branches.length === 0) {
-        html = '<tr><td colspan="5" class="p-6 text-center text-slate-400">ไม่พบข้อมูลในเดือนนี้</td></tr>';
+        html = `<tr><td colspan="5" class="p-6 text-center text-slate-400">${escapeHtml(t('emptyMonth'))}</td></tr>`;
     } else {
         html = branches.map(b => {
             const s = summary[b];
-            return `<tr class="hover:bg-slate-50/80 border-b border-slate-100 last:border-0 text-xs md:text-sm transition"><td class="p-2.5 md:p-3.5 font-semibold text-slate-800">${escapeHtml(b)}</td><td class="p-2.5 md:p-3.5 text-center text-slate-500">-</td><td class="p-2.5 md:p-3.5 text-center font-medium text-slate-800">${escapeHtml(String(s.do))}</td><td class="p-2.5 md:p-3.5 text-center font-semibold text-blue-600">${escapeHtml(String(s.sh))}</td><td class="p-2.5 md:p-3.5 text-center text-slate-500">-</td></tr>`;
+            return `<tr class="hover:bg-slate-50/80 border-b border-slate-100 last:border-0 text-xs md:text-sm transition"><td class="p-2.5 md:p-3.5 font-semibold text-slate-800">${escapeHtml(formatBranchName(b))}</td><td class="p-2.5 md:p-3.5 text-center text-slate-500">-</td><td class="p-2.5 md:p-3.5 text-center font-medium text-slate-800">${escapeHtml(String(s.do))}</td><td class="p-2.5 md:p-3.5 text-center font-semibold text-brand-green">${escapeHtml(String(s.sh))}</td><td class="p-2.5 md:p-3.5 text-center text-slate-500">-</td></tr>`;
         }).join('');
     }
     const mBODY = document.getElementById('m-monthly-table-body');
@@ -419,26 +425,26 @@ function updateMonthlyReport(source) {
 
 function confirmExport() {
     if (typeof XLSX === 'undefined') {
-        showToast('ไม่พบไลบรารีส่งออก Excel', 'error');
+        showToast(t('toastExportNoLib'), 'error');
         return;
     }
     const startEl = document.getElementById('export-start');
     const endEl = document.getElementById('export-end');
     const start = startEl ? startEl.value : '';
     const end = endEl ? endEl.value : '';
-    if (!start || !end) { showToast('กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด', 'error'); return; }
+    if (!start || !end) { showToast(t('toastSelectDates'), 'error'); return; }
     const exportData = globalData.filter(item => {
         if (!item.isoDate) return false;
         return item.isoDate >= start && item.isoDate <= end;
     });
-    if (exportData.length === 0) { showToast('ไม่พบข้อมูลในช่วงวันที่เลือก', 'error'); return; }
+    if (exportData.length === 0) { showToast(t('toastNoExportData'), 'error'); return; }
 
     const includeChartEl = document.getElementById('export-include-chart');
     const includeChart = Boolean(includeChartEl && includeChartEl.checked);
     const wb = XLSX.utils.book_new();
     const wsData = [[
         'สาขา', 'วันที่แจ้งงาน', 'วันที่ส่งสินค้า', 'เวลาแจ้งงาน', 'เวลายืนยัน',
-        'เวลาออก shipment', 'จำนวน shipment', 'จำนวนการแก้ไข', 'ระยะเวลาดำเนินการ (นาที)', 'หมายเหตุ'
+        'เวลาออกใบจัดส่ง', 'จำนวนจัดส่ง', 'จำนวนการแก้ไข', 'ระยะเวลาดำเนินการ', 'หมายเหตุ'
     ]];
 
     exportData.forEach(row => {
@@ -488,7 +494,7 @@ function confirmExport() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     closeExportModal();
-    showToast('ดาวน์โหลดไฟล์ Excel เรียบร้อยแล้ว');
+    showToast(t('toastExportSuccess'));
 }
 
 function addChartToWorkbook(wb, start, end) {
@@ -496,7 +502,7 @@ function addChartToWorkbook(wb, start, end) {
     const canvas = document.getElementById(canvasId);
     if (canvas) {
         if (canvas.width === 0 || canvas.height === 0) {
-            showToast('กรุณาเปิดหน้าแดชบอร์ดก่อนบันทึกกราฟ', 'error');
+            showToast(t('toastOpenDashForChart'), 'error');
             return;
         }
         try {
@@ -524,7 +530,7 @@ function addChartToWorkbook(wb, start, end) {
             document.body.removeChild(imageLink);
         } catch (e) {
             console.error('Chart Export Error:', e);
-            showToast('เกิดข้อผิดพลาดในการบันทึกรูปกราฟ', 'error');
+            showToast(t('toastChartExportErr'), 'error');
         }
     }
 }
@@ -537,6 +543,7 @@ let mMapInstance = null;
 let dMapInstance = null;
 let mapLayerGroups = { mobile: null, desktop: null };
 let mapBaseTileLayers = { mobile: [], desktop: [] };
+let mapLegendContainers = [];
 let currentMapStyle = 'light';
 let showPermanentLabels = true;
 let geoJsonData = null;
@@ -560,28 +567,16 @@ const TILE_SOURCES = Object.freeze({
     none: []
 });
 
-// District description per branch for rich popups
-const BRANCH_DISTRICT_INFO = Object.freeze({
-    'สาขานครศรีธรรมราช': 'อ.เมืองนครศรีฯ, ขนอม, สิชล, นบพิตำ, ท่าศาลา, พิปูน, พรหมคีรี, ลานสกา, พระพรหม, ปากพนัง, ร่อนพิบูลย์, เฉลิมพระเกียรติ, เชียรใหญ่, หัวไทร',
-    'สาขาทุ่งสง': 'อ.ทุ่งสง, ถ้ำพรรณรา, ฉวาง, ช้างกลาง, ทุ่งใหญ่, นาบอน, บางขัน, จุฬาภรณ์, ชะอวด',
-    'สาขาสุราษฎร์ธานี': 'อ.เมืองสุราษฎร์ธานี, กาญจนดิษฐ์, ดอนสัก, บ้านนาเดิม, บ้านนาสาร, เวียงสระ',
-    'สาขาพุนพิน': 'อ.พุนพิน, ท่าชนะ, ไชยา, ท่าฉาง, วิภาวดี, บ้านตาขุน, คีรีรัฐนิคม, พนม, เคียนซา, พระแสง, ชัยบุรี',
-    'สาขาสมุย': 'อ.เกาะสมุย',
-    'เขตเกาะพะงัน': 'อ.เกาะพะงัน, เกาะเต่า',
-    'สาขาชุมพร': 'อ.เมืองชุมพร, ท่าแซะ, ปะทิว',
-    'สาขาหลังสวน': 'อ.หลังสวน, สวี, ทุ่งตะโก, พะโต๊ะ, ละแม'
-});
-
 const EXTRA_LAYERS = Object.freeze([
     Object.freeze({ branch: 'เขตกลางคืน', prov: 'Phuket', type: 'circle', center: [7.885, 98.392], radius: 3800 })
 ]);
 
 const STATUS_COLORS = Object.freeze({
-    new: '#EF4444',   // Rose Red (งานใหม่)
-    edit: '#F59E0B',  // Amber (แก้ไขบิล)
-    conf: '#2563EB',  // Royal Blue (ยืนยันแล้ว)
-    ship: '#10B981',  // Emerald Green (เสร็จสิ้น)
-    empty: '#CBD5E1'  // Slate Gray (ไม่มีงาน)
+    new: '#f00000',   // Brand Signal Red (New / Urgent)
+    edit: '#F59E0B',  // Amber (Edited)
+    conf: '#2563EB',  // Blue (Confirmed)
+    ship: '#007947',  // Brand Green (Completed)
+    empty: '#CBD5E1'  // Slate Gray (No Orders)
 });
 
 function applyTileLayersToMap(map, key, styleName) {
@@ -610,11 +605,7 @@ function switchMapStyle(styleName) {
     if (!Object.prototype.hasOwnProperty.call(TILE_SOURCES, styleName)) return;
     currentMapStyle = styleName;
     document.querySelectorAll('.map-style-btn').forEach(btn => {
-        if (btn.getAttribute('data-style') === styleName) {
-            btn.className = btn.className.replace(/bg-slate-100 text-slate-600 border-slate-200/g, 'bg-blue-50 text-blue-600 border-blue-200');
-        } else {
-            btn.className = btn.className.replace(/bg-blue-50 text-blue-600 border-blue-200/g, 'bg-slate-100 text-slate-600 border-slate-200');
-        }
+        btn.classList.toggle('active-map-btn', btn.getAttribute('data-style') === styleName);
     });
     if (mMapInstance) applyTileLayersToMap(mMapInstance, 'mobile', styleName);
     if (dMapInstance) applyTileLayersToMap(dMapInstance, 'desktop', styleName);
@@ -630,13 +621,17 @@ function toggleMapLabels() {
     const btn = document.getElementById('btn-toggle-labels');
     if (btn) {
         btn.className = showPermanentLabels
-            ? 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 transition'
-            : 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 transition';
+            ? 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-green text-white border border-brand-green transition'
+            : 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-600 border border-slate-200 hover:text-brand-green transition';
     }
+    rebindMapTooltips();
+}
+
+function rebindMapTooltips() {
     mapLayers.forEach(obj => {
         if (!obj.layer) return;
         obj.layer.unbindTooltip();
-        obj.layer.bindTooltip(escapeHtml(obj.branch), {
+        obj.layer.bindTooltip(escapeHtml(formatBranchName(obj.branch)), {
             permanent: showPermanentLabels,
             direction: obj.isGeoJson ? 'center' : 'top',
             className: 'branch-label-tooltip'
@@ -654,9 +649,9 @@ function focusBranchOnMap(branchName) {
     if (targetObj && targetObj.layer) {
         activeMap.invalidateSize();
         if (targetObj.layer.getBounds) {
-            activeMap.fitBounds(targetObj.layer.getBounds(), { maxZoom: 9, padding: [30, 30] });
+            activeMap.fitBounds(targetObj.layer.getBounds(), { maxZoom: 10, padding: [30, 30] });
         } else if (targetObj.layer.getLatLng) {
-            activeMap.setView(targetObj.layer.getLatLng(), 10);
+            activeMap.setView(targetObj.layer.getLatLng(), 11);
         }
         targetObj.layer.openPopup();
     }
@@ -673,7 +668,6 @@ function createMapInstance(containerId, key) {
     });
     applyTileLayersToMap(map, key, currentMapStyle);
 
-    // Automatically keep map responsive when container resizes or becomes visible
     const containerEl = document.getElementById(containerId);
     if (containerEl && window.ResizeObserver) {
         const ro = new ResizeObserver(() => {
@@ -702,8 +696,18 @@ async function fetchGeoJson() {
     return geoJsonData;
 }
 
-function buildBranchPopupHtml(branchName, provName, subtitleText, statusSummaryHtml) {
-    const safeBranch = escapeHtml(branchName);
+function buildBranchSubtitle(branchName, rawProv, isGeoJson) {
+    const provLabel = formatProvinceName(rawProv);
+    if (!isGeoJson) {
+        return t('mapPopupNightArea', { prov: provLabel });
+    }
+    const districtDesc = getBranchDistrictInfo(branchName);
+    const prefix = t('mapPopupProvincePrefix');
+    return `${prefix}${provLabel} — ${districtDesc}`;
+}
+
+function buildBranchPopupHtml(branchName, subtitleText, statusSummaryHtml) {
+    const safeBranch = escapeHtml(formatBranchName(branchName));
     const safeSubtitle = escapeHtml(subtitleText);
     return `
         <div style="min-width:195px;">
@@ -733,23 +737,21 @@ function renderBranchAreas(map, mapKey) {
                 const props = (feature && feature.properties) || {};
                 const bName = getCanonicalBranch(props.branchName || props.name);
                 const pName = sanitizeText(props.customProv || props.name, '-', 80);
-                const districtDesc = BRANCH_DISTRICT_INFO[bName] || `พื้นที่บริการ ${bName}`;
-                const subtitle = `จ.${pName} (${districtDesc})`;
+                const subtitle = buildBranchSubtitle(bName, pName, true);
 
                 layer.bindPopup(buildBranchPopupHtml(
                     bName,
-                    pName,
                     subtitle,
-                    '<span style="color:#94a3b8">ไม่มีงานวันนี้</span>'
+                    `<span style="color:#94a3b8">${escapeHtml(t('mapPopupNoDataToday'))}</span>`
                 ));
-                layer.bindTooltip(escapeHtml(bName), {
+                layer.bindTooltip(escapeHtml(formatBranchName(bName)), {
                     permanent: showPermanentLabels,
                     direction: 'center',
                     className: 'branch-label-tooltip'
                 });
                 layer.on({
                     mouseover: (e) => {
-                        e.target.setStyle({ weight: 3, color: '#1E293B', fillOpacity: 0.92 });
+                        e.target.setStyle({ weight: 3, color: '#007947', fillOpacity: 0.92 });
                         e.target.bringToFront();
                     },
                     mouseout: (e) => {
@@ -773,21 +775,20 @@ function renderBranchAreas(map, mapKey) {
         const bName = getCanonicalBranch(area.branch);
         const defaultStyle = { fillColor: STATUS_COLORS.empty, fillOpacity: 0.75, weight: 2, color: '#FFFFFF', dashArray: '' };
         const layer = L.circle(area.center, { ...defaultStyle, radius: area.radius }).addTo(group);
-        const subtitle = `พื้นที่กะกลางคืน (${area.prov})`;
+        const subtitle = buildBranchSubtitle(bName, area.prov, false);
 
         layer.bindPopup(buildBranchPopupHtml(
             bName,
-            area.prov,
             subtitle,
-            '<span style="color:#94a3b8">ไม่มีงานวันนี้</span>'
+            `<span style="color:#94a3b8">${escapeHtml(t('mapPopupNoDataToday'))}</span>`
         ));
-        layer.bindTooltip(escapeHtml(bName), {
+        layer.bindTooltip(escapeHtml(formatBranchName(bName)), {
             permanent: showPermanentLabels,
             direction: 'top',
             className: 'branch-label-tooltip'
         });
         layer.on({
-            mouseover: (e) => { e.target.setStyle({ weight: 3, color: '#1E293B', fillOpacity: 0.95 }); e.target.bringToFront(); },
+            mouseover: (e) => { e.target.setStyle({ weight: 3, color: '#007947', fillOpacity: 0.95 }); e.target.bringToFront(); },
             mouseout: (e) => { const obj = mapLayers.find(m => m.layer === e.target); if (obj) e.target.setStyle(obj.defaultStyle); }
         });
         mapLayers.push({ layer, mapKey, prov: area.prov, branch: bName, isGeoJson: false, defaultStyle });
@@ -795,23 +796,36 @@ function renderBranchAreas(map, mapKey) {
     return group;
 }
 
+function buildMapLegendHtml() {
+    return `
+        <div class="map-legend-title mb-2">${escapeHtml(t('mapLegendTitle'))}</div>
+        <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.new}"></i><span>${escapeHtml(t('mapLegendNew'))}</span></div>
+        <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.edit}"></i><span>${escapeHtml(t('mapLegendEdit'))}</span></div>
+        <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.conf}"></i><span>${escapeHtml(t('mapLegendConf'))}</span></div>
+        <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.ship}"></i><span>${escapeHtml(t('mapLegendShip'))}</span></div>
+        <div style="border-top: 1px solid #f1f5f9; margin-top: 6px; padding-top: 4px;">
+            <i style="background:${STATUS_COLORS.empty}"></i><span style="color:#94a3b8">${escapeHtml(t('mapLegendEmpty'))}</span>
+        </div>
+    `;
+}
+
 function addMapLegend(map) {
     const legend = L.control({ position: 'bottomleft' });
     legend.onAdd = function () {
         const div = L.DomUtil.create('div', 'map-legend');
-        div.innerHTML = `
-            <div class="map-legend-title mb-2">สถานะรายวัน (Status)</div>
-            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.new}"></i><span>งานใหม่ (รอตรวจสอบ)</span></div>
-            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.edit}"></i><span>ต้องแก้ไขบิล (Edit)</span></div>
-            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.conf}"></i><span>ยืนยันแล้ว (รับเรื่อง)</span></div>
-            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.ship}"></i><span>เสร็จสิ้นทั้งหมด (Shipped)</span></div>
-            <div style="border-top: 1px solid #f1f5f9; margin-top: 6px; padding-top: 4px;">
-                <i style="background:${STATUS_COLORS.empty}"></i><span style="color:#94a3b8">ไม่มีงาน/เขตว่าง</span>
-            </div>
-        `;
+        div.innerHTML = buildMapLegendHtml();
+        mapLegendContainers.push(div);
         return div;
     };
     legend.addTo(map);
+}
+
+function refreshMapLanguage() {
+    mapLegendContainers.forEach(div => {
+        if (div) div.innerHTML = buildMapLegendHtml();
+    });
+    rebindMapTooltips();
+    updateMapData(lastFilteredMapData);
 }
 
 async function initBranchMaps() {
@@ -819,6 +833,7 @@ async function initBranchMaps() {
     try {
         await fetchGeoJson();
         mapLayers = [];
+        mapLegendContainers = [];
         const mContainer = document.getElementById('m-branch-map');
         const dContainer = document.getElementById('d-branch-map');
         if (mContainer && !mMapInstance) {
@@ -853,15 +868,15 @@ function renderMapBranchChips(branchCounts) {
         let dotColor = 'bg-slate-300';
         let borderCls = 'border-slate-200 bg-white text-slate-600';
         if (c && c.total > 0) {
-            if (c.new > 0) { dotColor = 'bg-rose-500'; borderCls = 'border-rose-200 bg-rose-50/60 text-rose-700 font-semibold'; }
-            else if (c.edit > 0) { dotColor = 'bg-amber-500'; borderCls = 'border-amber-200 bg-amber-50/60 text-amber-700 font-semibold'; }
-            else if (c.conf > 0) { dotColor = 'bg-blue-600'; borderCls = 'border-blue-200 bg-blue-50/60 text-blue-700 font-semibold'; }
-            else { dotColor = 'bg-emerald-500'; borderCls = 'border-emerald-200 bg-emerald-50/60 text-emerald-700 font-semibold'; }
+            if (c.new > 0) { dotColor = 'bg-brand-red'; borderCls = 'badge-urgent-new font-semibold'; }
+            else if (c.edit > 0) { dotColor = 'bg-amber-500'; borderCls = 'border-amber-200 bg-amber-50/70 text-amber-700 font-semibold'; }
+            else if (c.conf > 0) { dotColor = 'bg-blue-600'; borderCls = 'border-blue-200 bg-blue-50/70 text-blue-700 font-semibold'; }
+            else { dotColor = 'bg-brand-green'; borderCls = 'badge-completed font-semibold'; }
         }
         const safeBranchAttr = escapeHtml(bName);
-        const safeLabel = escapeHtml(bName.replace('สาขา', ''));
+        const safeLabel = escapeHtml(formatBranchName(bName, true));
         const badge = c && c.total > 0
-            ? `<span class="ml-1 px-1.5 py-0.5 bg-white/90 rounded-full text-[10px]">${escapeHtml(String(c.total))}</span>`
+            ? `<span class="ml-1 px-1.5 py-0.5 bg-white/95 rounded-full text-[10px]">${escapeHtml(String(c.total))}</span>`
             : '';
         return `<button type="button" data-action="focus-branch" data-branch="${safeBranchAttr}" class="px-2.5 py-1 rounded-full border text-xs flex items-center gap-1.5 whitespace-nowrap hover:shadow-sm transition cursor-pointer ${borderCls}">
             <span class="w-2 h-2 rounded-full ${dotColor}"></span>
@@ -917,22 +932,19 @@ function updateMapData(filteredData) {
         obj.defaultStyle = newStyle;
         obj.layer.setStyle(newStyle);
 
-        const districtDesc = BRANCH_DISTRICT_INFO[obj.branch] || `พื้นที่บริการ ${obj.branch}`;
-        const subtitle = obj.isGeoJson
-            ? `จ.${obj.prov} (${districtDesc})`
-            : `พื้นที่กะกลางคืน (${obj.prov})`;
+        const subtitle = buildBranchSubtitle(obj.branch, obj.prov, obj.isGeoJson);
         const statusSummaryHtml = hasAnyData
             ? `<div style="line-height:1.7;">
-                <div>รวมทั้งหมด: <b>${escapeHtml(String(count.total))} งาน</b></div>
+                <div>${escapeHtml(t('mapPopupTotal'))} <b>${escapeHtml(formatOrderCount(count.total))}</b></div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap; font-size:10px; margin-top:2px;">
-                    <span style="color:#EF4444; font-weight:700;">● ใหม่ ${escapeHtml(String(count.new))}</span>
-                    <span style="color:#2563EB; font-weight:700;">● ยืนยัน ${escapeHtml(String(count.conf))}</span>
-                    <span style="color:#F59E0B; font-weight:700;">● แก้ไข ${escapeHtml(String(count.edit))}</span>
-                    <span style="color:#10B981; font-weight:700;">● เสร็จ ${escapeHtml(String(count.ship))}</span>
+                    <span style="color:#f00000; font-weight:700;">● ${escapeHtml(t('mapPopupNew'))} ${escapeHtml(String(count.new))}</span>
+                    <span style="color:#2563EB; font-weight:700;">● ${escapeHtml(t('mapPopupConf'))} ${escapeHtml(String(count.conf))}</span>
+                    <span style="color:#F59E0B; font-weight:700;">● ${escapeHtml(t('mapPopupEdit'))} ${escapeHtml(String(count.edit))}</span>
+                    <span style="color:#007947; font-weight:700;">● ${escapeHtml(t('mapPopupShip'))} ${escapeHtml(String(count.ship))}</span>
                 </div>
                </div>`
-            : `<span style="color:#94a3b8">ไม่มีงานในวันที่เลือก</span>`;
+            : `<span style="color:#94a3b8">${escapeHtml(t('mapPopupNoDataDate'))}</span>`;
 
-        obj.layer.setPopupContent(buildBranchPopupHtml(obj.branch, obj.prov, subtitle, statusSummaryHtml));
+        obj.layer.setPopupContent(buildBranchPopupHtml(obj.branch, subtitle, statusSummaryHtml));
     });
 }
