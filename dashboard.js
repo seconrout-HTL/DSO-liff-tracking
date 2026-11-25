@@ -3,7 +3,7 @@
 // ============================================
 
 function updateDashboard(data) {
-    let stats = { total: data.length, new: 0, conf: 0, edit: 0, shipped: 0 };
+    const stats = { total: data.length, new: 0, conf: 0, edit: 0, shipped: 0 };
     data.forEach(item => {
         const p = calculateProgress(item);
         const hasEdit = item.editCount > 0;
@@ -11,7 +11,7 @@ function updateDashboard(data) {
         else if (p === 2) { stats.conf++; if (hasEdit) stats.edit++; }
         else stats.new++;
     });
-    const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = String(val); };
     setTxt('m-dash-total', stats.total); setTxt('m-dash-new', stats.new);
     setTxt('m-dash-conf', stats.conf); setTxt('m-dash-shipped', stats.shipped);
     setTxt('d-dash-total', stats.total); setTxt('d-dash-new', stats.new);
@@ -28,34 +28,19 @@ function renderDashboardTables(filteredData) {
 // 📈 FREQUENCY CHART & TABLE
 // ============================================
 
-function renderFrequencyChart(currentDayData) {
-    let slots = [0, 0, 0, 0, 0, 0];
-    currentDayData.forEach(item => {
-        const parts = item.timestamp.split(' ');
-        if (!parts[1]) return;
-        const timeParts = parts[1].split(':');
-        const h = parseInt(timeParts[0]);
-        const m = parseInt(timeParts[1]);
-        const minutes = h * 60 + m;
-        if (minutes <= 960) slots[0]++;
-        else if (minutes <= 1020) slots[1]++;
-        else if (minutes <= 1050) slots[2]++;
-        else if (minutes <= 1080) slots[3]++;
-        else if (minutes <= 1110) slots[4]++;
-        else slots[5]++;
-    });
+function buildFrequencyChartConfig(slots) {
     const labels = ['<16:00', '16-17:00', '17-17:30', '17:30-18', '18-18:30', '>18:30'];
     const maxVal = Math.max(...slots, 5);
     const bgTrack = slots.map(() => maxVal);
 
-    const config = {
+    return {
         type: 'bar',
         data: {
             labels,
             datasets: [
                 {
                     label: 'จำนวนงาน (Orders)',
-                    data: slots,
+                    data: [...slots],
                     backgroundColor: '#2563EB',
                     hoverBackgroundColor: '#1D4ED8',
                     borderRadius: 999,
@@ -82,11 +67,13 @@ function renderFrequencyChart(currentDayData) {
                 y: {
                     beginAtZero: true,
                     stacked: false,
+                    border: { display: false },
                     ticks: { stepSize: 1, color: '#94A3B8', font: { size: 11 } },
-                    grid: { color: '#F1F5F9', drawBorder: false }
+                    grid: { color: '#F1F5F9' }
                 },
                 x: {
                     stacked: true,
+                    border: { display: false },
                     ticks: { color: '#64748B', font: { size: 10, weight: '600' } },
                     grid: { display: false }
                 }
@@ -100,25 +87,59 @@ function renderFrequencyChart(currentDayData) {
             interaction: { intersect: false, mode: 'index' }
         }
     };
-    const ctxM = document.getElementById('m-freq-chart').getContext('2d');
-    if (mFreqChartInstance) mFreqChartInstance.destroy();
-    mFreqChartInstance = new Chart(ctxM, JSON.parse(JSON.stringify(config)));
+}
 
-    const ctxD = document.getElementById('d-freq-chart').getContext('2d');
-    if (freqChartInstance) freqChartInstance.destroy();
-    freqChartInstance = new Chart(ctxD, config);
+function renderFrequencyChart(currentDayData) {
+    if (typeof Chart === 'undefined') return;
+    const slots = [0, 0, 0, 0, 0, 0];
+    currentDayData.forEach(item => {
+        const parts = String(item.timestamp || '').split(' ');
+        if (!parts[1]) return;
+        const timeParts = parts[1].split(':');
+        const h = parseInt(timeParts[0], 10);
+        const m = parseInt(timeParts[1], 10);
+        if (isNaN(h) || isNaN(m)) return;
+        const minutes = h * 60 + m;
+        if (minutes <= 960) slots[0]++;
+        else if (minutes <= 1020) slots[1]++;
+        else if (minutes <= 1050) slots[2]++;
+        else if (minutes <= 1080) slots[3]++;
+        else if (minutes <= 1110) slots[4]++;
+        else slots[5]++;
+    });
+
+    const mCanvas = document.getElementById('m-freq-chart');
+    if (mCanvas) {
+        const ctxM = mCanvas.getContext('2d');
+        if (mFreqChartInstance) mFreqChartInstance.destroy();
+        mFreqChartInstance = new Chart(ctxM, buildFrequencyChartConfig(slots));
+    }
+
+    const dCanvas = document.getElementById('d-freq-chart');
+    if (dCanvas) {
+        const ctxD = dCanvas.getContext('2d');
+        if (freqChartInstance) freqChartInstance.destroy();
+        freqChartInstance = new Chart(ctxD, buildFrequencyChartConfig(slots));
+    }
 }
 
 function renderFrequencyTable(allData) {
-    const freqMap = {};
+    const freqMap = createSafeMap();
     allData.forEach(item => {
-        if (!item.isoDate) return;
-        if (!freqMap[item.isoDate]) freqMap[item.isoDate] = { d: item.timestamp.split(' ')[0], s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s6: 0 };
-        const parts = item.timestamp.split(' ');
+        if (!item.isoDate || !isSafeDictKey(item.isoDate)) return;
+        if (!freqMap[item.isoDate]) {
+            freqMap[item.isoDate] = {
+                iso: item.isoDate,
+                d: String(item.timestamp || '').split(' ')[0] || item.isoDate,
+                s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s6: 0
+            };
+        }
+        const parts = String(item.timestamp || '').split(' ');
         if (!parts[1]) return;
         const timeParts = parts[1].split(':');
-        const h = parseInt(timeParts[0]);
-        const m = parseInt(timeParts[1]);
+        const h = parseInt(timeParts[0], 10);
+        const m = parseInt(timeParts[1], 10);
+        if (isNaN(h) || isNaN(m)) return;
         const minutes = h * 60 + m;
         if (minutes <= 960) freqMap[item.isoDate].s1++;
         else if (minutes <= 1020) freqMap[item.isoDate].s2++;
@@ -127,10 +148,10 @@ function renderFrequencyTable(allData) {
         else if (minutes <= 1110) freqMap[item.isoDate].s5++;
         else freqMap[item.isoDate].s6++;
     });
-    const freqArr = Object.values(freqMap).sort((a, b) => b.d.localeCompare(a.d)).slice(0, 10);
+    const freqArr = Object.values(freqMap).sort((a, b) => b.iso.localeCompare(a.iso)).slice(0, 10);
     const createRow = (row) => `
         <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition">
-            <td class="p-2.5 text-left font-semibold text-slate-700">${row.d}</td>
+            <td class="p-2.5 text-left font-semibold text-slate-700">${escapeHtml(row.d)}</td>
             <td class="p-2.5 text-slate-500">${row.s1 || '-'}</td>
             <td class="p-2.5 text-slate-500">${row.s2 || '-'}</td>
             <td class="p-2.5 text-slate-500">${row.s3 || '-'}</td>
@@ -150,54 +171,67 @@ function renderFrequencyTable(allData) {
 // ============================================
 
 function renderBranchStatusTable(currentData) {
-    const activeBranches = {};
+    const activeBranches = createSafeMap();
+    const rank = { new: 4, edit: 3, conf: 2, ship: 1 };
     currentData.forEach(item => {
         const bName = getCanonicalBranch(item.branch);
+        if (!isSafeDictKey(bName)) return;
+        const timeStr = String(item.timestamp || '').split(' ')[1] || '';
         if (!activeBranches[bName]) {
-            activeBranches[bName] = { status: getStatusCode(item), time: item.timestamp.split(' ')[1], count: 0 };
+            activeBranches[bName] = { status: getStatusCode(item), time: timeStr, count: 0 };
         }
         activeBranches[bName].count++;
-        // Keep highest priority status for summary display
         const st = getStatusCode(item);
         const cur = activeBranches[bName].status;
-        const rank = { 'new': 4, 'edit': 3, 'conf': 2, 'ship': 1 };
-        if (rank[st] > rank[cur]) {
+        if ((rank[st] || 0) > (rank[cur] || 0)) {
             activeBranches[bName].status = st;
-            activeBranches[bName].time = item.timestamp.split(' ')[1];
+            activeBranches[bName].time = timeStr;
         }
     });
+
     const missingBranches = [];
-    const allKnownBranches = Array.from(new Set([...MASTER_SOUTHERN_BRANCHES, ...Object.values(branchNames).map(getCanonicalBranch)]));
-    allKnownBranches.forEach(b => { if (b && b !== '-' && !activeBranches[b]) missingBranches.push(b); });
+    const allKnownBranches = Array.from(new Set([
+        ...MASTER_SOUTHERN_BRANCHES,
+        ...Object.values(branchNames).map(getCanonicalBranch)
+    ]));
+    allKnownBranches.forEach(b => {
+        if (b && b !== '-' && isSafeDictKey(b) && !activeBranches[b]) missingBranches.push(b);
+    });
     missingBranches.sort();
+
     let html = '';
     if (missingBranches.length > 0) {
         html += `<div class="mb-2 text-xs font-semibold text-rose-500">ยังไม่แจ้งงาน (${missingBranches.length})</div>`;
         html += `<div class="flex flex-wrap gap-1.5 mb-4">`;
         missingBranches.forEach(b => {
-            html += `<button onclick="focusBranchOnMap('${b}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-medium rounded-lg border border-rose-100 transition cursor-pointer">${b}</button>`;
+            const safeBranch = escapeHtml(b);
+            html += `<button type="button" data-action="focus-branch" data-branch="${safeBranch}" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-medium rounded-lg border border-rose-100 transition cursor-pointer">${safeBranch}</button>`;
         });
         html += `</div>`;
     } else {
         html += `<div class="mb-4 text-center text-xs font-semibold text-emerald-600 bg-emerald-50 p-2.5 rounded-xl border border-emerald-100">ครบทุกสาขาแล้ว</div>`;
     }
-    if (Object.keys(activeBranches).length > 0) {
-        html += `<div class="mb-2 text-xs font-semibold text-slate-400">แจ้งงานแล้ว (${Object.keys(activeBranches).length})</div>`;
-        Object.entries(activeBranches).forEach(([name, info]) => {
+
+    const activeEntries = Object.entries(activeBranches);
+    if (activeEntries.length > 0) {
+        html += `<div class="mb-2 text-xs font-semibold text-slate-400">แจ้งงานแล้ว (${activeEntries.length})</div>`;
+        activeEntries.forEach(([name, info]) => {
             let color = 'text-rose-600', barColor = 'bg-rose-500', pct = '30%', statusTxt = 'งานใหม่';
             if (info.status === 'conf') { color = 'text-blue-600'; barColor = 'bg-blue-500'; pct = '68%'; statusTxt = 'ยืนยันแล้ว'; }
             else if (info.status === 'ship') { color = 'text-emerald-600'; barColor = 'bg-emerald-500'; pct = '100%'; statusTxt = 'เสร็จสิ้น'; }
             else if (info.status === 'edit') { color = 'text-amber-600'; barColor = 'bg-amber-500'; pct = '50%'; statusTxt = 'แก้ไขบิล'; }
+            const safeName = escapeHtml(name);
+            const safeTime = escapeHtml(info.time || '-');
             html += `
-            <div onclick="focusBranchOnMap('${name}')" class="p-3 bg-slate-50/70 rounded-xl border border-slate-100 mb-2 hover:bg-blue-50/40 hover:border-blue-200 transition cursor-pointer">
+            <div data-action="focus-branch" data-branch="${safeName}" role="button" tabindex="0" class="p-3 bg-slate-50/70 rounded-xl border border-slate-100 mb-2 hover:bg-blue-50/40 hover:border-blue-200 transition cursor-pointer">
                 <div class="flex justify-between items-center mb-1.5">
                     <div class="font-semibold text-xs text-slate-800 flex items-center gap-1.5">
-                        <span>${name}</span>
+                        <span>${safeName}</span>
                         <span class="px-1.5 py-0.5 bg-white text-slate-600 rounded text-[10px] border border-slate-200">${info.count} งาน</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="text-xs ${color} font-semibold">${statusTxt}</span>
-                        <span class="text-[11px] text-slate-400">${info.time || '-'} น.</span>
+                        <span class="text-[11px] text-slate-400">${safeTime} น.</span>
                     </div>
                 </div>
                 <div class="w-full h-1.5 bg-slate-200/70 rounded-full overflow-hidden">
@@ -208,6 +242,7 @@ function renderBranchStatusTable(currentData) {
     } else {
         html += `<div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl mb-2">ไม่มีข้อมูลการแจ้งงาน</div>`;
     }
+
     const mContainer = document.getElementById('m-branch-status-container');
     const dContainer = document.getElementById('d-branch-status-container');
     if (mContainer) mContainer.innerHTML = html;
@@ -219,21 +254,38 @@ function renderBranchStatusTable(currentData) {
 // ============================================
 
 function populateBranchFilters() {
-    const mFilter = document.getElementById('m-branch-filter');
-    const dFilter = document.getElementById('d-branch-filter');
-    let options = '<option value="">ทุกสาขา</option>';
     const sortedBranches = Array.from(uniqueBranches).sort();
-    sortedBranches.forEach(b => { options += `<option value="${b}">${b}</option>`; });
-    if (mFilter && mFilter.options.length <= 1) mFilter.innerHTML = options;
-    if (dFilter && dFilter.options.length <= 1) dFilter.innerHTML = options;
+    ['m-branch-filter', 'd-branch-filter'].forEach(id => {
+        const selectEl = document.getElementById(id);
+        if (!selectEl) return;
+        const prevVal = selectEl.value;
+        selectEl.textContent = '';
+
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = 'ทุกสาขา';
+        selectEl.appendChild(allOpt);
+
+        sortedBranches.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b;
+            opt.textContent = b;
+            selectEl.appendChild(opt);
+        });
+
+        if (prevVal && sortedBranches.includes(prevVal)) {
+            selectEl.value = prevVal;
+        }
+    });
 }
 
 function switchReportType(type) {
+    const safeType = type === 'monthly' ? 'monthly' : 'daily';
     const dBtnDaily = document.getElementById('d-btn-daily');
     const dBtnMonthly = document.getElementById('d-btn-monthly');
     const mBtnDaily = document.getElementById('m-btn-daily');
     const mBtnMonthly = document.getElementById('m-btn-monthly');
-    if (type === 'daily') {
+    if (safeType === 'daily') {
         if (dBtnDaily) dBtnDaily.className = 'report-btn active p-4 rounded-xl font-medium transition flex items-center justify-center gap-3';
         if (dBtnMonthly) dBtnMonthly.className = 'report-btn p-4 rounded-xl font-medium transition flex items-center justify-center gap-3';
         if (mBtnDaily) mBtnDaily.className = 'report-btn active p-3 rounded-xl text-sm font-medium transition';
@@ -251,10 +303,18 @@ function switchReportType(type) {
 }
 
 function updateDailyReport(source) {
-    let activeDate = "";
-    if (source === 'mobile') { activeDate = document.getElementById('m-report-date').value; document.getElementById('d-report-date').value = activeDate; }
-    else if (source === 'desktop') { activeDate = document.getElementById('d-report-date').value; document.getElementById('m-report-date').value = activeDate; }
-    else { activeDate = document.getElementById('d-report-date').value || document.getElementById('m-report-date').value; }
+    let activeDate = '';
+    const mDateEl = document.getElementById('m-report-date');
+    const dDateEl = document.getElementById('d-report-date');
+    if (source === 'mobile' && mDateEl) {
+        activeDate = mDateEl.value;
+        if (dDateEl) dDateEl.value = activeDate;
+    } else if (source === 'desktop' && dDateEl) {
+        activeDate = dDateEl.value;
+        if (mDateEl) mDateEl.value = activeDate;
+    } else {
+        activeDate = (dDateEl && dDateEl.value) || (mDateEl && mDateEl.value) || '';
+    }
     const reportData = globalData.filter(item => item.isoDate === activeDate);
     renderDetailTable(reportData);
 }
@@ -268,19 +328,21 @@ function renderDetailTable(data) {
         html = '<tr><td colspan="8" class="p-6 text-center text-slate-400">ไม่พบข้อมูลตามวันที่เลือก</td></tr>';
     } else {
         html = sortedData.map(row => {
-            const dateParts = row.timestamp.split(' ');
-            const notiDate = dateParts[0];
-            const notiTime = row.bill.time || '-';
+            const dateParts = String(row.timestamp || '').split(' ');
+            const notiDate = escapeHtml(dateParts[0] || '-');
+            const notiTime = escapeHtml((row.bill && row.bill.time) ? row.bill.time : '-');
+            const confTime = escapeHtml((row.conf && row.conf.time) ? row.conf.time : '-');
+            const shipTime = escapeHtml((row.ship && row.ship.time) ? row.ship.time : '-');
             return `
             <tr class="hover:bg-slate-50/80 border-b border-slate-100 last:border-0 text-xs md:text-sm transition">
-                <td class="p-2.5 md:p-3.5 font-semibold text-slate-800">${row.branch}</td>
+                <td class="p-2.5 md:p-3.5 font-semibold text-slate-800">${escapeHtml(row.branch)}</td>
                 <td class="p-2.5 md:p-3.5">${notiDate}</td>
-                <td class="p-2.5 md:p-3.5">${row.deliveryDate}</td>
+                <td class="p-2.5 md:p-3.5">${escapeHtml(row.deliveryDate)}</td>
                 <td class="p-2.5 md:p-3.5 text-center text-slate-500">${notiTime}</td>
-                <td class="p-2.5 md:p-3.5 text-center text-slate-500">${row.conf.time || '-'}</td>
-                <td class="p-2.5 md:p-3.5 text-center text-slate-500">${row.ship.time || '-'}</td>
-                <td class="p-2.5 md:p-3.5 text-right font-semibold text-blue-600">${row.shipmentAmount}</td>
-                <td class="p-2.5 md:p-3.5 text-center">${row.processingTime || '-'}</td>
+                <td class="p-2.5 md:p-3.5 text-center text-slate-500">${confTime}</td>
+                <td class="p-2.5 md:p-3.5 text-center text-slate-500">${shipTime}</td>
+                <td class="p-2.5 md:p-3.5 text-right font-semibold text-blue-600">${escapeHtml(row.shipmentAmount)}</td>
+                <td class="p-2.5 md:p-3.5 text-center">${escapeHtml(row.processingTime || '-')}</td>
             </tr>`;
         }).join('');
     }
@@ -289,29 +351,52 @@ function renderDetailTable(data) {
 }
 
 function updateMonthlyReport(source) {
-    let activeMonth, activeYear, activeBranch;
+    const mMonthEl = document.getElementById('m-report-month');
+    const mYearEl = document.getElementById('m-report-year');
+    const mBranchEl = document.getElementById('m-branch-filter');
+    const dMonthEl = document.getElementById('d-report-month');
+    const dYearEl = document.getElementById('d-report-year');
+    const dBranchEl = document.getElementById('d-branch-filter');
+
+    let activeMonth = '', activeYear = '', activeBranch = '';
     if (source === 'mobile') {
-        activeMonth = document.getElementById('m-report-month').value; activeYear = document.getElementById('m-report-year').value; activeBranch = document.getElementById('m-branch-filter').value;
-        document.getElementById('d-report-month').value = activeMonth; document.getElementById('d-report-year').value = activeYear; document.getElementById('d-branch-filter').value = activeBranch;
+        activeMonth = mMonthEl ? mMonthEl.value : '';
+        activeYear = mYearEl ? mYearEl.value : '';
+        activeBranch = mBranchEl ? mBranchEl.value : '';
+        if (dMonthEl) dMonthEl.value = activeMonth;
+        if (dYearEl) dYearEl.value = activeYear;
+        if (dBranchEl) dBranchEl.value = activeBranch;
     } else if (source === 'desktop') {
-        activeMonth = document.getElementById('d-report-month').value; activeYear = document.getElementById('d-report-year').value; activeBranch = document.getElementById('d-branch-filter').value;
-        document.getElementById('m-report-month').value = activeMonth; document.getElementById('m-report-year').value = activeYear; document.getElementById('m-branch-filter').value = activeBranch;
+        activeMonth = dMonthEl ? dMonthEl.value : '';
+        activeYear = dYearEl ? dYearEl.value : '';
+        activeBranch = dBranchEl ? dBranchEl.value : '';
+        if (mMonthEl) mMonthEl.value = activeMonth;
+        if (mYearEl) mYearEl.value = activeYear;
+        if (mBranchEl) mBranchEl.value = activeBranch;
     } else {
-        activeMonth = document.getElementById('d-report-month').value; activeYear = document.getElementById('d-report-year').value; activeBranch = document.getElementById('d-branch-filter').value;
+        activeMonth = dMonthEl ? dMonthEl.value : '';
+        activeYear = dYearEl ? dYearEl.value : '';
+        activeBranch = dBranchEl ? dBranchEl.value : '';
     }
     if (!activeYear) return;
+
     const filtered = globalData.filter(item => {
         if (!item.isoDate) return false;
         const [y, m] = item.isoDate.split('-');
-        return parseInt(m) === parseInt(activeMonth) && parseInt(y) === parseInt(activeYear) && (activeBranch === "" || item.branch === activeBranch);
+        return parseInt(m, 10) === parseInt(activeMonth, 10)
+            && parseInt(y, 10) === parseInt(activeYear, 10)
+            && (activeBranch === '' || item.branch === activeBranch);
     });
-    const summary = {};
+
+    const summary = createSafeMap();
     filtered.forEach(item => {
+        if (!isSafeDictKey(item.branch)) return;
         if (!summary[item.branch]) summary[item.branch] = { do: 0, sh: 0 };
         summary[item.branch].do++;
         const sAmt = parseFloat(String(item.shipmentAmount).replace(/,/g, ''));
         if (!isNaN(sAmt)) summary[item.branch].sh += sAmt;
     });
+
     const branches = Object.keys(summary).sort();
     let html = '';
     if (branches.length === 0) {
@@ -319,7 +404,7 @@ function updateMonthlyReport(source) {
     } else {
         html = branches.map(b => {
             const s = summary[b];
-            return `<tr class="hover:bg-slate-50/80 border-b border-slate-100 last:border-0 text-xs md:text-sm transition"><td class="p-2.5 md:p-3.5 font-semibold text-slate-800">${b}</td><td class="p-2.5 md:p-3.5 text-center text-slate-500">-</td><td class="p-2.5 md:p-3.5 text-center font-medium text-slate-800">${s.do}</td><td class="p-2.5 md:p-3.5 text-center font-semibold text-blue-600">${s.sh}</td><td class="p-2.5 md:p-3.5 text-center text-slate-500">-</td></tr>`;
+            return `<tr class="hover:bg-slate-50/80 border-b border-slate-100 last:border-0 text-xs md:text-sm transition"><td class="p-2.5 md:p-3.5 font-semibold text-slate-800">${escapeHtml(b)}</td><td class="p-2.5 md:p-3.5 text-center text-slate-500">-</td><td class="p-2.5 md:p-3.5 text-center font-medium text-slate-800">${escapeHtml(String(s.do))}</td><td class="p-2.5 md:p-3.5 text-center font-semibold text-blue-600">${escapeHtml(String(s.sh))}</td><td class="p-2.5 md:p-3.5 text-center text-slate-500">-</td></tr>`;
         }).join('');
     }
     const mBODY = document.getElementById('m-monthly-table-body');
@@ -329,46 +414,81 @@ function updateMonthlyReport(source) {
 }
 
 // ============================================
-// 📤 EXPORT LOGIC
+// 📤 EXPORT LOGIC (CWE-1236 Formula Injection Protected)
 // ============================================
 
 function confirmExport() {
-    const start = document.getElementById('export-start').value;
-    const end = document.getElementById('export-end').value;
-    if (!start || !end) { showToast("กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด", "error"); return; }
-    const exportData = globalData.filter(item => { if (!item.isoDate) return false; return item.isoDate >= start && item.isoDate <= end; });
-    if (exportData.length === 0) { showToast("ไม่พบข้อมูลในช่วงวันที่เลือก", "error"); return; }
-    const includeChart = document.getElementById('export-include-chart').checked;
+    if (typeof XLSX === 'undefined') {
+        showToast('ไม่พบไลบรารีส่งออก Excel', 'error');
+        return;
+    }
+    const startEl = document.getElementById('export-start');
+    const endEl = document.getElementById('export-end');
+    const start = startEl ? startEl.value : '';
+    const end = endEl ? endEl.value : '';
+    if (!start || !end) { showToast('กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด', 'error'); return; }
+    const exportData = globalData.filter(item => {
+        if (!item.isoDate) return false;
+        return item.isoDate >= start && item.isoDate <= end;
+    });
+    if (exportData.length === 0) { showToast('ไม่พบข้อมูลในช่วงวันที่เลือก', 'error'); return; }
+
+    const includeChartEl = document.getElementById('export-include-chart');
+    const includeChart = Boolean(includeChartEl && includeChartEl.checked);
     const wb = XLSX.utils.book_new();
-    const wsData = [["สาขา", "วันที่แจ้งงาน", "วันที่ส่งสินค้า", "เวลาแจ้งงาน", "เวลายืนยัน", "เวลาออก shipment", "จำนวน shipment", "จำนวนการแก้ไข", "ระยะเวลาดำเนินการ (นาที)", "หมายเหตุ"]];
+    const wsData = [[
+        'สาขา', 'วันที่แจ้งงาน', 'วันที่ส่งสินค้า', 'เวลาแจ้งงาน', 'เวลายืนยัน',
+        'เวลาออก shipment', 'จำนวน shipment', 'จำนวนการแก้ไข', 'ระยะเวลาดำเนินการ (นาที)', 'หมายเหตุ'
+    ]];
+
     exportData.forEach(row => {
-        const dateParts = row.timestamp.split(' ');
+        const dateParts = String(row.timestamp || '').split(' ');
         const notiDate = dateParts[0] || '-';
-        const notiTime = row.bill.time || '-';
+        const notiTime = (row.bill && row.bill.time) ? row.bill.time : '-';
         let deliveryDate = row.deliveryDate || '-';
         if (deliveryDate !== '-') {
-            const dateMatch = deliveryDate.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-            if (dateMatch) { let year = parseInt(dateMatch[3]); if (dateMatch[3].length === 2) year += 2000; deliveryDate = `${dateMatch[1]}/${dateMatch[2]}/${year}`; }
+            const dateMatch = deliveryDate.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+            if (dateMatch) {
+                let year = parseInt(dateMatch[3], 10);
+                if (dateMatch[3].length === 2) year += 2000;
+                deliveryDate = `${dateMatch[1]}/${dateMatch[2]}/${year}`;
+            }
         }
-        wsData.push([row.branch || '-', notiDate, deliveryDate, notiTime, row.conf.time || '-', row.ship.time || '-', row.shipmentAmount !== '-' ? row.shipmentAmount : '', row.editCount > 0 ? row.editCount.toString() : '0', row.processingTime !== '-' ? row.processingTime : '', row.note || '']);
+        const safeRow = [
+            row.branch || '-',
+            notiDate,
+            deliveryDate,
+            notiTime,
+            (row.conf && row.conf.time) ? row.conf.time : '-',
+            (row.ship && row.ship.time) ? row.ship.time : '-',
+            row.shipmentAmount !== '-' ? row.shipmentAmount : '',
+            row.editCount > 0 ? String(row.editCount) : '0',
+            row.processingTime !== '-' ? row.processingTime : '',
+            row.note || ''
+        ].map(sanitizeExcelCell);
+        wsData.push(safeRow);
     });
+
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     ws['!cols'] = [{ wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 12 }, { wch: 25 }, { wch: 18 }];
-    XLSX.utils.book_append_sheet(wb, ws, "ข้อมูลการแจ้งงาน");
+    XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูลการแจ้งงาน');
     if (includeChart) addChartToWorkbook(wb, start, end);
+
+    const safeStart = sanitizeFilenameSegment(start, 'start');
+    const safeEnd = sanitizeFilenameSegment(end, 'end');
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `FleetOrder_Export_${start}_to_${end}.xlsx`);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `FleetOrder_Export_${safeStart}_to_${safeEnd}.xlsx`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     closeExportModal();
-    showToast("ดาวน์โหลดไฟล์ Excel เรียบร้อยแล้ว");
+    showToast('ดาวน์โหลดไฟล์ Excel เรียบร้อยแล้ว');
 }
 
 function addChartToWorkbook(wb, start, end) {
@@ -376,32 +496,41 @@ function addChartToWorkbook(wb, start, end) {
     const canvas = document.getElementById(canvasId);
     if (canvas) {
         if (canvas.width === 0 || canvas.height === 0) {
-            showToast("กรุณาเปิดหน้าแดชบอร์ดก่อนบันทึกกราฟ", "error");
+            showToast('กรุณาเปิดหน้าแดชบอร์ดก่อนบันทึกกราฟ', 'error');
             return;
         }
         try {
             const imageData = canvas.toDataURL('image/png', 1.0);
-            const chartWs = XLSX.utils.aoa_to_sheet([["รายงานกราฟความถี่การแจ้งงาน"], [`ช่วงวันที่: ${start} ถึง ${end}`], [""], ["กราฟแสดงความถี่การแจ้งงานในช่วงเวลาต่างๆ ของวัน"]]);
+            const safeStartCell = sanitizeExcelCell(start);
+            const safeEndCell = sanitizeExcelCell(end);
+            const chartRows = [
+                [sanitizeExcelCell('รายงานกราฟความถี่การแจ้งงาน')],
+                [sanitizeExcelCell(`ช่วงวันที่: ${safeStartCell} ถึง ${safeEndCell}`)],
+                [''],
+                [sanitizeExcelCell('กราฟแสดงความถี่การแจ้งงานในช่วงเวลาต่างๆ ของวัน')]
+            ];
+            const chartWs = XLSX.utils.aoa_to_sheet(chartRows);
             chartWs['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 20 }];
-            XLSX.utils.book_append_sheet(wb, chartWs, "กราฟความถี่");
-            chartWs['A5'] = { t: 's', v: '📊 กราฟความถี่การแจ้งงาน' };
-            if (!wb.Props) wb.Props = {};
-            wb.Props.ChartImage = imageData;
+            XLSX.utils.book_append_sheet(wb, chartWs, 'กราฟความถี่');
+            chartWs['A5'] = { t: 's', v: sanitizeExcelCell('📊 กราฟความถี่การแจ้งงาน') };
+
+            const safeStart = sanitizeFilenameSegment(start, 'start');
+            const safeEnd = sanitizeFilenameSegment(end, 'end');
             const imageLink = document.createElement('a');
-            imageLink.download = `FleetOrder_Chart_${start}_to_${end}.png`;
+            imageLink.download = `FleetOrder_Chart_${safeStart}_to_${safeEnd}.png`;
             imageLink.href = imageData;
             document.body.appendChild(imageLink);
             imageLink.click();
             document.body.removeChild(imageLink);
         } catch (e) {
-            console.error("Chart Export Error:", e);
-            showToast("เกิดข้อผิดพลาดในการบันทึกรูปกราฟ", "error");
+            console.error('Chart Export Error:', e);
+            showToast('เกิดข้อผิดพลาดในการบันทึกรูปกราฟ', 'error');
         }
     }
 }
 
 // ============================================
-// 🗺️ GEO MAP — Branch Coverage Areas (No 403 / Polygon Split)
+// 🗺️ GEO MAP — Pre-computed Southern Branch Coverage Areas
 // ============================================
 
 let mMapInstance = null;
@@ -414,11 +543,13 @@ let geoJsonData = null;
 let mapLayers = [];
 let lastFilteredMapData = [];
 
+const LOCAL_GEOJSON_URL = 'assets/thailand-south.geojson';
+
 // Transparent 1x1 pixel fallback so broken tile icons never appear
 const BLANK_TILE_DATA_URI = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 // Esri ArcGIS Online Public Tiles (No API Key Required & No Referer 403 Block)
-const TILE_SOURCES = {
+const TILE_SOURCES = Object.freeze({
     light: [
         'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
         'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
@@ -427,53 +558,10 @@ const TILE_SOURCES = {
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
     ],
     none: []
-};
-
-const SINGLE_BRANCH_PROVINCES = {
-    'Ranong': 'สาขาระนอง',
-    'Krabi': 'สาขากระบี่',
-    'Trang': 'สาขาตรัง',
-    'Phatthalung': 'สาขาพัทลุง',
-    'Satun': 'สาขาสตูล',
-    'Songkhla': 'สาขาหาดใหญ่',
-    'Pattani': 'สาขาปัตตานี',
-    'Yala': 'สาขายะลา',
-    'Narathiwat': 'สาขานราธิวาส'
-};
-
-// Polygon Mask for สาขาทุ่งสง (Matches Red Circle in Nakhon Si Thammarat Map:
-// ถ้ำพรรณรา, ฉวาง, ช้างกลาง, ทุ่งใหญ่, นาบอน, ทุ่งสง, บางขัน, จุฬาภรณ์, ชะอวด)
-const THUNG_SONG_RED_CIRCLE_COORDS = [[
-    [99.15, 8.54],
-    [99.42, 8.53],
-    [99.53, 8.46],
-    [99.66, 8.38],
-    [99.71, 8.27],
-    [99.76, 8.15],
-    [99.93, 8.09],
-    [100.06, 8.02],
-    [100.06, 7.82],
-    [99.15, 7.82],
-    [99.15, 8.54]
-]];
-
-// Polygon Mask for สาขาสุราษฎร์ธานี (Matches Red Circle in Surat Thani Map:
-// อ.เมืองสุราษฎร์ธานี, อ.กาญจนดิษฐ์, อ.ดอนสัก, อ.บ้านนาเดิม, อ.บ้านนาสาร, อ.เวียงสระ)
-const SURAT_BRANCH_RED_CIRCLE_COORDS = [[
-    [99.25, 9.30],
-    [99.23, 9.10],
-    [99.20, 8.98],
-    [99.24, 8.82],
-    [99.27, 8.58],
-    [99.35, 8.45],
-    [99.82, 8.45],
-    [99.82, 9.42],
-    [99.35, 9.38],
-    [99.25, 9.30]
-]];
+});
 
 // District description per branch for rich popups
-const BRANCH_DISTRICT_INFO = {
+const BRANCH_DISTRICT_INFO = Object.freeze({
     'สาขานครศรีธรรมราช': 'อ.เมืองนครศรีฯ, ขนอม, สิชล, นบพิตำ, ท่าศาลา, พิปูน, พรหมคีรี, ลานสกา, พระพรหม, ปากพนัง, ร่อนพิบูลย์, เฉลิมพระเกียรติ, เชียรใหญ่, หัวไทร',
     'สาขาทุ่งสง': 'อ.ทุ่งสง, ถ้ำพรรณรา, ฉวาง, ช้างกลาง, ทุ่งใหญ่, นาบอน, บางขัน, จุฬาภรณ์, ชะอวด',
     'สาขาสุราษฎร์ธานี': 'อ.เมืองสุราษฎร์ธานี, กาญจนดิษฐ์, ดอนสัก, บ้านนาเดิม, บ้านนาสาร, เวียงสระ',
@@ -482,19 +570,19 @@ const BRANCH_DISTRICT_INFO = {
     'เขตเกาะพะงัน': 'อ.เกาะพะงัน, เกาะเต่า',
     'สาขาชุมพร': 'อ.เมืองชุมพร, ท่าแซะ, ปะทิว',
     'สาขาหลังสวน': 'อ.หลังสวน, สวี, ทุ่งตะโก, พะโต๊ะ, ละแม'
-};
+});
 
-const EXTRA_LAYERS = [
-    { branch: 'เขตกลางคืน', prov: 'Phuket', type: 'circle', center: [7.885, 98.392], radius: 3800 }
-];
+const EXTRA_LAYERS = Object.freeze([
+    Object.freeze({ branch: 'เขตกลางคืน', prov: 'Phuket', type: 'circle', center: [7.885, 98.392], radius: 3800 })
+]);
 
-const STATUS_COLORS = {
-    'new': '#EF4444',   // Rose Red (งานใหม่)
-    'edit': '#F59E0B',  // Amber (แก้ไขบิล)
-    'conf': '#2563EB',  // Royal Blue (ยืนยันแล้ว)
-    'ship': '#10B981',  // Emerald Green (เสร็จสิ้น)
-    'empty': '#CBD5E1'  // Slate Gray (ไม่มีงาน)
-};
+const STATUS_COLORS = Object.freeze({
+    new: '#EF4444',   // Rose Red (งานใหม่)
+    edit: '#F59E0B',  // Amber (แก้ไขบิล)
+    conf: '#2563EB',  // Royal Blue (ยืนยันแล้ว)
+    ship: '#10B981',  // Emerald Green (เสร็จสิ้น)
+    empty: '#CBD5E1'  // Slate Gray (ไม่มีงาน)
+});
 
 function applyTileLayersToMap(map, key, styleName) {
     if (mapBaseTileLayers[key]) {
@@ -509,7 +597,7 @@ function applyTileLayersToMap(map, key, styleName) {
             maxZoom: 18,
             errorTileUrl: BLANK_TILE_DATA_URI
         });
-        tl.on('tileerror', function(e) {
+        tl.on('tileerror', function (e) {
             if (e && e.tile) e.tile.src = BLANK_TILE_DATA_URI;
         });
         tl.addTo(map);
@@ -519,6 +607,7 @@ function applyTileLayersToMap(map, key, styleName) {
 }
 
 function switchMapStyle(styleName) {
+    if (!Object.prototype.hasOwnProperty.call(TILE_SOURCES, styleName)) return;
     currentMapStyle = styleName;
     document.querySelectorAll('.map-style-btn').forEach(btn => {
         if (btn.getAttribute('data-style') === styleName) {
@@ -547,9 +636,9 @@ function toggleMapLabels() {
     mapLayers.forEach(obj => {
         if (!obj.layer) return;
         obj.layer.unbindTooltip();
-        obj.layer.bindTooltip(obj.branch, {
+        obj.layer.bindTooltip(escapeHtml(obj.branch), {
             permanent: showPermanentLabels,
-            direction: 'center',
+            direction: obj.isGeoJson ? 'center' : 'top',
             className: 'branch-label-tooltip'
         });
     });
@@ -598,187 +687,41 @@ function createMapInstance(containerId, key) {
 async function fetchGeoJson() {
     if (geoJsonData) return geoJsonData;
     try {
-        const response = await fetch('https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json');
+        const response = await fetch(LOCAL_GEOJSON_URL, {
+            credentials: 'same-origin',
+            referrerPolicy: 'no-referrer'
+        });
+        if (!response.ok) throw new Error(`GeoJSON HTTP ${response.status}`);
         const raw = await response.json();
-        const southernProvs = new Set([
-            ...Object.keys(SINGLE_BRANCH_PROVINCES),
-            'Chumphon', 'Nakhon Si Thammarat', 'Phangnga', 'Surat Thani', 'Phuket'
-        ]);
-        raw.features = raw.features.filter(f => southernProvs.has(f.properties.name));
-        geoJsonData = raw;
+        if (raw && raw.type === 'FeatureCollection' && Array.isArray(raw.features)) {
+            geoJsonData = raw;
+        }
     } catch (e) {
-        console.error('Failed to fetch GeoJSON', e);
+        console.error('Failed to load local Southern Thailand GeoJSON:', e);
     }
     return geoJsonData;
 }
 
-// Helper: Safely intersect or difference a MultiPolygon/Polygon with a Turf polygon mask
-function clipGeometryByPolygon(feature, maskPoly, mode = 'intersect') {
-    if (!window.turf) return null;
-    try {
-        const polys = feature.geometry.type === 'MultiPolygon'
-            ? feature.geometry.coordinates.map(c => turf.polygon(c))
-            : [turf.polygon(feature.geometry.coordinates)];
-
-        const resultCoords = [];
-        polys.forEach(p => {
-            try {
-                const res = mode === 'intersect'
-                    ? turf.intersect(p, maskPoly)
-                    : turf.difference(p, maskPoly);
-                if (res && res.geometry && res.geometry.coordinates && res.geometry.coordinates.length > 0) {
-                    if (res.geometry.type === 'Polygon') {
-                        resultCoords.push(res.geometry.coordinates);
-                    } else if (res.geometry.type === 'MultiPolygon') {
-                        resultCoords.push(...res.geometry.coordinates);
-                    }
-                }
-            } catch (innerErr) {}
-        });
-
-        if (resultCoords.length === 0) return null;
-        return resultCoords.length === 1
-            ? turf.polygon(resultCoords[0])
-            : turf.multiPolygon(resultCoords);
-    } catch (err) {
-        return null;
-    }
-}
-
-// Helper: Safely clip a MultiPolygon/Polygon with a Bounding Box [minX, minY, maxX, maxY]
-function clipGeometryByBbox(feature, bbox) {
-    if (!window.turf) return null;
-    const maskPoly = turf.bboxPolygon(bbox);
-    const intersected = clipGeometryByPolygon(feature, maskPoly, 'intersect');
-    if (intersected) return intersected;
-
-    // Fallback using turf.bboxClip per sub-polygon
-    try {
-        if (feature.geometry.type === 'MultiPolygon') {
-            const good = [];
-            feature.geometry.coordinates.forEach(coords => {
-                try {
-                    const c = turf.bboxClip(turf.polygon(coords), bbox);
-                    if (c && c.geometry && c.geometry.coordinates && c.geometry.coordinates.length > 0) {
-                        good.push(c.geometry.coordinates);
-                    }
-                } catch (e) {}
-            });
-            return good.length > 0 ? turf.multiPolygon(good) : null;
-        } else {
-            const c = turf.bboxClip(feature, bbox);
-            return (c && c.geometry && c.geometry.coordinates.length > 0) ? c : null;
-        }
-    } catch (e) {
-        return null;
-    }
-}
-
-function processMultiBranchProvince(feature) {
-    const provName = feature.properties.name;
-    if (!window.turf) return [feature];
-
-    const [minX, minY, maxX, maxY] = turf.bbox(feature);
-    const midY = minY + (maxY - minY) / 2;
-    const parts = [];
-
-    const addPart = (geom, branchName) => {
-        if (geom && geom.geometry && geom.geometry.coordinates && geom.geometry.coordinates.length > 0) {
-            const copy = JSON.parse(JSON.stringify(geom));
-            copy.properties = { ...feature.properties, branchName, customProv: provName };
-            parts.push(copy);
-            return true;
-        }
-        return false;
-    };
-
-    if (provName === 'Nakhon Si Thammarat') {
-        // 1. สาขาทุ่งสง (Inside Red Circle: ถ้ำพรรณรา, ฉวาง, ช้างกลาง, ทุ่งใหญ่, นาบอน, ทุ่งสง, บางขัน, จุฬาภรณ์, ชะอวด)
-        const thungSongMask = turf.polygon(THUNG_SONG_RED_CIRCLE_COORDS);
-        let thungSongGeo = clipGeometryByPolygon(feature, thungSongMask, 'intersect');
-        if (!thungSongGeo) {
-            thungSongGeo = clipGeometryByBbox(feature, [minX, minY, 100.05, 8.48]);
-        }
-        addPart(thungSongGeo || turf.polygon(THUNG_SONG_RED_CIRCLE_COORDS), 'สาขาทุ่งสง');
-
-        // 2. สาขานครศรีธรรมราช (Outside Red Circle: เมืองนครศรีฯ, ขนอม, สิชล, ท่าศาลา, พิปูน, ลานสกา, ปากพนัง, ร่อนพิบูลย์, หัวไทร ฯลฯ)
-        let nakhonGeo = clipGeometryByPolygon(feature, thungSongMask, 'difference');
-        if (!nakhonGeo) {
-            nakhonGeo = clipGeometryByBbox(feature, [99.35, 8.15, maxX, maxY]);
-        }
-        addPart(nakhonGeo || feature, 'สาขานครศรีธรรมราช');
-        return parts;
-    }
-
-    if (provName === 'Surat Thani') {
-        // 1. สาขาสุราษฎร์ธานี (Inside Red Circle: เมืองสุราษฎร์ธานี, กาญจนดิษฐ์, ดอนสัก, บ้านนาเดิม, บ้านนาสาร, เวียงสระ)
-        const suratMask = turf.polygon(SURAT_BRANCH_RED_CIRCLE_COORDS);
-        let suratGeo = clipGeometryByPolygon(feature, suratMask, 'intersect');
-        if (!suratGeo) {
-            suratGeo = clipGeometryByBbox(feature, [99.22, minY, 99.82, 9.42]);
-        }
-        addPart(suratGeo || turf.polygon(SURAT_BRANCH_RED_CIRCLE_COORDS), 'สาขาสุราษฎร์ธานี');
-
-        // 2. สาขาพุนพิน (Western & Northern Mainland outside the Surat Thani red circle)
-        const mainlandGeo = clipGeometryByBbox(feature, [minX, minY, 99.82, maxY]);
-        let phunphinGeo = mainlandGeo ? clipGeometryByPolygon(mainlandGeo, suratMask, 'difference') : null;
-        if (!phunphinGeo) {
-            phunphinGeo = clipGeometryByBbox(feature, [minX, minY, 99.25, maxY]);
-        }
-        addPart(phunphinGeo, 'สาขาพุนพิน');
-
-        // 3. สาขาสมุย & เขตเกาะพะงัน
-        const samuiGeo = clipGeometryByBbox(feature, [99.85, 9.35, 100.12, 9.61]);
-        addPart(samuiGeo || turf.bboxPolygon([99.91, 9.42, 100.06, 9.57]), 'สาขาสมุย');
-
-        const phanganGeo = clipGeometryByBbox(feature, [99.90, 9.63, 100.18, 9.88]);
-        addPart(phanganGeo || turf.bboxPolygon([99.95, 9.68, 100.08, 9.81]), 'เขตเกาะพะงัน');
-        return parts;
-    }
-
-    if (provName === 'Chumphon') {
-        addPart(clipGeometryByBbox(feature, [minX, midY, maxX, maxY]), 'สาขาชุมพร');
-        addPart(clipGeometryByBbox(feature, [minX, minY, maxX, midY]), 'สาขาหลังสวน');
-        return parts;
-    }
-
-    if (provName === 'Phangnga') {
-        addPart(clipGeometryByBbox(feature, [minX, 8.42, maxX, maxY]), 'สาขาตะกั่วป่า');
-        addPart(clipGeometryByBbox(feature, [98.20, minY, maxX, 8.42]), 'สาขาพังงา');
-        const kohYaoGeo = clipGeometryByBbox(feature, [98.40, 7.90, 98.70, 8.25]);
-        addPart(kohYaoGeo || turf.bboxPolygon([98.52, 7.95, 98.63, 8.18]), 'เขตเกาะยาว');
-        return parts;
-    }
-
-    if (provName === 'Phuket') {
-        addPart(feature, 'สาขาภูเก็ต');
-        return parts;
-    }
-
-    return [feature];
+function buildBranchPopupHtml(branchName, provName, subtitleText, statusSummaryHtml) {
+    const safeBranch = escapeHtml(branchName);
+    const safeSubtitle = escapeHtml(subtitleText);
+    return `
+        <div style="min-width:195px;">
+            <div style="font-size:13px; font-weight:700; color:#0f172a;">${safeBranch}</div>
+            <div style="font-size:10px; color:#64748b; margin-top:2px;">${safeSubtitle}</div>
+            <hr style="margin:6px 0; border-color:#e2e8f0;">
+            <div style="font-size:11px;">${statusSummaryHtml}</div>
+        </div>
+    `;
 }
 
 function renderBranchAreas(map, mapKey) {
     const group = L.layerGroup().addTo(map);
     if (geoJsonData && Array.isArray(geoJsonData.features)) {
-        let renderFeatures = [];
-        geoJsonData.features.forEach(feature => {
-            const provName = feature.properties.name;
-            if (SINGLE_BRANCH_PROVINCES[provName]) {
-                const copy = JSON.parse(JSON.stringify(feature));
-                copy.properties.branchName = SINGLE_BRANCH_PROVINCES[provName];
-                copy.properties.customProv = provName;
-                renderFeatures.push(copy);
-            } else {
-                const subFeatures = processMultiBranchProvince(feature);
-                renderFeatures.push(...subFeatures);
-            }
-        });
-
-        L.geoJSON(renderFeatures, {
+        L.geoJSON(geoJsonData.features, {
             style: function () {
                 return {
-                    fillColor: STATUS_COLORS['empty'],
+                    fillColor: STATUS_COLORS.empty,
                     weight: 2,
                     opacity: 1,
                     color: '#FFFFFF',
@@ -787,23 +730,19 @@ function renderBranchAreas(map, mapKey) {
                 };
             },
             onEachFeature: function (feature, layer) {
-                const bName = getCanonicalBranch(feature.properties.branchName);
-                const pName = feature.properties.customProv;
+                const props = (feature && feature.properties) || {};
+                const bName = getCanonicalBranch(props.branchName || props.name);
+                const pName = sanitizeText(props.customProv || props.name, '-', 80);
                 const districtDesc = BRANCH_DISTRICT_INFO[bName] || `พื้นที่บริการ ${bName}`;
-                const safeClass = `geo-popup-${bName.replace(/\s+/g, '')}`;
+                const subtitle = `จ.${pName} (${districtDesc})`;
 
-                const popupHtml = `
-                    <div style="min-width:190px;">
-                        <div style="font-size:13px; font-weight:700; color:#0f172a;">${bName}</div>
-                        <div style="font-size:10px; color:#64748b; margin-top:2px;">จ.${pName} (${districtDesc})</div>
-                        <hr style="margin:6px 0; border-color:#e2e8f0;">
-                        <div class="${safeClass}" style="font-size:11px;">
-                            <span style="color:#94a3b8">ไม่มีงานวันนี้</span>
-                        </div>
-                    </div>`;
-
-                layer.bindPopup(popupHtml);
-                layer.bindTooltip(bName, {
+                layer.bindPopup(buildBranchPopupHtml(
+                    bName,
+                    pName,
+                    subtitle,
+                    '<span style="color:#94a3b8">ไม่มีงานวันนี้</span>'
+                ));
+                layer.bindTooltip(escapeHtml(bName), {
                     permanent: showPermanentLabels,
                     direction: 'center',
                     className: 'branch-label-tooltip'
@@ -824,7 +763,7 @@ function renderBranchAreas(map, mapKey) {
                     prov: pName,
                     branch: bName,
                     isGeoJson: true,
-                    defaultStyle: { fillColor: STATUS_COLORS['empty'], fillOpacity: 0.72, weight: 2, color: '#FFFFFF', dashArray: '' }
+                    defaultStyle: { fillColor: STATUS_COLORS.empty, fillOpacity: 0.72, weight: 2, color: '#FFFFFF', dashArray: '' }
                 });
             }
         }).addTo(group);
@@ -832,20 +771,17 @@ function renderBranchAreas(map, mapKey) {
 
     EXTRA_LAYERS.forEach(area => {
         const bName = getCanonicalBranch(area.branch);
-        const defaultStyle = { fillColor: STATUS_COLORS['empty'], fillOpacity: 0.75, weight: 2, color: '#FFFFFF', dashArray: '' };
+        const defaultStyle = { fillColor: STATUS_COLORS.empty, fillOpacity: 0.75, weight: 2, color: '#FFFFFF', dashArray: '' };
         const layer = L.circle(area.center, { ...defaultStyle, radius: area.radius }).addTo(group);
-        const safeClass = `geo-popup-${bName.replace(/\s+/g, '')}`;
+        const subtitle = `พื้นที่กะกลางคืน (${area.prov})`;
 
-        layer.bindPopup(`
-            <div style="min-width:170px;">
-                <div style="font-size:13px; font-weight:700; color:#0f172a;">${bName}</div>
-                <div style="font-size:10px; color:#64748b;">พื้นที่กะกลางคืน (${area.prov})</div>
-                <hr style="margin:6px 0; border-color:#e2e8f0;">
-                <div class="${safeClass}" style="font-size:11px;">
-                    <span style="color:#94a3b8">ไม่มีงานวันนี้</span>
-                </div>
-            </div>`);
-        layer.bindTooltip(bName, {
+        layer.bindPopup(buildBranchPopupHtml(
+            bName,
+            area.prov,
+            subtitle,
+            '<span style="color:#94a3b8">ไม่มีงานวันนี้</span>'
+        ));
+        layer.bindTooltip(escapeHtml(bName), {
             permanent: showPermanentLabels,
             direction: 'top',
             className: 'branch-label-tooltip'
@@ -861,16 +797,16 @@ function renderBranchAreas(map, mapKey) {
 
 function addMapLegend(map) {
     const legend = L.control({ position: 'bottomleft' });
-    legend.onAdd = function() {
+    legend.onAdd = function () {
         const div = L.DomUtil.create('div', 'map-legend');
         div.innerHTML = `
             <div class="map-legend-title mb-2">สถานะรายวัน (Status)</div>
-            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS['new']}"></i><span>งานใหม่ (รอตรวจสอบ)</span></div>
-            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS['edit']}"></i><span>ต้องแก้ไขบิล (Edit)</span></div>
-            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS['conf']}"></i><span>ยืนยันแล้ว (รับเรื่อง)</span></div>
-            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS['ship']}"></i><span>เสร็จสิ้นทั้งหมด (Shipped)</span></div>
+            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.new}"></i><span>งานใหม่ (รอตรวจสอบ)</span></div>
+            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.edit}"></i><span>ต้องแก้ไขบิล (Edit)</span></div>
+            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.conf}"></i><span>ยืนยันแล้ว (รับเรื่อง)</span></div>
+            <div style="margin-bottom:4px"><i style="background:${STATUS_COLORS.ship}"></i><span>เสร็จสิ้นทั้งหมด (Shipped)</span></div>
             <div style="border-top: 1px solid #f1f5f9; margin-top: 6px; padding-top: 4px;">
-                <i style="background:${STATUS_COLORS['empty']}"></i><span style="color:#94a3b8">ไม่มีงาน/เขตว่าง</span>
+                <i style="background:${STATUS_COLORS.empty}"></i><span style="color:#94a3b8">ไม่มีงาน/เขตว่าง</span>
             </div>
         `;
         return div;
@@ -879,6 +815,7 @@ function addMapLegend(map) {
 }
 
 async function initBranchMaps() {
+    if (typeof L === 'undefined') return;
     try {
         await fetchGeoJson();
         mapLayers = [];
@@ -895,7 +832,9 @@ async function initBranchMaps() {
             addMapLegend(dMapInstance);
         }
         updateMapData(lastFilteredMapData.length > 0 ? lastFilteredMapData : globalData);
-    } catch (e) { console.error('Map init error:', e); }
+    } catch (e) {
+        console.error('Map init error:', e);
+    }
 }
 
 function invalidateMaps() {
@@ -910,7 +849,7 @@ function renderMapBranchChips(branchCounts) {
     const mChips = document.getElementById('m-map-branch-chips');
 
     const html = MASTER_SOUTHERN_BRANCHES.map(bName => {
-        const c = branchCounts[bName];
+        const c = isSafeDictKey(bName) ? branchCounts[bName] : null;
         let dotColor = 'bg-slate-300';
         let borderCls = 'border-slate-200 bg-white text-slate-600';
         if (c && c.total > 0) {
@@ -919,10 +858,14 @@ function renderMapBranchChips(branchCounts) {
             else if (c.conf > 0) { dotColor = 'bg-blue-600'; borderCls = 'border-blue-200 bg-blue-50/60 text-blue-700 font-semibold'; }
             else { dotColor = 'bg-emerald-500'; borderCls = 'border-emerald-200 bg-emerald-50/60 text-emerald-700 font-semibold'; }
         }
-        const badge = c && c.total > 0 ? `<span class="ml-1 px-1.5 py-0.2 bg-white/90 rounded-full text-[10px]">${c.total}</span>` : '';
-        return `<button onclick="focusBranchOnMap('${bName}')" class="px-2.5 py-1 rounded-full border text-xs flex items-center gap-1.5 whitespace-nowrap hover:shadow-sm transition cursor-pointer ${borderCls}">
+        const safeBranchAttr = escapeHtml(bName);
+        const safeLabel = escapeHtml(bName.replace('สาขา', ''));
+        const badge = c && c.total > 0
+            ? `<span class="ml-1 px-1.5 py-0.5 bg-white/90 rounded-full text-[10px]">${escapeHtml(String(c.total))}</span>`
+            : '';
+        return `<button type="button" data-action="focus-branch" data-branch="${safeBranchAttr}" class="px-2.5 py-1 rounded-full border text-xs flex items-center gap-1.5 whitespace-nowrap hover:shadow-sm transition cursor-pointer ${borderCls}">
             <span class="w-2 h-2 rounded-full ${dotColor}"></span>
-            <span>${bName.replace('สาขา', '')}</span>
+            <span>${safeLabel}</span>
             ${badge}
         </button>`;
     }).join('');
@@ -932,10 +875,11 @@ function renderMapBranchChips(branchCounts) {
 }
 
 function updateMapData(filteredData) {
-    lastFilteredMapData = filteredData || [];
-    const branchCounts = {};
+    lastFilteredMapData = Array.isArray(filteredData) ? filteredData : [];
+    const branchCounts = createSafeMap();
     lastFilteredMapData.forEach(item => {
         const b = getCanonicalBranch(item.branch);
+        if (!isSafeDictKey(b)) return;
         if (!branchCounts[b]) branchCounts[b] = { total: 0, new: 0, conf: 0, edit: 0, ship: 0 };
         branchCounts[b].total++;
         const st = getStatusCode(item);
@@ -950,17 +894,17 @@ function updateMapData(filteredData) {
     if (mapLayers.length === 0) return;
 
     mapLayers.forEach(obj => {
-        const count = branchCounts[obj.branch];
-        const hasAnyData = count && count.total > 0;
-        let finalColor = STATUS_COLORS['empty'];
+        const count = isSafeDictKey(obj.branch) ? branchCounts[obj.branch] : null;
+        const hasAnyData = Boolean(count && count.total > 0);
+        let finalColor = STATUS_COLORS.empty;
         let finalOpacity = 0.65;
 
         if (hasAnyData) {
             finalOpacity = 0.86;
-            if (count.new > 0) finalColor = STATUS_COLORS['new'];
-            else if (count.edit > 0) finalColor = STATUS_COLORS['edit'];
-            else if (count.conf > 0) finalColor = STATUS_COLORS['conf'];
-            else finalColor = STATUS_COLORS['ship'];
+            if (count.new > 0) finalColor = STATUS_COLORS.new;
+            else if (count.edit > 0) finalColor = STATUS_COLORS.edit;
+            else if (count.conf > 0) finalColor = STATUS_COLORS.conf;
+            else finalColor = STATUS_COLORS.ship;
         }
 
         const newStyle = {
@@ -973,27 +917,22 @@ function updateMapData(filteredData) {
         obj.defaultStyle = newStyle;
         obj.layer.setStyle(newStyle);
 
-        // Update popup content dynamically so opening popup always shows latest counts
         const districtDesc = BRANCH_DISTRICT_INFO[obj.branch] || `พื้นที่บริการ ${obj.branch}`;
+        const subtitle = obj.isGeoJson
+            ? `จ.${obj.prov} (${districtDesc})`
+            : `พื้นที่กะกลางคืน (${obj.prov})`;
         const statusSummaryHtml = hasAnyData
             ? `<div style="line-height:1.7;">
-                <div>รวมทั้งหมด: <b>${count.total} งาน</b></div>
+                <div>รวมทั้งหมด: <b>${escapeHtml(String(count.total))} งาน</b></div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap; font-size:10px; margin-top:2px;">
-                    <span style="color:#EF4444; font-weight:700;">● ใหม่ ${count.new}</span>
-                    <span style="color:#2563EB; font-weight:700;">● ยืนยัน ${count.conf}</span>
-                    <span style="color:#F59E0B; font-weight:700;">● แก้ไข ${count.edit}</span>
-                    <span style="color:#10B981; font-weight:700;">● เสร็จ ${count.ship}</span>
+                    <span style="color:#EF4444; font-weight:700;">● ใหม่ ${escapeHtml(String(count.new))}</span>
+                    <span style="color:#2563EB; font-weight:700;">● ยืนยัน ${escapeHtml(String(count.conf))}</span>
+                    <span style="color:#F59E0B; font-weight:700;">● แก้ไข ${escapeHtml(String(count.edit))}</span>
+                    <span style="color:#10B981; font-weight:700;">● เสร็จ ${escapeHtml(String(count.ship))}</span>
                 </div>
                </div>`
             : `<span style="color:#94a3b8">ไม่มีงานในวันที่เลือก</span>`;
 
-        obj.layer.setPopupContent(`
-            <div style="min-width:195px;">
-                <div style="font-size:13px; font-weight:700; color:#0f172a;">${obj.branch}</div>
-                <div style="font-size:10px; color:#64748b; margin-top:2px;">จ.${obj.prov} (${districtDesc})</div>
-                <hr style="margin:6px 0; border-color:#e2e8f0;">
-                <div style="font-size:11px;">${statusSummaryHtml}</div>
-            </div>
-        `);
+        obj.layer.setPopupContent(buildBranchPopupHtml(obj.branch, obj.prov, subtitle, statusSummaryHtml));
     });
 }

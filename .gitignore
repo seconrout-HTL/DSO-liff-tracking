@@ -1,0 +1,22 @@
+# Build & staging output
+_site/
+dist/
+node_modules/
+
+# Environment & local secrets
+.env
+.env.*
+*.pem
+*.key
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
