@@ -10,24 +10,23 @@ const _c = [
 const GAS_API_URL = atob(_c[0]);
 const LIFF_ID     = atob(_c[1]);
 
-// Tailwind config override
-tailwind.config = {
-    theme: {
-        extend: {
-            colors: {
-                'ht-red': '#E41E2B',
-                'ht-green': '#10B981',
-                'ht-orange': '#F59E0B',
-                'ht-blue': '#2563EB',
-                'ht-gray': '#F4F6F9',
-                'excel-green': '#10B981',
-            }
-        }
-    }
-};
+// 🛡️ Security Configuration
+// Keep REQUIRE_LIFF_LOGIN & USE_POST_AUTH false until backend/Code.gs is deployed
+// so Desktop browsers are not blocked immediately.
+const SECURITY_CONFIG = Object.freeze({
+    REQUIRE_LIFF_LOGIN: false,
+    USE_POST_AUTH: false,
+    API_TIMEOUT_MS: 15000,
+    MAX_BRANCH_LEN: 100,
+    MAX_NOTE_LEN: 500
+});
+
+if (!validateGasApiUrl(GAS_API_URL)) {
+    console.error('Configured GAS_API_URL failed security validation.');
+}
 
 // --- Global State ---
-let branchNames = {};
+let branchNames = createSafeMap();
 let globalData = [];
 let uniqueBranches = new Set();
 let isFirstLoad = true;
@@ -35,12 +34,12 @@ let sortState = { column: 'default', direction: 'asc' };
 let activeFilters = { new: true, conf: true, edit: true, ship: true };
 let freqChartInstance = null;
 let mFreqChartInstance = null;
-let userMapping = {};
 let currentUserId = null;
+let currentUserName = null;
 let toastTimer = null;
 
 // Canonical Master List of Southern Branches on the Map
-const MASTER_SOUTHERN_BRANCHES = [
+const MASTER_SOUTHERN_BRANCHES = Object.freeze([
     'สาขาชุมพร',
     'สาขาหลังสวน',
     'สาขาระนอง',
@@ -63,12 +62,12 @@ const MASTER_SOUTHERN_BRANCHES = [
     'สาขาปัตตานี',
     'สาขายะลา',
     'สาขานราธิวาส'
-];
+]);
 
 // Normalize any raw branch name (e.g. spelling variants like สุราษฏร์ธานี vs สุราษฎร์ธานี, นครศรีฯ, etc.)
 function getCanonicalBranch(raw) {
     if (!raw) return '-';
-    let s = String(raw).trim();
+    const s = sanitizeText(raw, '', SECURITY_CONFIG.MAX_BRANCH_LEN);
     if (!s || s === '-') return '-';
 
     // Normalize common Thai spelling variants (ฏ -> ฎ) and remove spaces/dots
