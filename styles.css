@@ -1,12 +1,30 @@
 /* ============================================
-   Fleet Order Tracking - Clean SaaS UI System
+   DSO Fleet Order Tracking — Brand Design System
+   Palette: #007947 (Brand Green), #f00000 (Signal Red), #ffffff (Pure White)
    ============================================ */
+
+:root {
+    --brand-green: #007947;
+    --brand-green-dark: #005F37;
+    --brand-green-soft: #EBF6F0;
+    --brand-green-border: #C5E4D4;
+    --brand-red: #f00000;
+    --brand-red-dark: #C80000;
+    --brand-red-soft: #FFF0F0;
+    --brand-red-border: #FFD1D1;
+    --brand-white: #ffffff;
+    --surface-canvas: #F6F9F7;
+    --ink-primary: #0F172A;
+    --ink-secondary: #475569;
+    --ink-muted: #64748B;
+    --border-subtle: #E6EFEA;
+}
 
 /* --- Base & Typography --- */
 body {
     font-family: 'Inter', 'Sarabun', sans-serif;
-    background-color: #F4F6F9;
-    color: #0F172A;
+    background-color: var(--surface-canvas);
+    color: var(--ink-primary);
     -webkit-tap-highlight-color: transparent;
     min-height: 100vh;
 }
@@ -14,36 +32,85 @@ body {
 /* Custom subtle scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.55); }
+::-webkit-scrollbar-thumb { background: rgba(0, 121, 71, 0.22); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 121, 71, 0.45); }
 
-/* --- Brand Spaced Logo (Inspired by Reference UI) --- */
+/* --- Brand Top Ribbon (#007947 + #f00000 accent) --- */
+.brand-top-ribbon {
+    height: 4px;
+    width: 100%;
+    background: linear-gradient(90deg, var(--brand-green) 0%, var(--brand-green) 80%, var(--brand-red) 80%, var(--brand-red) 100%);
+}
+
+/* --- Brand Spaced Logo --- */
 .brand-logo-text {
     font-family: 'Inter', sans-serif;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
 }
-.brand-dso-d { color: #15803D; }
-.brand-dso-so { color: #0F2942; }
+.brand-dso-d { color: var(--brand-green); }
+.brand-dso-so { color: var(--ink-primary); }
+.brand-accent-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background-color: var(--brand-red);
+    margin-left: 4px;
+    margin-bottom: 1px;
+}
 
-/* --- Clean SaaS White Surface Card --- */
+/* --- Language Segmented Switcher (TH | EN) --- */
+.lang-switcher {
+    display: inline-flex;
+    align-items: center;
+    background: var(--surface-canvas);
+    border: 1px solid var(--border-subtle);
+    border-radius: 9999px;
+    padding: 2px;
+    gap: 2px;
+}
+.lang-btn {
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--ink-muted);
+    background: transparent;
+    transition: all 0.18s ease;
+    cursor: pointer;
+    line-height: 1.2;
+}
+.lang-btn:hover:not(.active) {
+    color: var(--brand-green);
+}
+.lang-btn.active {
+    background: var(--brand-green);
+    color: var(--brand-white);
+    box-shadow: 0 2px 6px rgba(0, 121, 71, 0.25);
+}
+
+/* --- Clean Pure White Surface Card --- */
 .glass-card {
-    background: #FFFFFF;
-    border: 1px solid #F1F5F9;
+    background: var(--brand-white);
+    border: 1px solid var(--border-subtle);
     border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03), 0 1px 2px rgba(15, 23, 42, 0.02);
+    box-shadow: 0 2px 10px rgba(0, 121, 71, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .glass-card:hover {
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05), 0 2px 6px rgba(15, 23, 42, 0.03);
+    box-shadow: 0 8px 24px rgba(0, 121, 71, 0.07), 0 2px 6px rgba(15, 23, 42, 0.03);
 }
 
 /* --- Mobile Clean White Header --- */
 .header-clean {
-    background: #FFFFFF;
-    border-bottom: 1px solid #EEF0F4;
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+    background: var(--brand-white);
+    border-bottom: 1px solid var(--border-subtle);
+    box-shadow: 0 2px 12px rgba(0, 121, 71, 0.05);
 }
 
 /* --- Timeline Styles --- */
@@ -58,7 +125,7 @@ body {
     left: 12%;
     right: 12%;
     height: 5px;
-    background: #EEF2F6;
+    background: #E8F1EC;
     z-index: 0;
     border-radius: 99px;
 }
@@ -67,42 +134,52 @@ body {
     top: 17px;
     left: 12%;
     height: 5px;
-    background: linear-gradient(90deg, #2563EB, #10B981);
+    background: linear-gradient(90deg, var(--brand-green), #10B981);
     z-index: 0;
     transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
     border-radius: 99px;
 }
 
-/* --- Sidebar (Clean White with Pill Active State) --- */
+/* --- Sidebar (Clean White with #007947 Active Pill) --- */
 .sidebar-clean {
-    background: #FFFFFF;
-    border-right: 1px solid #EEF0F4;
+    background: var(--brand-white);
+    border-right: 1px solid var(--border-subtle);
 }
 
 .sidebar-link {
     border-radius: 12px;
     margin: 4px 14px;
     padding: 11px 16px;
-    color: #475569;
+    color: var(--ink-secondary);
     font-size: 0.875rem;
     font-weight: 500;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
 }
 .sidebar-link:hover {
-    background-color: #F8FAFC;
-    color: #1E293B;
+    background-color: var(--surface-canvas);
+    color: var(--brand-green);
 }
 .sidebar-link.active {
-    background-color: #EEF2FF;
-    color: #2563EB;
-    font-weight: 600;
+    background-color: var(--brand-green-soft);
+    color: var(--brand-green);
+    font-weight: 700;
+}
+.sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 3.5px;
+    border-radius: 0 4px 4px 0;
+    background: var(--brand-green);
 }
 .sidebar-link i {
     transition: transform 0.2s ease, color 0.2s ease;
 }
 .sidebar-link.active i {
-    color: #2563EB;
+    color: var(--brand-green);
 }
 .sidebar-link:hover i {
     transform: translateX(1px);
@@ -112,46 +189,67 @@ body {
 .mobile-nav-item {
     transition: all 0.2s ease;
     position: relative;
-    color: #64748B;
+    color: var(--ink-muted);
 }
 .mobile-nav-item.active {
-    color: #2563EB;
-    font-weight: 600;
+    color: var(--brand-green);
+    font-weight: 700;
 }
 .mobile-nav-item.active .nav-pill {
-    background-color: #EEF2FF;
-    color: #2563EB;
+    background-color: var(--brand-green);
+    color: var(--brand-white);
 }
 
 /* --- Queue Badge --- */
 .queue-badge {
-    background: #EEF2FF;
-    color: #2563EB;
-    border: 1px solid #DBEAFE;
+    background: var(--brand-green-soft);
+    color: var(--brand-green);
+    border: 1px solid var(--brand-green-border);
     font-weight: 700;
     border-radius: 8px;
     letter-spacing: 0.3px;
 }
 
-/* --- Stat Cards (Borderless with Sparkline) --- */
+/* --- Brand Semantic Helpers --- */
+.text-brand-green { color: var(--brand-green); }
+.bg-brand-green { background-color: var(--brand-green); }
+.border-brand-green { border-color: var(--brand-green); }
+.bg-brand-green-soft { background-color: var(--brand-green-soft); }
+.text-brand-red { color: var(--brand-red); }
+.bg-brand-red { background-color: var(--brand-red); }
+.bg-brand-red-soft { background-color: var(--brand-red-soft); }
+.border-brand-red-soft { border-color: var(--brand-red-border); }
+
+.badge-urgent-new {
+    background: var(--brand-red-soft);
+    color: var(--brand-red);
+    border: 1px solid var(--brand-red-border);
+}
+.badge-completed {
+    background: var(--brand-green-soft);
+    color: var(--brand-green);
+    border: 1px solid var(--brand-green-border);
+}
+
+/* --- Stat Cards --- */
 .stat-card {
-    background: #FFFFFF;
-    border: 1px solid #F1F5F9;
+    background: var(--brand-white);
+    border: 1px solid var(--border-subtle);
     border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+    box-shadow: 0 2px 10px rgba(0, 121, 71, 0.04);
     position: relative;
     overflow: hidden;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 8px 20px rgba(0, 121, 71, 0.08);
 }
 
 /* --- Pill Filter Inputs --- */
 .pill-filter {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: var(--brand-white);
+    border: 1px solid #D9E5DF;
     border-radius: 9999px;
     padding: 7px 16px;
     font-size: 0.8125rem;
@@ -160,11 +258,11 @@ body {
     transition: all 0.15s ease;
 }
 .pill-filter:hover {
-    border-color: #CBD5E1;
+    border-color: #B4CEBF;
 }
 .pill-filter:focus-within {
-    border-color: #2563EB;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 3px rgba(0, 121, 71, 0.12);
 }
 
 /* --- Sort Header Hover --- */
@@ -173,22 +271,22 @@ th.sortable {
     user-select: none;
 }
 th.sortable:hover {
-    background-color: #F8FAFC;
-    color: #2563EB;
+    background-color: var(--brand-green-soft);
+    color: var(--brand-green);
 }
 
 /* --- Buttons --- */
 .btn-primary {
-    background: #2563EB;
-    color: white;
+    background: var(--brand-green);
+    color: var(--brand-white);
     font-weight: 600;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 121, 71, 0.22);
     transition: all 0.2s ease;
 }
 .btn-primary:hover {
-    background: #1D4ED8;
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.28);
+    background: var(--brand-green-dark);
+    box-shadow: 0 6px 16px rgba(0, 121, 71, 0.30);
     transform: translateY(-1px);
 }
 .btn-primary:active {
@@ -196,33 +294,45 @@ th.sortable:hover {
 }
 
 .btn-excel {
-    background: #FFFFFF;
+    background: var(--brand-white);
     color: #334155;
-    border: 1px solid #E2E8F0;
+    border: 1px solid #D9E5DF;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
     transition: all 0.2s ease;
 }
 .btn-excel:hover {
-    background: #F8FAFC;
-    border-color: #CBD5E1;
-    color: #0F172A;
+    background: var(--brand-green-soft);
+    border-color: var(--brand-green-border);
+    color: var(--brand-green);
 }
 .btn-excel-solid {
-    background: #10B981;
-    color: white;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    background: var(--brand-green);
+    color: var(--brand-white);
+    box-shadow: 0 4px 12px rgba(0, 121, 71, 0.22);
     transition: all 0.2s ease;
 }
 .btn-excel-solid:hover {
-    background: #059669;
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+    background: var(--brand-green-dark);
+    box-shadow: 0 6px 16px rgba(0, 121, 71, 0.32);
+}
+
+.icon-btn-header {
+    background: var(--surface-canvas);
+    color: var(--ink-secondary);
+    border: 1px solid var(--border-subtle);
+    transition: all 0.18s ease;
+}
+.icon-btn-header:hover {
+    background: var(--brand-green-soft);
+    color: var(--brand-green);
+    border-color: var(--brand-green-border);
 }
 
 /* --- Mobile Card --- */
 .order-card {
-    background: #FFFFFF;
-    border: 1px solid #F1F5F9;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+    background: var(--brand-white);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 2px 10px rgba(0, 121, 71, 0.04);
     transition: all 0.2s ease;
 }
 .order-card:active {
@@ -253,18 +363,22 @@ th.sortable:hover {
     max-height: 0;
     overflow: hidden;
 }
+.accordion-item.active {
+    border-color: var(--brand-green-border);
+}
 .accordion-item.active .accordion-content {
     max-height: 500px;
 }
 .accordion-item.active .fa-chevron-down {
     transform: rotate(180deg);
+    color: var(--brand-green);
 }
 .accordion-item {
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .accordion-item:hover {
-    border-color: #CBD5E1;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    border-color: var(--brand-green-border);
+    box-shadow: 0 2px 8px rgba(0, 121, 71, 0.06);
 }
 
 /* --- Animations --- */
@@ -295,9 +409,9 @@ th.sortable:hover {
 .stagger-3 { animation-delay: 0.09s; }
 .stagger-4 { animation-delay: 0.12s; }
 
-/* --- Section Heading (Minimal SaaS Header) --- */
+/* --- Section Heading --- */
 .section-heading {
-    color: #0F172A;
+    color: var(--ink-primary);
     font-weight: 600;
     letter-spacing: -0.01em;
 }
@@ -310,19 +424,38 @@ th.sortable:hover {
     border: 1px solid transparent;
 }
 .report-btn.active {
-    background: #EEF2FF;
-    color: #2563EB;
-    border-color: #DBEAFE;
+    background: var(--brand-green);
+    color: var(--brand-white);
+    border-color: var(--brand-green);
     font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 121, 71, 0.2);
 }
 .report-btn:not(.active) {
-    background: #F8FAFC;
-    color: #64748B;
-    border-color: #F1F5F9;
+    background: var(--surface-canvas);
+    color: var(--ink-muted);
+    border-color: var(--border-subtle);
 }
 .report-btn:not(.active):hover {
-    background: #F1F5F9;
-    color: #334155;
+    background: var(--brand-green-soft);
+    color: var(--brand-green);
+    border-color: var(--brand-green-border);
+}
+
+/* --- Map Control Buttons --- */
+.map-style-btn.active-map-btn {
+    background: var(--brand-green);
+    color: var(--brand-white);
+    border-color: var(--brand-green);
+}
+.map-style-btn:not(.active-map-btn) {
+    background: var(--brand-white);
+    color: var(--ink-secondary);
+    border-color: #D9E5DF;
+}
+.map-style-btn:not(.active-map-btn):hover {
+    background: var(--brand-green-soft);
+    color: var(--brand-green);
+    border-color: var(--brand-green-border);
 }
 
 /* --- Filter Dropdown --- */
@@ -345,7 +478,7 @@ th.sortable:hover {
 .empty-state {
     padding: 3rem 1rem;
     text-align: center;
-    opacity: 0.7;
+    opacity: 0.75;
 }
 .empty-state i {
     font-size: 2.75rem;
@@ -353,41 +486,41 @@ th.sortable:hover {
     color: #CBD5E1;
 }
 
-/* --- Mobile Bottom Nav Shadow --- */
+/* --- Mobile Bottom Nav --- */
 .bottom-nav {
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(10px);
-    border-top: 1px solid #EEF0F4;
-    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.04);
+    border-top: 1px solid var(--border-subtle);
+    box-shadow: 0 -4px 20px rgba(0, 121, 71, 0.06);
 }
 
 /* --- Geo Map --- */
 .branch-map-container {
     border-radius: 14px;
     overflow: hidden;
-    border: 1px solid #E2E8F0;
+    border: 1px solid var(--border-subtle);
     position: relative;
 }
-#m-branch-map { height: 380px; width: 100%; background: #E8EEF5; z-index: 1; }
-#d-branch-map { height: 520px; width: 100%; background: #E8EEF5; z-index: 1; }
+#m-branch-map { height: 380px; width: 100%; background: #E9F2EE; z-index: 1; }
+#d-branch-map { height: 520px; width: 100%; background: #E9F2EE; z-index: 1; }
 .leaflet-container {
-    background: #E8EEF5 !important;
+    background: #E9F2EE !important;
     font-family: 'Inter', 'Sarabun', sans-serif !important;
 }
 .leaflet-popup-content-wrapper { border-radius: 12px !important; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important; }
 .leaflet-popup-content { margin: 10px 14px !important; font-family: 'Inter', 'Sarabun', sans-serif !important; }
-.map-legend { background: rgba(255,255,255,0.96); backdrop-filter: blur(8px); padding: 10px 14px; border-radius: 12px; border: 1px solid #F1F5F9; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08); font-size: 11px; line-height: 1.6; max-height: 300px; overflow-y: auto; }
-.map-legend-title { font-weight: 700; font-size: 12px; margin-bottom: 6px; color: #1E293B; }
+.map-legend { background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(8px); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border-subtle); box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08); font-size: 11px; line-height: 1.6; max-height: 300px; overflow-y: auto; }
+.map-legend-title { font-weight: 700; font-size: 12px; margin-bottom: 6px; color: var(--ink-primary); }
 .map-legend i { width: 12px; height: 12px; display: inline-block; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
 .branch-label-tooltip {
-    background: rgba(255, 255, 255, 0.92) !important;
-    border: 1px solid #CBD5E1 !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    border: 1px solid var(--brand-green-border) !important;
     border-radius: 6px !important;
     padding: 2px 6px !important;
     font-size: 10px !important;
     font-weight: 700 !important;
-    color: #1E293B !important;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+    color: var(--ink-primary) !important;
+    box-shadow: 0 2px 6px rgba(0, 121, 71, 0.1) !important;
     white-space: nowrap !important;
 }
 .branch-label-tooltip::before { display: none !important; }

@@ -10,11 +10,11 @@ function showToast(msg, type = 'info') {
     const msgEl = document.getElementById('app-toast-msg');
     const iconEl = document.getElementById('app-toast-icon');
     if (!toast || !msgEl) return;
-    msgEl.textContent = sanitizeText(msg, 'แจ้งเตือน', 300);
+    msgEl.textContent = sanitizeText(msg, t('toastDefault'), 300);
     if (iconEl) {
         iconEl.className = type === 'error'
-            ? 'fas fa-exclamation-circle text-amber-400'
-            : 'fas fa-check-circle text-emerald-400';
+            ? 'fas fa-exclamation-circle text-brand-red'
+            : 'fas fa-check-circle text-brand-green';
     }
     toast.classList.remove('hidden');
     if (toastTimer) clearTimeout(toastTimer);
@@ -31,7 +31,7 @@ function openAuthGateModal(message) {
     const modal = document.getElementById('auth-gate-modal');
     const msgEl = document.getElementById('auth-gate-message');
     if (msgEl && message) {
-        msgEl.textContent = sanitizeText(message, msgEl.textContent, 300);
+        msgEl.textContent = sanitizeText(message, t('authMessage'), 300);
     }
     if (modal) modal.classList.remove('hidden');
 }
@@ -69,7 +69,7 @@ function renderMobileList(data) {
     const container = document.getElementById('m-list-container');
     if (!container) return;
     if (data.length === 0) {
-        container.innerHTML = `<div class="empty-state py-12"><i class="fas fa-box-open text-4xl mb-2 text-slate-300"></i><p class="text-slate-400 text-sm mt-2">ไม่พบรายการ</p></div>`;
+        container.innerHTML = `<div class="empty-state py-12"><i class="fas fa-box-open text-4xl mb-2 text-slate-300"></i><p class="text-slate-400 text-sm mt-2">${escapeHtml(t('emptyList'))}</p></div>`;
         return;
     }
     container.innerHTML = data.map((item, idx) => {
@@ -82,11 +82,10 @@ function renderMobileList(data) {
 
         const safeQueue = escapeHtml(item.queueNo);
         const safeTimestamp = escapeHtml(item.timestamp);
-        const safeBranch = escapeHtml(item.branch);
+        const safeBranch = escapeHtml(formatBranchName(item.branch));
         const safeAmount = escapeHtml(item.amount);
         const safeDelivery = escapeHtml(item.deliveryDate);
         const safeShipment = escapeHtml(item.shipmentAmount);
-        const safeEditCount = escapeHtml(String(item.editCount));
         const safeNote = item.note ? escapeHtml(item.note) : '';
 
         return `
@@ -98,35 +97,35 @@ function renderMobileList(data) {
                         <div class="font-bold text-slate-800 text-base tracking-tight">${safeTimestamp}</div>
                     </div>
                     <div class="text-xs text-slate-400 mt-1">
-                        <span class="font-semibold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-md">${safeBranch}</span>
+                        <span class="font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-md">${safeBranch}</span>
                     </div>
                 </div>
                 <div class="text-right">
-                     <div class="text-[10px] font-medium text-slate-400 uppercase">DO Amount</div>
+                     <div class="text-[10px] font-medium text-slate-400 uppercase">${escapeHtml(t('cardDoLabel'))}</div>
                      <div class="text-xl font-bold text-slate-900 leading-none mb-1">${safeAmount}</div>
                      ${getStatusBadge(item, true)}
                 </div>
             </div>
             <div class="flex gap-2 mb-4">
                  <div class="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex-1 flex items-center">
-                    <i class="fas fa-truck text-slate-400 mr-1.5"></i>Deliver: <span class="font-semibold ml-1 text-slate-700">${safeDelivery}</span>
+                    <i class="fas fa-truck text-slate-400 mr-1.5"></i>${escapeHtml(t('cardDeliverLabel'))} <span class="font-semibold ml-1 text-slate-700">${safeDelivery}</span>
                 </div>
-                <div class="text-xs text-blue-700 bg-blue-50 px-3 py-2 rounded-xl border border-blue-100 min-w-[85px] text-center">
-                    <span class="text-[10px] text-blue-500 font-medium block">Shipment</span>
-                    <span class="font-bold text-base text-blue-700">${safeShipment}</span>
+                <div class="text-xs text-brand-green bg-brand-green-soft px-3 py-2 rounded-xl border border-brand-green-border min-w-[85px] text-center">
+                    <span class="text-[10px] text-brand-green font-medium block opacity-80">${escapeHtml(t('cardShipmentLabel'))}</span>
+                    <span class="font-bold text-base text-brand-green">${safeShipment}</span>
                 </div>
             </div>
             <div class="relative px-1 pb-1 mt-2">
                 <div class="absolute left-0 right-0 top-[5px] h-[4px] bg-slate-100 z-0 rounded-full"></div>
-                <div class="absolute left-0 top-[5px] h-[4px] bg-gradient-to-r from-blue-600 to-emerald-500 z-0 transition-all duration-700 rounded-full" style="width: ${width}"></div>
+                <div class="absolute left-0 top-[5px] h-[4px] bg-brand-green z-0 transition-all duration-700 rounded-full" style="width: ${width}"></div>
                 <div class="flex justify-between relative z-10 text-[9px] text-center">
-                    ${renderMobileNode('งานใหม่', item.bill, true, 'bg-blue-600')}
-                    ${renderMobileNode('ยืนยัน', item.conf, p >= 2, 'bg-blue-600')}
-                    ${renderMobileNode(hasEdit ? 'แก้บิล' : '', { time: hasEdit ? `${safeEditCount} ครั้ง` : '' }, hasEdit, 'bg-amber-500', true)}
-                    ${renderMobileNode('เสร็จสิ้น', item.ship, p >= 4, 'bg-emerald-500')}
+                    ${renderMobileNode(t('statusNew'), item.bill, true, 'bg-brand-red')}
+                    ${renderMobileNode(t('statusConfirmedShort'), item.conf, p >= 2, 'bg-blue-600')}
+                    ${renderMobileNode(hasEdit ? t('statusEditedShort') : '', { time: hasEdit ? t('editTimes', { n: item.editCount }) : '' }, hasEdit, 'bg-amber-500', true)}
+                    ${renderMobileNode(t('statusShipped'), item.ship, p >= 4, 'bg-brand-green')}
                 </div>
             </div>
-            ${safeNote ? `<div class="mt-2.5 text-[11px] text-amber-700 bg-amber-50/70 p-2 rounded-xl border border-amber-100"><i class="far fa-comment-dots mr-1"></i>${safeNote}</div>` : ''}
+            ${safeNote ? `<div class="mt-2.5 text-[11px] text-amber-800 bg-amber-50/70 p-2 rounded-xl border border-amber-100"><i class="far fa-comment-dots mr-1"></i>${safeNote}</div>` : ''}
         </div>`;
     }).join('');
 }
@@ -153,7 +152,7 @@ function renderDesktopTable(data) {
     const tbody = document.getElementById('d-table-body');
     if (!tbody) return;
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="p-12 text-center text-slate-400"><i class="fas fa-inbox text-3xl mb-2 block text-slate-300"></i>ไม่พบข้อมูลที่ค้นหา</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-400"><i class="fas fa-inbox text-3xl mb-2 block text-slate-300"></i>${escapeHtml(t('emptySearch'))}</td></tr>`;
         return;
     }
     tbody.innerHTML = data.map(item => {
@@ -166,7 +165,7 @@ function renderDesktopTable(data) {
 
         const safeQueue = escapeHtml(item.queueNo);
         const safeTimestamp = escapeHtml(item.timestamp);
-        const safeBranch = escapeHtml(item.branch);
+        const safeBranch = escapeHtml(formatBranchName(item.branch));
         const safeDelivery = escapeHtml(item.deliveryDate);
         const safeAmount = escapeHtml(item.amount);
         const safeShipment = escapeHtml(item.shipmentAmount);
@@ -183,20 +182,20 @@ function renderDesktopTable(data) {
                     <div class="timeline-line-bg"></div>
                     <div class="timeline-line-progress" style="width: ${barWidth}"></div>
                     <div class="flex justify-between relative z-10 px-2">
-                        ${renderDesktopNode('งานใหม่', item.bill, true, 'border-blue-600', 'bg-blue-600')}
-                        ${renderDesktopNode('ยืนยันแล้ว', item.conf, p >= 2, 'border-blue-600', 'bg-blue-600')}
+                        ${renderDesktopNode(t('statusNew'), item.bill, true, 'border-brand-red', 'bg-brand-red')}
+                        ${renderDesktopNode(t('statusConfirmed'), item.conf, p >= 2, 'border-blue-600', 'bg-blue-600')}
                         ${renderEditNodeDesktop(hasEdit, item.editCount, item.note)}
-                        ${renderDesktopNode('เสร็จสิ้น', item.ship, p >= 4, 'border-emerald-500', 'bg-emerald-500')}
+                        ${renderDesktopNode(t('statusShipped'), item.ship, p >= 4, 'border-brand-green', 'bg-brand-green')}
                     </div>
                 </div>
             </td>
             <td class="p-4 align-middle text-right font-bold text-slate-900 text-base">${safeAmount}</td>
-            <td class="p-4 align-middle text-right font-bold text-blue-600 text-base">${safeShipment}</td>
+            <td class="p-4 align-middle text-right font-bold text-brand-green text-base">${safeShipment}</td>
         </tr>`;
     }).join('');
 }
 
-function renderDesktopNode(label, detail, isActive, borderColor, activeBg = 'bg-blue-600') {
+function renderDesktopNode(label, detail, isActive, borderColor, activeBg = 'bg-brand-green') {
     const circleStyle = isActive ? `bg-white border-2 ${borderColor}` : 'bg-slate-200 border-2 border-white';
     const dotStyle = isActive ? `w-2 h-2 rounded-full ${activeBg}` : '';
     const labelColor = isActive ? 'text-slate-700 font-semibold' : 'text-slate-300';
@@ -216,7 +215,7 @@ function renderDesktopNode(label, detail, isActive, borderColor, activeBg = 'bg-
 
 function renderEditNodeDesktop(hasEdit, count, note) {
     if (!hasEdit) return `<div class="flex flex-col items-center w-1/4"><div class="w-3 h-3 rounded-full bg-slate-200 mt-0.5 mb-1 border-2 border-white"></div></div>`;
-    const safeCount = escapeHtml(String(count));
+    const safeCount = escapeHtml(t('editTimes', { n: count }));
     const safeNoteAttr = note ? escapeHtml(note) : '';
     return `
     <div class="flex flex-col items-center w-1/4">
@@ -224,8 +223,8 @@ function renderEditNodeDesktop(hasEdit, count, note) {
             <div class="w-2 h-2 rounded-full bg-amber-500"></div>
         </div>
         <div class="text-[10px] text-center">
-            <div class="text-amber-600 font-semibold">แก้บิล</div>
-            <div class="text-slate-400 scale-90">${safeCount} ครั้ง</div>
+            <div class="text-amber-600 font-semibold">${escapeHtml(t('statusEditedShort'))}</div>
+            <div class="text-slate-400 scale-90">${safeCount}</div>
             ${safeNoteAttr ? `<div class="text-slate-400 scale-90 cursor-help" title="${safeNoteAttr}"><i class="far fa-comment-dots"></i></div>` : ''}
         </div>
     </div>`;
@@ -243,6 +242,14 @@ function switchMobileTab(tab, el) {
     document.querySelectorAll('.mobile-page').forEach(page => page.classList.add('hidden'));
     const pageEl = document.getElementById(`m-page-${tab}`);
     if (pageEl) pageEl.classList.remove('hidden');
+
+    // Show global search/date/filter bar only on Tracking & Dashboard tabs (prevents duplicate date picker on Report tab)
+    const showFilters = (tab === 'tracking' || tab === 'dashboard');
+    const mFilterBar = document.getElementById('mobile-filter-bar');
+    const mFilterBtn = document.getElementById('mobile-filter-open-btn');
+    if (mFilterBar) mFilterBar.classList.toggle('hidden', !showFilters);
+    if (mFilterBtn) mFilterBtn.classList.toggle('hidden', !showFilters);
+
     if (tab === 'report') setTimeout(() => { switchReportType('daily'); }, 100);
     if (tab === 'dashboard' && typeof invalidateMaps === 'function') invalidateMaps();
 }
@@ -255,14 +262,21 @@ function switchDesktopTab(tab) {
     document.querySelectorAll('.desktop-page').forEach(el => el.classList.add('hidden'));
     const dPageTab = document.getElementById(`d-page-${tab}`);
     if (dPageTab) dPageTab.classList.remove('hidden');
-    const titles = {
-        tracking: 'งานล่าสุด (Recent List)',
-        dashboard: 'แดชบอร์ด (Dashboard)',
-        report: 'รายงาน (Reports)',
-        help: 'ช่วยเหลือ (Get Started)'
+
+    // Show global filter row only on Tracking & Dashboard tabs (prevents duplicate date picker on Report tab)
+    const showFilters = (tab === 'tracking' || tab === 'dashboard');
+    const dFilterBar = document.getElementById('desktop-filter-bar');
+    if (dFilterBar) dFilterBar.classList.toggle('hidden', !showFilters);
+
+    const titleKeyMap = {
+        tracking: 'titleTracking',
+        dashboard: 'titleDashboard',
+        report: 'titleReport',
+        help: 'titleHelp'
     };
     const titleEl = document.getElementById('desktop-page-title');
-    if (titleEl) titleEl.textContent = titles[tab] || 'Fleet Order';
+    if (titleEl) titleEl.textContent = t(titleKeyMap[tab] || 'titleTracking');
+
     if (tab === 'report') setTimeout(() => { switchReportType('daily'); }, 100);
     if (tab === 'dashboard' && typeof invalidateMaps === 'function') invalidateMaps();
 }

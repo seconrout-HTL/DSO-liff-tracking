@@ -54,7 +54,7 @@ async function initLiff() {
     }
 
     if (SECURITY_CONFIG.REQUIRE_LIFF_LOGIN && !isAuthenticated) {
-        openAuthGateModal('กรุณาเข้าสู่ระบบด้วยบัญชี LINE ที่ได้รับอนุญาตเพื่อเข้าถึงข้อมูลระบบติดตามคำสั่งซื้อ');
+        openAuthGateModal(t('authMessage'));
         return false;
     }
 
@@ -63,7 +63,8 @@ async function initLiff() {
 }
 
 function updateUserDisplay(tempName) {
-    const displayName = sanitizeText(tempName || currentUserName, 'Guest User', 120);
+    const fallbackGuest = (typeof t === 'function') ? t('guestUser') : 'Guest User';
+    const displayName = sanitizeText(tempName || currentUserName, fallbackGuest, 120);
     const mUser = document.getElementById('user-display-mobile');
     const dUser = document.getElementById('user-display-desktop');
     if (mUser) mUser.textContent = displayName;
@@ -74,7 +75,7 @@ function handleLiffLoginAction() {
     if (typeof liff !== 'undefined' && typeof liff.login === 'function') {
         liff.login();
     } else {
-        showToast('ไม่สามารถเปิดหน้าเข้าสู่ระบบ LINE ได้ในขณะนี้', 'error');
+        showToast(t('toastLoginUnavailable'), 'error');
     }
 }
 
@@ -82,6 +83,11 @@ function handleLiffLoginAction() {
 function handleDelegatedAction(actionEl, event) {
     const action = actionEl.getAttribute('data-action');
     switch (action) {
+        case 'set-lang': {
+            const lang = actionEl.getAttribute('data-lang');
+            if (lang) setLanguage(lang);
+            break;
+        }
         case 'hide-toast':
             hideToast();
             break;
@@ -168,7 +174,7 @@ function initEventListeners() {
         }
     });
 
-    // Keyboard activation for clickable non-button elements (e.g. accordion, branch cards, nav divs)
+    // Keyboard activation for clickable non-button elements
     document.addEventListener('keydown', function (event) {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         const actionEl = event.target.closest('[role="button"][data-action]');
@@ -226,6 +232,7 @@ function initEventListeners() {
 // --- App Bootstrap ---
 document.addEventListener('DOMContentLoaded', async function () {
     initEventListeners();
+    setLanguage(loadSavedLanguage(), true);
     setDefaultDate();
     const canProceed = await initLiff();
     if (!canProceed) return;

@@ -48,9 +48,9 @@ async function fetchData(isSilent = false) {
         const json = await secureApiRequest('getTrackingData', { t: String(Date.now()) });
         if (json && json.status === 'unauthorized') {
             if (SECURITY_CONFIG.REQUIRE_LIFF_LOGIN && typeof openAuthGateModal === 'function') {
-                openAuthGateModal(json.message || 'กรุณาเข้าสู่ระบบด้วยบัญชี LINE ที่ได้รับอนุญาต');
+                openAuthGateModal(json.message || t('authMessage'));
             } else if (!isSilent) {
-                showToast('ไม่มีสิทธิ์เข้าถึงข้อมูล กรุณาเข้าสู่ระบบผ่าน LINE', 'error');
+                showToast(t('toastUnauthorized'), 'error');
             }
             return;
         }
@@ -185,23 +185,29 @@ function getStatusCode(item) {
 function getStatusBadge(item, isMobile = false) {
     const p = calculateProgress(item);
     const isEdit = item.editCount > 0;
-    if (p >= 4) return '<span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-semibold border border-emerald-200/70">เสร็จสิ้น</span>';
-    if (isEdit && p < 4) return '<span class="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-xs font-semibold border border-amber-200/70">แก้ไขบิล</span>';
-    if (p === 2) return '<span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold border border-blue-200/70">ยืนยันแล้ว</span>';
+    if (p >= 4) {
+        return `<span class="px-3 py-1 badge-completed rounded-full text-xs font-semibold">${escapeHtml(t('statusShipped'))}</span>`;
+    }
+    if (isEdit && p < 4) {
+        return `<span class="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold border border-amber-200/80">${escapeHtml(t('statusEdited'))}</span>`;
+    }
+    if (p === 2) {
+        return `<span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-200/80">${escapeHtml(t('statusConfirmed'))}</span>`;
+    }
     if (Number.isInteger(item.queueWait) && item.queueWait >= 0) {
         const align = isMobile ? 'items-end' : 'items-center';
         let queueText = '';
         let queueColor = '';
         if (item.queueWait === 0) {
-            queueText = 'ถึงคิวแล้ว ▲';
-            queueColor = 'text-emerald-600';
+            queueText = escapeHtml(t('queueReady'));
+            queueColor = 'text-brand-green';
         } else {
-            queueText = `รออีก ${escapeHtml(String(item.queueWait))} คิว ▼`;
-            queueColor = 'text-rose-500';
+            queueText = escapeHtml(t('queueWaiting', { n: item.queueWait }));
+            queueColor = 'text-brand-red';
         }
-        return `<div class="flex flex-col ${align}"><span class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">งานใหม่</span><span class="text-[10px] ${queueColor} font-semibold mt-1 whitespace-nowrap">${queueText}</span></div>`;
+        return `<div class="flex flex-col ${align}"><span class="px-3 py-1 badge-urgent-new rounded-full text-xs font-semibold">${escapeHtml(t('statusNew'))}</span><span class="text-[10px] ${queueColor} font-semibold mt-1 whitespace-nowrap">${queueText}</span></div>`;
     }
-    return '<span class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">งานใหม่</span>';
+    return `<span class="px-3 py-1 badge-urgent-new rounded-full text-xs font-semibold">${escapeHtml(t('statusNew'))}</span>`;
 }
 
 function setDefaultDate() {
@@ -252,11 +258,11 @@ function handleSortMobile() {
 
 function updateSortIcons() {
     document.querySelectorAll('th i').forEach(i => {
-        i.className = 'fas fa-sort text-slate-300 ml-1 group-hover:text-blue-600';
+        i.className = 'fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green';
     });
     if (sortState.column !== 'default') {
         const icon = document.getElementById(`icon-${sortState.column}`);
-        if (icon) icon.className = `fas fa-sort-${sortState.direction === 'asc' ? 'up' : 'down'} text-blue-600 ml-1`;
+        if (icon) icon.className = `fas fa-sort-${sortState.direction === 'asc' ? 'up' : 'down'} text-brand-green ml-1`;
     }
 }
 
@@ -272,7 +278,7 @@ function sortData(data, column, direction) {
         switch (column) {
             case 'queue': valA = parseInt(String(a.queueNo).replace('#', ''), 10) || 0; valB = parseInt(String(b.queueNo).replace('#', ''), 10) || 0; break;
             case 'timestamp': valA = a.rawTimestamp; valB = b.rawTimestamp; break;
-            case 'branch': valA = String(a.branch).toLowerCase(); valB = String(b.branch).toLowerCase(); break;
+            case 'branch': valA = formatBranchName(a.branch).toLowerCase(); valB = formatBranchName(b.branch).toLowerCase(); break;
             case 'deliveryDate': valA = a.isoDate || ''; valB = b.isoDate || ''; break;
             case 'status': valA = calculateProgress(a); valB = calculateProgress(b); break;
             case 'amount': valA = parseFloat(String(a.amount).replace(/,/g, '')) || 0; valB = parseFloat(String(b.amount).replace(/,/g, '')) || 0; break;
@@ -300,11 +306,12 @@ function syncFilters(source) {
 function applyFilters() {
     const searchEl = document.getElementById('search-mobile');
     const dateEl = document.getElementById('date-mobile');
-    const searchQuery = (searchEl ? searchEl.value : '').toLowerCase();
+    const searchQuery = (searchEl ? searchEl.value : '').trim().toLowerCase();
     const dateQuery = dateEl ? dateEl.value : '';
     let filtered = globalData.filter(item => {
-        const branchStr = String(item.branch || '').toLowerCase();
-        const matchesSearch = branchStr.includes(searchQuery);
+        const canonicalStr = String(item.branch || '').toLowerCase();
+        const displayStr = formatBranchName(item.branch).toLowerCase();
+        const matchesSearch = !searchQuery || canonicalStr.includes(searchQuery) || displayStr.includes(searchQuery);
         let matchesDate = true;
         if (dateQuery) matchesDate = item.isoDate === dateQuery;
         const status = getStatusCode(item);
@@ -319,6 +326,14 @@ function applyFilters() {
     updateMapData(filtered);
 }
 
+function updateStatusSummaryText() {
+    const activeCount = Object.values(activeFilters).filter(Boolean).length;
+    const summaryEl = document.getElementById('desktop-status-summary');
+    if (summaryEl) {
+        summaryEl.textContent = activeCount === 4 ? t('filterAll') : t('filterSelected', { n: activeCount });
+    }
+}
+
 function toggleStatusFilter(key, isChecked) {
     if (!ALLOWED_STATUS_KEYS.has(key)) return;
     activeFilters[key] = Boolean(isChecked);
@@ -327,9 +342,7 @@ function toggleStatusFilter(key, isChecked) {
     if (dChk) dChk.checked = Boolean(isChecked);
     if (mChk) mChk.checked = Boolean(isChecked);
 
-    const activeCount = Object.values(activeFilters).filter(Boolean).length;
-    const summaryEl = document.getElementById('desktop-status-summary');
-    if (summaryEl) summaryEl.textContent = activeCount === 4 ? 'All' : `${activeCount} Selected`;
+    updateStatusSummaryText();
 
     if (window.innerWidth >= 768) applyFilters();
 }

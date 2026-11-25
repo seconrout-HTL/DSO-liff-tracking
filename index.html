@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="referrer" content="strict-origin">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.line-scdn.net https://cdn.jsdelivr.net https://cdn.sheetjs.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: blob: https://server.arcgisonline.com https://unpkg.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.line.me https://liffsdk.line-scdn.net https://access.line.me https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.js.map https://unpkg.com/leaflet@1.9.4/dist/leaflet.js.map; object-src 'none'; base-uri 'self'; form-action 'self';">
-    <title>Fleet Order Tracking</title>
-    <meta name="description" content="Fleet Order Tracking System - ระบบติดตามคำสั่งซื้อ">
+    <title>ระบบติดตามคำสั่งซื้อ</title>
+    <meta name="description" content="ระบบติดตามคำสั่งซื้อ DSO">
 
     <!-- Pre-compiled Tailwind CSS (No runtime cdn.tailwindcss.com) -->
     <link rel="stylesheet" href="assets/tailwind.min.css">
@@ -25,54 +25,64 @@
 <body>
 
     <!-- Custom Toast Notification (replaces alert) -->
-    <div id="app-toast" class="fixed top-5 right-5 z-[100] hidden max-w-sm bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 flex items-center gap-3 text-sm transition-all">
-        <i id="app-toast-icon" class="fas fa-info-circle text-blue-400"></i>
-        <span id="app-toast-msg" class="flex-1">แจ้งเตือน</span>
-        <button type="button" data-action="hide-toast" class="text-slate-400 hover:text-white" aria-label="Close toast"><i class="fas fa-times"></i></button>
+    <div id="app-toast" class="fixed top-5 right-5 z-[100] hidden max-w-sm bg-white text-slate-900 px-4 py-3 rounded-xl shadow-xl border border-slate-200 flex items-center gap-3 text-sm transition-all">
+        <i id="app-toast-icon" class="fas fa-check-circle text-brand-green"></i>
+        <span id="app-toast-msg" class="flex-1 font-medium" data-i18n="toastDefault">แจ้งเตือน</span>
+        <button type="button" data-action="hide-toast" class="text-slate-400 hover:text-slate-700" aria-label="Close toast"><i class="fas fa-times"></i></button>
     </div>
 
     <!-- Auth Gate Modal (activated when SECURITY_CONFIG.REQUIRE_LIFF_LOGIN is true) -->
     <div id="auth-gate-modal" class="fixed inset-0 bg-slate-900/60 z-[90] hidden flex items-center justify-center p-4 modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="auth-gate-title">
         <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-100 text-center">
-            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4 border border-blue-100">
+            <div class="w-12 h-12 rounded-2xl bg-brand-green-soft text-brand-green flex items-center justify-center mx-auto mb-4 border border-brand-green-border">
                 <i class="fas fa-shield-alt text-xl"></i>
             </div>
-            <h3 id="auth-gate-title" class="text-lg font-bold text-slate-900 mb-2">ต้องเข้าสู่ระบบผ่าน LINE</h3>
-            <p id="auth-gate-message" class="text-xs text-slate-500 mb-5 leading-relaxed">กรุณาเข้าสู่ระบบด้วยบัญชี LINE ที่ได้รับอนุญาตเพื่อเข้าถึงข้อมูลระบบติดตามคำสั่งซื้อ</p>
+            <h3 id="auth-gate-title" class="text-lg font-bold text-slate-900 mb-2" data-i18n="authTitle">ต้องเข้าสู่ระบบผ่านไลน์</h3>
+            <p id="auth-gate-message" class="text-xs text-slate-500 mb-5 leading-relaxed" data-i18n="authMessage">กรุณาเข้าสู่ระบบด้วยบัญชีไลน์ที่ได้รับอนุญาตเพื่อเข้าถึงข้อมูลระบบติดตามคำสั่งซื้อ</p>
             <button type="button" data-action="liff-login" class="w-full btn-primary py-2.5 text-sm flex items-center justify-center gap-2">
                 <i class="fas fa-sign-in-alt"></i>
-                <span>เข้าสู่ระบบด้วย LINE</span>
+                <span data-i18n="authLoginBtn">เข้าสู่ระบบด้วยไลน์</span>
             </button>
         </div>
     </div>
 
     <!-- ==================== MOBILE VIEW ==================== -->
     <div id="mobile-view" class="md:hidden flex flex-col min-h-screen pb-24">
-        <header class="header-clean px-4 pt-4 pb-3 sticky top-0 z-50">
-            <div class="flex justify-between items-center mb-3">
-                <div>
-                    <h1 class="text-xl brand-logo-text leading-none"><span class="brand-dso-d">D</span><span class="brand-dso-so">SO</span> <span class="text-xs font-semibold text-slate-400 tracking-normal">Fleet Order</span></h1>
-                    <p id="user-display-mobile" class="text-[11px] text-slate-400 font-medium mt-0.5">Guest User</p>
+        <header class="header-clean sticky top-0 z-50">
+            <div class="brand-top-ribbon"></div>
+            <div class="px-4 pt-3.5 pb-3">
+                <div class="flex justify-between items-center mb-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl brand-logo-text leading-none"><span class="brand-dso-d">D</span><span class="brand-dso-so">SO</span><span class="brand-accent-dot"></span></span>
+                            <span class="text-xs font-semibold text-slate-500 tracking-normal" data-i18n="brandSubMobile">ติดตามคำสั่งซื้อ</span>
+                        </div>
+                        <p id="user-display-mobile" class="text-[11px] text-slate-400 font-medium mt-0.5" data-i18n="guestUser">ผู้ใช้งานทั่วไป</p>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <div class="lang-switcher" role="group" aria-label="Language">
+                            <button type="button" data-action="set-lang" data-lang="th" class="lang-btn active" aria-pressed="true">TH</button>
+                            <button type="button" data-action="set-lang" data-lang="en" class="lang-btn" aria-pressed="false">EN</button>
+                        </div>
+                        <button type="button" data-action="open-export" class="icon-btn-header p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95" aria-label="Export Excel">
+                            <i class="fas fa-download text-xs"></i>
+                        </button>
+                        <button type="button" id="mobile-filter-open-btn" data-action="open-mobile-filter" class="icon-btn-header p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95" aria-label="Filter">
+                            <i class="fas fa-sliders-h text-xs"></i>
+                        </button>
+                        <button type="button" data-action="manual-refresh" class="icon-btn-header p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95" aria-label="Refresh">
+                            <i class="fas fa-sync-alt text-xs refresh-icon"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="flex gap-1.5">
-                    <button type="button" data-action="open-export" class="bg-slate-100 text-slate-600 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition hover:bg-slate-200" aria-label="Export Excel">
-                        <i class="fas fa-download text-xs"></i>
-                    </button>
-                    <button type="button" data-action="open-mobile-filter" class="bg-slate-100 text-slate-600 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition hover:bg-slate-200" aria-label="Filter">
-                        <i class="fas fa-sliders-h text-xs"></i>
-                    </button>
-                    <button type="button" data-action="manual-refresh" class="bg-slate-100 text-slate-600 p-2 rounded-full w-8 h-8 flex items-center justify-center active:scale-95 transition hover:bg-slate-200" aria-label="Refresh">
-                        <i class="fas fa-sync-alt text-xs refresh-icon"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <div class="flex-1 pill-filter flex items-center px-3 py-1.5 bg-slate-50/70">
-                    <i class="fas fa-search text-slate-400 text-xs mr-2"></i>
-                    <input type="text" id="search-mobile" data-sync-filter="mobile" placeholder="ค้นหาสาขา..." class="w-full text-xs outline-none text-slate-700 bg-transparent">
-                </div>
-                <div class="w-[42%] pill-filter px-2.5 py-1.5 bg-slate-50/70 flex items-center">
-                    <input type="date" id="date-mobile" data-sync-filter="mobile" class="w-full text-xs text-center outline-none bg-transparent text-slate-700 font-medium">
+                <div id="mobile-filter-bar" class="flex gap-2">
+                    <div class="flex-1 pill-filter flex items-center px-3 py-1.5 bg-slate-50/70">
+                        <i class="fas fa-search text-slate-400 text-xs mr-2"></i>
+                        <input type="text" id="search-mobile" data-sync-filter="mobile" data-i18n-placeholder="searchPlaceholderMobile" placeholder="ค้นหาสาขา..." class="w-full text-xs outline-none text-slate-700 bg-transparent">
+                    </div>
+                    <div class="w-[44%] pill-filter px-2.5 py-1.5 bg-slate-50/70 flex items-center">
+                        <input type="date" id="date-mobile" data-sync-filter="mobile" class="w-full text-xs text-center outline-none bg-transparent text-slate-700 font-medium">
+                    </div>
                 </div>
             </div>
         </header>
@@ -81,28 +91,28 @@
         <div id="mobile-filter-modal" class="fixed inset-0 bg-slate-900/40 z-[60] hidden flex items-center justify-center p-4 modal-backdrop">
             <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl border border-slate-100 modal-content entered">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-base text-slate-800">ตัวกรองสถานะงาน</h3>
+                    <h3 class="font-bold text-base text-slate-800" data-i18n="filterStatusTitle">ตัวกรองสถานะงาน</h3>
                     <button type="button" data-action="close-mobile-filter" class="text-slate-400 hover:text-slate-600" aria-label="Close filter"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="space-y-2.5 mb-6">
                     <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition cursor-pointer">
-                        <input type="checkbox" class="w-4 h-4 accent-blue-600 rounded" checked data-status-filter="new" id="m-chk-new">
-                        <span class="text-sm text-slate-700 font-medium">งานใหม่ (New)</span>
+                        <input type="checkbox" class="w-4 h-4 accent-brand-red rounded" checked data-status-filter="new" id="m-chk-new">
+                        <span class="text-sm text-slate-700 font-medium" data-i18n="statusNew">งานใหม่</span>
                     </label>
                     <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition cursor-pointer">
                         <input type="checkbox" class="w-4 h-4 accent-blue-600 rounded" checked data-status-filter="conf" id="m-chk-conf">
-                        <span class="text-sm text-slate-700 font-medium">ยืนยันแล้ว (Confirmed)</span>
+                        <span class="text-sm text-slate-700 font-medium" data-i18n="statusConfirmed">ยืนยันแล้ว</span>
                     </label>
                     <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition cursor-pointer">
                         <input type="checkbox" class="w-4 h-4 accent-amber-500 rounded" checked data-status-filter="edit" id="m-chk-edit">
-                        <span class="text-sm text-slate-700 font-medium">แก้ไขบิล (Edit)</span>
+                        <span class="text-sm text-slate-700 font-medium" data-i18n="statusEdited">แก้ไขบิล</span>
                     </label>
                     <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition cursor-pointer">
-                        <input type="checkbox" class="w-4 h-4 accent-emerald-600 rounded" checked data-status-filter="ship" id="m-chk-ship">
-                        <span class="text-sm text-slate-700 font-medium">เสร็จสิ้น (Shipment)</span>
+                        <input type="checkbox" class="w-4 h-4 accent-brand-green rounded" checked data-status-filter="ship" id="m-chk-ship">
+                        <span class="text-sm text-slate-700 font-medium" data-i18n="statusShipped">เสร็จสิ้น</span>
                     </label>
                 </div>
-                <button type="button" data-action="close-mobile-filter" class="w-full btn-primary py-2.5 text-sm">ตกลง</button>
+                <button type="button" data-action="close-mobile-filter" class="w-full btn-primary py-2.5 text-sm" data-i18n="btnConfirm">ตกลง</button>
             </div>
         </div>
 
@@ -123,15 +133,15 @@
             <!-- Mobile Tracking Page -->
             <div id="m-page-tracking" class="mobile-page block space-y-3">
                 <div class="flex justify-between items-center px-1">
-                    <h2 class="text-sm font-bold text-slate-800">งานล่าสุด (Recent List)</h2>
+                    <h2 class="text-sm font-bold text-slate-800" data-i18n="titleTracking">งานล่าสุด</h2>
                     <div class="pill-filter py-1 px-3 flex items-center gap-1.5">
-                        <span class="text-[11px] text-slate-400">เรียง:</span>
+                        <span class="text-[11px] text-slate-400" data-i18n="sortLabel">เรียง:</span>
                         <select id="mobile-sort-select" data-change-action="sort-mobile" class="text-xs border-none bg-transparent text-slate-700 font-semibold outline-none focus:ring-0">
-                            <option value="default">คิวล่าสุด</option>
-                            <option value="timestamp_asc">เวลาเก่าสุด</option>
-                            <option value="queue_asc">ลำดับคิว</option>
-                            <option value="branch_asc">สาขา (A-Z)</option>
-                            <option value="amount_desc">ยอดบิลมากสุด</option>
+                            <option value="default" data-i18n="sortDefault">คิวล่าสุด</option>
+                            <option value="timestamp_asc" data-i18n="sortTimestampAsc">เวลาเก่าสุด</option>
+                            <option value="queue_asc" data-i18n="sortQueueAsc">ลำดับคิว</option>
+                            <option value="branch_asc" data-i18n="sortBranchAsc">สาขา ก-ฮ</option>
+                            <option value="amount_desc" data-i18n="sortAmountDesc">ยอดบิลมากสุด</option>
                         </select>
                     </div>
                 </div>
@@ -140,65 +150,64 @@
 
             <!-- Mobile Dashboard Page -->
             <div id="m-page-dashboard" class="mobile-page hidden space-y-4">
-                <!-- Stat Cards with Mini Sparklines -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="stat-card p-4">
                         <div class="flex items-center justify-between mb-1">
-                            <p class="text-xs font-medium text-slate-500">งานทั้งหมด</p>
-                            <i class="fas fa-layer-group text-slate-300 text-xs"></i>
+                            <p class="text-xs font-medium text-slate-500" data-i18n="statTotal">งานทั้งหมด</p>
+                            <i class="fas fa-layer-group text-brand-green text-xs opacity-60"></i>
                         </div>
                         <h2 class="text-2xl font-bold text-slate-900" id="m-dash-total">-</h2>
                         <svg class="w-full h-7 mt-2 overflow-visible" viewBox="0 0 120 28" fill="none">
-                            <path d="M2 22 C20 20, 32 10, 50 15 C68 20, 82 6, 100 11 C110 13, 114 5, 118 4" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M2 22 C20 20, 32 10, 50 15 C68 20, 82 6, 100 11 C110 13, 114 5, 118 4" stroke="#007947" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                     </div>
                     <div class="stat-card p-4">
                         <div class="flex items-center justify-between mb-1">
-                            <p class="text-xs font-medium text-slate-500">งานใหม่</p>
-                            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                            <p class="text-xs font-medium text-slate-500" data-i18n="statNew">งานใหม่</p>
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-red"></span>
                         </div>
                         <h2 class="text-2xl font-bold text-slate-900" id="m-dash-new">-</h2>
                         <svg class="w-full h-7 mt-2 overflow-visible" viewBox="0 0 120 28" fill="none">
-                            <path d="M2 20 C24 24, 38 12, 56 16 C74 20, 88 8, 104 12 C112 14, 115 7, 118 6" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M2 20 C24 24, 38 12, 56 16 C74 20, 88 8, 104 12 C112 14, 115 7, 118 6" stroke="#f00000" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                     </div>
                     <div class="stat-card p-4">
                         <div class="flex items-center justify-between mb-1">
-                            <p class="text-xs font-medium text-slate-500">ยืนยันแล้ว</p>
-                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <p class="text-xs font-medium text-slate-500" data-i18n="statConfirmed">ยืนยันแล้ว</p>
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                         </div>
                         <h2 class="text-2xl font-bold text-slate-900" id="m-dash-conf">-</h2>
                         <svg class="w-full h-7 mt-2 overflow-visible" viewBox="0 0 120 28" fill="none">
-                            <path d="M2 24 C22 16, 40 22, 58 12 C76 4, 92 14, 108 8 C113 6, 116 4, 118 3" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M2 24 C22 16, 40 22, 58 12 C76 4, 92 14, 108 8 C113 6, 116 4, 118 3" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                     </div>
                     <div class="stat-card p-4">
                         <div class="flex items-center justify-between mb-1">
-                            <p class="text-xs font-medium text-slate-500">เสร็จสิ้น</p>
-                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <p class="text-xs font-medium text-slate-500" data-i18n="statCompleted">เสร็จสิ้น</p>
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-green"></span>
                         </div>
                         <h2 class="text-2xl font-bold text-slate-900" id="m-dash-shipped">-</h2>
                         <svg class="w-full h-7 mt-2 overflow-visible" viewBox="0 0 120 28" fill="none">
-                            <path d="M2 23 C18 21, 35 14, 54 17 C72 19, 86 7, 102 10 C110 11, 115 4, 118 3" stroke="#10B981" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M2 23 C18 21, 35 14, 54 17 C72 19, 86 7, 102 10 C110 11, 115 4, 118 3" stroke="#007947" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                     </div>
                 </div>
 
                 <div class="glass-card p-4 overflow-hidden">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="section-heading text-xs font-semibold text-slate-500">ความถี่การแจ้งงาน (Activity)</h3>
-                        <span class="text-[11px] font-semibold text-slate-600">รายชั่วโมง <i class="fas fa-chevron-down text-[9px] ml-0.5"></i></span>
+                        <h3 class="section-heading text-xs font-semibold text-slate-600" data-i18n="chartTitleMobile">ความถี่การแจ้งงาน</h3>
+                        <span class="text-[11px] font-semibold text-brand-green bg-brand-green-soft px-2.5 py-0.5 rounded-full" data-i18n="chartSubtitleMobile">รายช่วงเวลา</span>
                     </div>
                     <div class="h-60"><canvas id="m-freq-chart"></canvas></div>
                 </div>
 
                 <div class="glass-card p-4 overflow-hidden">
-                    <h3 class="section-heading text-xs font-semibold text-slate-500 mb-3">ตารางความถี่ (ย้อนหลัง)</h3>
+                    <h3 class="section-heading text-xs font-semibold text-slate-600 mb-3" data-i18n="freqTitleMobile">ตารางความถี่ย้อนหลัง</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-xs text-center border-collapse">
                             <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
                                 <tr>
-                                    <th class="p-2 text-left font-medium">วันที่</th>
+                                    <th class="p-2 text-left font-medium" data-i18n="freqDateCol">วันที่</th>
                                     <th class="p-2 text-[10px] font-medium">&lt;16:00</th>
                                     <th class="p-2 text-[10px] font-medium">16-17</th>
                                     <th class="p-2 text-[10px] font-medium">17-17:30</th>
@@ -213,18 +222,18 @@
                 </div>
 
                 <div class="glass-card p-4">
-                    <h3 class="section-heading text-xs font-semibold text-slate-500 mb-3">สถานะรายสาขา (Branch Leaderboard)</h3>
+                    <h3 class="section-heading text-xs font-semibold text-slate-600 mb-3" data-i18n="branchStatusTitleMobile">สถานะรายสาขา</h3>
                     <div id="m-branch-status-container" class="space-y-3"></div>
                 </div>
 
                 <div class="glass-card p-4">
                     <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
-                        <h3 class="section-heading text-xs font-semibold text-slate-500"><i class="fas fa-map-marked-alt text-blue-600 mr-1.5"></i>แผนที่พื้นที่สาขา (Branch Map)</h3>
+                        <h3 class="section-heading text-xs font-semibold text-slate-600"><i class="fas fa-map-marked-alt text-brand-green mr-1.5"></i><span data-i18n="mapTitleMobile">แผนที่พื้นที่สาขา</span></h3>
                         <div class="flex items-center gap-1">
-                            <button type="button" data-action="switch-map-style" class="map-style-btn px-2 py-1 rounded-lg text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-200" data-style="light">สีอ่อน</button>
-                            <button type="button" data-action="switch-map-style" class="map-style-btn px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200" data-style="street">ถนน/อำเภอ</button>
-                            <button type="button" data-action="switch-map-style" class="map-style-btn px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200" data-style="none">ไร้พื้นหลัง</button>
-                            <button type="button" data-action="reset-map-view" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200" title="รีเซ็ตมุมมอง" aria-label="Reset map view"><i class="fas fa-compress-arrows-alt"></i></button>
+                            <button type="button" data-action="switch-map-style" class="map-style-btn active-map-btn px-2 py-1 rounded-lg text-[10px] font-semibold border transition" data-style="light" data-i18n="mapStyleLightShort">สีอ่อน</button>
+                            <button type="button" data-action="switch-map-style" class="map-style-btn px-2 py-1 rounded-lg text-[10px] font-semibold border transition" data-style="street" data-i18n="mapStyleStreetShort">ถนน/อำเภอ</button>
+                            <button type="button" data-action="switch-map-style" class="map-style-btn px-2 py-1 rounded-lg text-[10px] font-semibold border transition" data-style="none" data-i18n="mapStyleNoneShort">ไร้พื้นหลัง</button>
+                            <button type="button" data-action="reset-map-view" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-white text-slate-600 border border-slate-200 hover:text-brand-green" data-i18n-title="mapResetView" title="รีเซ็ตมุมมอง" aria-label="Reset map view"><i class="fas fa-compress-arrows-alt"></i></button>
                         </div>
                     </div>
                     <div id="m-map-branch-chips" class="flex gap-1.5 overflow-x-auto pb-2 mb-2 text-[11px]"></div>
@@ -235,36 +244,31 @@
             <!-- Mobile Report Page -->
             <div id="m-page-report" class="mobile-page hidden space-y-4">
                 <div class="glass-card p-4">
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="section-heading text-xs font-semibold text-slate-500">เลือกรูปแบบรายงาน</h3>
-                        <button type="button" data-action="open-export" class="btn-excel flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold">
-                            <i class="fas fa-download text-slate-500"></i> <span>Download</span>
-                        </button>
-                    </div>
+                    <h3 class="section-heading text-xs font-semibold text-slate-600 mb-3" data-i18n="reportTypeTitle">เลือกรูปแบบรายงาน</h3>
                     <div class="grid grid-cols-2 gap-2.5">
                         <button type="button" data-action="switch-report-type" data-report-type="daily" id="m-btn-daily" class="report-btn active p-3 rounded-xl text-sm font-medium transition">
-                            <i class="fas fa-calendar-day mb-1"></i><div>รายวัน</div>
+                            <i class="fas fa-calendar-day mb-1"></i><div data-i18n="reportDailyShort">รายวัน</div>
                         </button>
                         <button type="button" data-action="switch-report-type" data-report-type="monthly" id="m-btn-monthly" class="report-btn p-3 rounded-xl text-sm font-medium transition">
-                            <i class="fas fa-calendar-alt mb-1"></i><div>รายเดือน</div>
+                            <i class="fas fa-calendar-alt mb-1"></i><div data-i18n="reportMonthlyShort">รายเดือน</div>
                         </button>
                     </div>
                 </div>
                 <div id="m-daily-report" class="space-y-4">
                     <div class="glass-card p-4">
-                        <h3 class="section-heading text-xs font-semibold text-slate-500 mb-2.5">เลือกวันที่</h3>
+                        <h3 class="section-heading text-xs font-semibold text-slate-600 mb-2.5" data-i18n="reportPickDateShort">เลือกวันที่</h3>
                         <input type="date" id="m-report-date" data-change-action="daily-report" data-source="mobile" class="w-full pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none">
                     </div>
                     <div class="glass-card p-4 overflow-hidden">
-                        <h3 class="section-heading text-xs font-semibold text-slate-500 mb-3">รายงานรายละเอียด (Detail Report)</h3>
+                        <h3 class="section-heading text-xs font-semibold text-slate-600 mb-3" data-i18n="reportDetailTitle">รายงานรายละเอียด</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-xs text-left border-collapse">
                                 <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
                                     <tr>
-                                        <th class="p-2.5 font-medium">สาขา</th><th class="p-2.5 font-medium">วันที่แจ้ง</th><th class="p-2.5 font-medium">วันที่ส่ง</th>
-                                        <th class="p-2.5 text-center font-medium">เวลาแจ้ง</th><th class="p-2.5 text-center font-medium">เวลายืนยัน</th>
-                                        <th class="p-2.5 text-center font-medium">เวลาออก SH</th><th class="p-2.5 text-right font-medium">Shipment</th>
-                                        <th class="p-2.5 text-center font-medium">นาที</th>
+                                        <th class="p-2.5 font-medium" data-i18n="rColBranch">สาขา</th><th class="p-2.5 font-medium" data-i18n="rColNotiDate">วันที่แจ้ง</th><th class="p-2.5 font-medium" data-i18n="rColDelivDate">วันที่ส่ง</th>
+                                        <th class="p-2.5 text-center font-medium" data-i18n="rColNotiTime">เวลาแจ้ง</th><th class="p-2.5 text-center font-medium" data-i18n="rColConfTime">เวลายืนยัน</th>
+                                        <th class="p-2.5 text-center font-medium" data-i18n="rColShipTimeShort">เวลาจัดส่ง</th><th class="p-2.5 text-right font-medium" data-i18n="rColShipAmtShort">จัดส่ง</th>
+                                        <th class="p-2.5 text-center font-medium" data-i18n="rColProcMinShort">นาที</th>
                                     </tr>
                                 </thead>
                                 <tbody id="m-detail-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
@@ -274,29 +278,29 @@
                 </div>
                 <div id="m-monthly-report" class="space-y-4 hidden">
                     <div class="glass-card p-4">
-                        <h3 class="section-heading text-xs font-semibold text-slate-500 mb-2.5">เลือกเดือนและปี</h3>
+                        <h3 class="section-heading text-xs font-semibold text-slate-600 mb-2.5" data-i18n="reportPickMonthYear">เลือกเดือนและปี</h3>
                         <div class="grid grid-cols-2 gap-2.5">
                             <select id="m-report-month" data-change-action="monthly-report" data-source="mobile" class="pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none">
-                                <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option><option value="3">มีนาคม</option>
-                                <option value="4">เมษายน</option><option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
-                                <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option><option value="9">กันยายน</option>
-                                <option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+                                <option value="1" data-i18n="month1">มกราคม</option><option value="2" data-i18n="month2">กุมภาพันธ์</option><option value="3" data-i18n="month3">มีนาคม</option>
+                                <option value="4" data-i18n="month4">เมษายน</option><option value="5" data-i18n="month5">พฤษภาคม</option><option value="6" data-i18n="month6">มิถุนายน</option>
+                                <option value="7" data-i18n="month7">กรกฎาคม</option><option value="8" data-i18n="month8">สิงหาคม</option><option value="9" data-i18n="month9">กันยายน</option>
+                                <option value="10" data-i18n="month10">ตุลาคม</option><option value="11" data-i18n="month11">พฤศจิกายน</option><option value="12" data-i18n="month12">ธันวาคม</option>
                             </select>
-                            <input type="number" id="m-report-year" data-change-action="monthly-report" data-source="mobile" class="pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none" placeholder="ปี (ค.ศ.)" min="2020" max="2030">
+                            <input type="number" id="m-report-year" data-change-action="monthly-report" data-source="mobile" data-i18n-placeholder="reportYearPlaceholder" class="pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none" placeholder="ปี ค.ศ." min="2020" max="2030">
                         </div>
                     </div>
                     <div class="glass-card p-4">
-                        <h3 class="section-heading text-xs font-semibold text-slate-500 mb-2.5">กรองตามสาขา</h3>
+                        <h3 class="section-heading text-xs font-semibold text-slate-600 mb-2.5" data-i18n="reportFilterBranch">กรองตามสาขา</h3>
                         <select id="m-branch-filter" data-change-action="monthly-report" data-source="mobile" class="w-full pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none">
-                            <option value="">ทุกสาขา</option>
+                            <option value="" data-i18n="reportAllBranches">ทุกสาขา</option>
                         </select>
                     </div>
                     <div class="glass-card p-4 overflow-hidden">
-                        <h3 class="section-heading text-xs font-semibold text-slate-500 mb-3">สรุปรายเดือน</h3>
+                        <h3 class="section-heading text-xs font-semibold text-slate-600 mb-3" data-i18n="reportMonthlyTitle">สรุปรายเดือน</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-xs text-left border-collapse">
                                 <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
-                                    <tr><th class="p-2.5 font-medium">สาขา</th><th class="p-2.5 text-center font-medium">เวลาแจ้งเฉลี่ย</th><th class="p-2.5 text-center font-medium">จำนวน DO</th><th class="p-2.5 text-center font-medium">จำนวน SH</th><th class="p-2.5 text-center font-medium">เวลาดำเนินการ</th></tr>
+                                    <tr><th class="p-2.5 font-medium" data-i18n="rColBranch">สาขา</th><th class="p-2.5 text-center font-medium" data-i18n="rColAvgTime">เวลาแจ้งเฉลี่ย</th><th class="p-2.5 text-center font-medium" data-i18n="rColDoCount">จำนวน DO</th><th class="p-2.5 text-center font-medium" data-i18n="rColShCount">จำนวนจัดส่ง</th><th class="p-2.5 text-center font-medium" data-i18n="rColProcTime">เวลาดำเนินการ</th></tr>
                                 </thead>
                                 <tbody id="m-monthly-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
                             </table>
@@ -308,23 +312,22 @@
             <!-- Mobile Help Page -->
             <div id="m-page-help" class="mobile-page hidden space-y-4">
                 <div class="glass-card p-5">
-                    <h2 class="font-bold text-base text-slate-800 mb-4 flex items-center"><i class="fas fa-lightbulb text-blue-600 mr-2"></i>ช่วยเหลือ &amp; FAQ</h2>
+                    <h2 class="font-bold text-base text-slate-800 mb-4 flex items-center"><i class="fas fa-lightbulb text-brand-green mr-2"></i><span data-i18n="helpTitle">ช่วยเหลือและคำถามที่พบบ่อย</span></h2>
                     <div class="space-y-3.5">
-                        <div class="border-b border-slate-100 pb-2.5"><h3 class="text-xs font-bold text-slate-700 mb-1">Q: ตัวเลขใน Dashboard อัปเดตเมื่อไหร่?</h3><p class="text-xs text-slate-500">A: ระบบจะอัปเดตอัตโนมัติทุกๆ 20 วินาที หรือกดปุ่ม Refresh เพื่อดึงข้อมูลล่าสุดทันที</p></div>
-                        <div class="border-b border-slate-100 pb-2.5"><h3 class="text-xs font-bold text-slate-700 mb-1">Q: ต้องการ Export รูปกราฟต้องทำอย่างไร?</h3><p class="text-xs text-slate-500">A: กดปุ่ม Download มุมขวาบน &rarr; เลือกช่วงวันที่ &rarr; ติ๊กถูกที่ช่อง &quot;บันทึกรูปกราฟด้วย&quot; &rarr; กดดาวน์โหลด</p></div>
-                        <div class="border-b border-slate-100 pb-2.5"><h3 class="text-xs font-bold text-slate-700 mb-1">Q: กราฟความถี่แสดงข้อมูลอะไร?</h3><p class="text-xs text-slate-500">A: แสดงจำนวนออเดอร์ในช่วงเวลาต่างๆ ของวันปัจจุบัน</p></div>
-                        <div class="border-b border-slate-100 pb-2.5"><h3 class="text-xs font-bold text-slate-700 mb-1">Q: ลำดับคิว (Queue) นับอย่างไร?</h3><p class="text-xs text-slate-500">A: ระบบนับตามลำดับเวลาที่แจ้งงานเข้ามา (First Come First Serve)</p></div>
-                        <div class="border-b border-slate-100 pb-2.5"><h3 class="text-xs font-bold text-slate-700 mb-1">Q: สถานะงานมีกี่ประเภท?</h3><p class="text-xs text-slate-500">A: มี 4 สถานะ: งานใหม่, ยืนยันแล้ว, แก้ไขบิล, และเสร็จสิ้น (Shipment)</p></div>
-                        <div class="pb-1"><h3 class="text-xs font-bold text-slate-700 mb-1">Q: หากพบข้อมูลผิดพลาดต้องทำอย่างไร?</h3><p class="text-xs text-slate-500">A: แจ้งปัญหาได้ทาง LINE หรือติดต่อทีม IT โดยระบุสาขา, วันที่, และปัญหาที่พบ</p></div>
+                        <div class="border-b border-slate-100 pb-2.5"><h3 class="text-xs font-bold text-slate-700 mb-1" data-i18n="faq3Q">ระบบอัปเดตข้อมูลอัตโนมัติหรือไม่?</h3><p class="text-xs text-slate-500" data-i18n="faq3A">ระบบจะอัปเดตข้อมูลอัตโนมัติทุกๆ 20 วินาที หรือกดปุ่มรีเฟรชเพื่อดึงข้อมูลล่าสุดได้ทันที</p></div>
+                        <div class="border-b border-slate-100 pb-2.5"><h3 class="text-xs font-bold text-slate-700 mb-1" data-i18n="faq2Q">วิธีการส่งออกข้อมูลและรูปกราฟทำอย่างไร?</h3><p class="text-xs text-slate-500"><span data-i18n="faq2S1">กดปุ่มส่งออกข้อมูลที่มุมขวาบน</span> &rarr; <span data-i18n="faq2S2">เลือกวันที่เริ่มต้นและวันที่สิ้นสุด</span> &rarr; <span data-i18n="faq2S3">หากต้องการรูปกราฟ ให้ติ๊กถูกที่ช่องบันทึกรูปกราฟความถี่ด้วย</span> &rarr; <span data-i18n="faq2S4">กดปุ่มดาวน์โหลด</span></p></div>
+                        <div class="border-b border-slate-100 pb-2.5"><h3 class="text-xs font-bold text-slate-700 mb-1" data-i18n="faq4Q">กราฟความถี่แสดงข้อมูลอะไร?</h3><p class="text-xs text-slate-500" data-i18n="faq4A">แสดงปริมาณงานในแต่ละช่วงเวลาของวันที่เลือก เพื่อช่วยวางแผนการทำงานในช่วงเวลาหนาแน่น</p></div>
+                        <div class="border-b border-slate-100 pb-2.5"><h3 class="text-xs font-bold text-slate-700 mb-1" data-i18n="faq5Q">การจัดลำดับคิวทำงานอย่างไร?</h3><p class="text-xs text-slate-500" data-i18n="faq5A">ใช้หลักมาก่อนได้ก่อน เรียงตามเวลาที่แจ้งงาน คิวจะเริ่มนับใหม่ที่ #01 ทุกวัน</p></div>
+                        <div class="pb-1"><h3 class="text-xs font-bold text-slate-700 mb-1" data-i18n="faq6Q">หากพบข้อมูลผิดพลาดต้องทำอย่างไร?</h3><p class="text-xs text-slate-500" data-i18n="faq6A">แจ้งปัญหาได้ทางไลน์หรือติดต่อทีมไอที โดยระบุสาขา วันที่ และรายละเอียดที่พบ</p></div>
                     </div>
                 </div>
                 <div class="glass-card p-5">
-                    <h2 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-3">คำอธิบายสถานะ Timeline</h2>
+                    <h2 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-3" data-i18n="helpTimelineTitle">คำอธิบายสถานะขั้นตอน</h2>
                     <div class="grid grid-cols-2 gap-3 text-xs">
-                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-slate-200"></div><span class="text-slate-600">งานใหม่ (รอตรวจสอบ)</span></div>
-                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-blue-600"></div><span class="text-slate-700 font-semibold">ยืนยันแล้ว (รับเรื่อง)</span></div>
-                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div><span class="text-slate-700 font-semibold">แก้ไขบิล (มีปรับปรุง)</span></div>
-                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-slate-700 font-semibold">เสร็จสิ้น (Shipment)</span></div>
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-brand-red"></div><span class="text-slate-700 font-semibold" data-i18n="statusNewDesc">งานใหม่ รอตรวจสอบ</span></div>
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-blue-600"></div><span class="text-slate-700 font-semibold" data-i18n="statusConfirmedDesc">ยืนยันแล้ว รับเรื่อง</span></div>
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div><span class="text-slate-700 font-semibold" data-i18n="statusEditedDesc">แก้ไขบิล มีการปรับปรุง</span></div>
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-brand-green"></div><span class="text-slate-700 font-semibold" data-i18n="statusShippedDesc">เสร็จสิ้น ออกใบจัดส่งแล้ว</span></div>
                     </div>
                 </div>
             </div>
@@ -334,19 +337,19 @@
         <nav class="fixed bottom-0 w-full bottom-nav grid grid-cols-4 py-2 px-2 z-40">
             <div data-action="switch-mobile-tab" data-tab="tracking" role="button" tabindex="0" class="mobile-nav-item active flex flex-col items-center cursor-pointer py-1">
                 <div class="nav-pill px-4 py-1 rounded-full mb-0.5 transition-colors"><i class="fas fa-bolt text-sm"></i></div>
-                <span class="text-[10px]">งานล่าสุด</span>
+                <span class="text-[10px]" data-i18n="navTracking">งานล่าสุด</span>
             </div>
             <div data-action="switch-mobile-tab" data-tab="dashboard" role="button" tabindex="0" class="mobile-nav-item flex flex-col items-center cursor-pointer py-1">
                 <div class="nav-pill px-4 py-1 rounded-full mb-0.5 transition-colors"><i class="fas fa-chart-line text-sm"></i></div>
-                <span class="text-[10px]">ภาพรวม</span>
+                <span class="text-[10px]" data-i18n="navDashboardMobile">ภาพรวม</span>
             </div>
             <div data-action="switch-mobile-tab" data-tab="report" role="button" tabindex="0" class="mobile-nav-item flex flex-col items-center cursor-pointer py-1">
                 <div class="nav-pill px-4 py-1 rounded-full mb-0.5 transition-colors"><i class="fas fa-clipboard-list text-sm"></i></div>
-                <span class="text-[10px]">รายงาน</span>
+                <span class="text-[10px]" data-i18n="navReport">รายงาน</span>
             </div>
             <div data-action="switch-mobile-tab" data-tab="help" role="button" tabindex="0" class="mobile-nav-item flex flex-col items-center cursor-pointer py-1">
                 <div class="nav-pill px-4 py-1 rounded-full mb-0.5 transition-colors"><i class="fas fa-lightbulb text-sm"></i></div>
-                <span class="text-[10px]">ช่วยเหลือ</span>
+                <span class="text-[10px]" data-i18n="navHelp">ช่วยเหลือ</span>
             </div>
         </nav>
     </div>
@@ -354,44 +357,45 @@
     <!-- ==================== DESKTOP VIEW ==================== -->
     <div id="desktop-view" class="hidden md:flex min-h-screen">
 
-        <!-- Clean White Sidebar (Matching Reference UI) -->
+        <!-- Clean White Sidebar with #007947 + #f00000 Top Ribbon -->
         <aside class="w-60 sidebar-clean z-20 flex flex-col fixed h-full select-none">
-            <div class="px-7 pt-8 pb-6">
-                <h1 class="text-3xl brand-logo-text leading-none"><span class="brand-dso-d">D</span><span class="brand-dso-so">SO</span></h1>
-                <p class="text-[11px] font-semibold text-slate-400 mt-1 tracking-wide">Fleet Order Tracking</p>
+            <div class="brand-top-ribbon"></div>
+            <div class="px-7 pt-7 pb-6">
+                <h1 class="text-3xl brand-logo-text leading-none"><span class="brand-dso-d">D</span><span class="brand-dso-so">SO</span><span class="brand-accent-dot"></span></h1>
+                <p class="text-[11px] font-semibold text-slate-400 mt-1.5 tracking-wide" data-i18n="brandSub">ระบบติดตามคำสั่งซื้อ</p>
             </div>
 
             <nav class="flex-1 mt-2">
                 <a data-action="switch-desktop-tab" data-tab="tracking" role="button" tabindex="0" id="d-nav-tracking" class="sidebar-link active flex items-center cursor-pointer">
                     <i class="fas fa-bolt w-5 text-center text-sm"></i>
-                    <span class="ml-3">งานล่าสุด</span>
+                    <span class="ml-3" data-i18n="navTracking">งานล่าสุด</span>
                 </a>
                 <a data-action="switch-desktop-tab" data-tab="dashboard" role="button" tabindex="0" id="d-nav-dashboard" class="sidebar-link flex items-center cursor-pointer">
                     <i class="fas fa-chart-line w-5 text-center text-sm"></i>
-                    <span class="ml-3">แดชบอร์ด</span>
+                    <span class="ml-3" data-i18n="navDashboard">แดชบอร์ด</span>
                 </a>
                 <a data-action="switch-desktop-tab" data-tab="report" role="button" tabindex="0" id="d-nav-report" class="sidebar-link flex items-center cursor-pointer">
                     <i class="fas fa-clipboard-check w-5 text-center text-sm"></i>
-                    <span class="ml-3">รายงาน</span>
+                    <span class="ml-3" data-i18n="navReport">รายงาน</span>
                 </a>
 
-                <div class="px-7 pt-7 pb-2 text-xs font-semibold text-slate-400 tracking-wide">
-                    Support
+                <div class="px-7 pt-7 pb-2 text-xs font-semibold text-slate-400 tracking-wide" data-i18n="navSupport">
+                    ศูนย์ช่วยเหลือ
                 </div>
                 <a data-action="switch-desktop-tab" data-tab="help" role="button" tabindex="0" id="d-nav-help" class="sidebar-link flex items-center cursor-pointer">
                     <i class="fas fa-lightbulb w-5 text-center text-sm"></i>
-                    <span class="ml-3">ช่วยเหลือ (Get Started)</span>
+                    <span class="ml-3" data-i18n="navHelp">ช่วยเหลือ</span>
                 </a>
             </nav>
 
             <!-- Bottom User Profile -->
             <div class="p-5 border-t border-slate-100 flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs border border-blue-100">
+                <div class="w-8 h-8 rounded-full bg-brand-green-soft text-brand-green flex items-center justify-center font-bold text-xs border border-brand-green-border">
                     <i class="fas fa-user"></i>
                 </div>
                 <div class="overflow-hidden">
-                    <div class="text-xs font-semibold text-slate-700 truncate" id="user-display-desktop">Guest User</div>
-                    <div class="text-[10px] text-slate-400">Secondary Routing</div>
+                    <div class="text-xs font-semibold text-slate-700 truncate" id="user-display-desktop" data-i18n="guestUser">ผู้ใช้งานทั่วไป</div>
+                    <div class="text-[10px] text-slate-400" data-i18n="roleSub">ระบบจัดส่งสายรอง</div>
                 </div>
             </div>
         </aside>
@@ -400,56 +404,59 @@
         <main class="flex-1 ml-60 px-8 py-7 max-w-[1600px]">
             <!-- Top Title Header -->
             <div class="flex justify-between items-center pb-5 mb-5 border-b border-slate-200/80">
-                <h2 class="text-2xl font-bold text-slate-900 tracking-tight" id="desktop-page-title">งานล่าสุด (Recent List)</h2>
+                <h2 class="text-2xl font-bold text-slate-900 tracking-tight" id="desktop-page-title" data-i18n="titleTracking">งานล่าสุด</h2>
                 <div class="flex items-center gap-2.5">
-                    <button type="button" data-action="open-export" class="btn-excel flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900">
-                        <i class="fas fa-download text-slate-500"></i>
-                        <span>Download</span>
+                    <div class="lang-switcher" role="group" aria-label="Language">
+                        <button type="button" data-action="set-lang" data-lang="th" class="lang-btn active" aria-pressed="true">TH</button>
+                        <button type="button" data-action="set-lang" data-lang="en" class="lang-btn" aria-pressed="false">EN</button>
+                    </div>
+                    <button type="button" data-action="open-export" class="btn-excel-solid flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold">
+                        <i class="fas fa-file-excel"></i>
+                        <span data-i18n="btnExport">ส่งออกข้อมูล</span>
                     </button>
-                    <button type="button" data-action="manual-refresh" class="btn-excel p-2 w-9 h-9 rounded-xl text-slate-500 hover:text-slate-800 flex items-center justify-center" title="รีเฟรชข้อมูล" aria-label="Refresh">
+                    <button type="button" data-action="manual-refresh" class="btn-excel p-2 w-9 h-9 rounded-xl flex items-center justify-center" data-i18n-title="btnRefreshTitle" title="รีเฟรชข้อมูล" aria-label="Refresh">
                         <i class="fas fa-sync-alt text-xs refresh-icon"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Pill Filter Row -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 relative z-20">
-                <!-- Pill 1: Date Picker -->
-                <div class="pill-filter flex items-center justify-between">
-                    <div class="flex items-center gap-1.5 text-xs">
-                        <span class="text-slate-400 font-medium">Timeframe:</span>
-                        <input type="date" id="date-desktop" data-sync-filter="desktop" class="font-semibold text-slate-800 bg-transparent outline-none cursor-pointer">
+            <!-- Pill Filter Row (Visible on Tracking & Dashboard only — avoids duplicate date picker on Report) -->
+            <div id="desktop-filter-bar" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 relative z-20">
+                <!-- Pill 1: Date Picker (No duplicate calendar icon; uses browser native date picker icon only) -->
+                <div class="pill-filter flex items-center">
+                    <div class="flex items-center gap-2 text-xs w-full">
+                        <span class="text-slate-400 font-medium whitespace-nowrap" data-i18n="filterDateLabel">วันที่:</span>
+                        <input type="date" id="date-desktop" data-sync-filter="desktop" class="w-full font-semibold text-slate-800 bg-transparent outline-none cursor-pointer">
                     </div>
-                    <i class="fas fa-calendar-alt text-slate-400 text-xs"></i>
                 </div>
 
                 <!-- Pill 2: Status Filter Dropdown -->
                 <div class="relative">
                     <button type="button" id="desktop-filter-btn" data-action="toggle-desktop-filter" class="w-full pill-filter flex items-center justify-between text-left">
                         <div class="text-xs">
-                            <span class="text-slate-400 font-medium">Status:</span>
-                            <span class="font-semibold text-slate-800 ml-1" id="desktop-status-summary">All</span>
+                            <span class="text-slate-400 font-medium" data-i18n="filterStatusLabel">สถานะ:</span>
+                            <span class="font-semibold text-slate-800 ml-1" id="desktop-status-summary" data-i18n="filterAll">ทั้งหมด</span>
                         </div>
                         <i class="fas fa-caret-down text-slate-500 text-xs"></i>
                     </button>
                     <div id="desktop-filter-dropdown" class="absolute top-full left-0 mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 hidden z-50 p-4 filter-dropdown">
-                        <div class="text-[11px] font-semibold text-slate-400 uppercase mb-3 tracking-wider">สถานะที่แสดง</div>
+                        <div class="text-[11px] font-semibold text-slate-400 uppercase mb-3 tracking-wider" data-i18n="filterStatusShow">สถานะที่แสดง</div>
                         <div class="space-y-2.5">
                             <label class="flex items-center gap-3 cursor-pointer group">
-                                <input type="checkbox" class="h-4 w-4 rounded accent-blue-600 cursor-pointer" checked data-status-filter="new" id="d-chk-new">
-                                <span class="text-xs font-medium text-slate-700 group-hover:text-blue-600 transition-colors">งานใหม่ (New)</span>
+                                <input type="checkbox" class="h-4 w-4 rounded accent-brand-red cursor-pointer" checked data-status-filter="new" id="d-chk-new">
+                                <span class="text-xs font-medium text-slate-700 group-hover:text-brand-red transition-colors" data-i18n="statusNew">งานใหม่</span>
                             </label>
                             <label class="flex items-center gap-3 cursor-pointer group">
                                 <input type="checkbox" class="h-4 w-4 rounded accent-blue-600 cursor-pointer" checked data-status-filter="conf" id="d-chk-conf">
-                                <span class="text-xs font-medium text-slate-700 group-hover:text-blue-600 transition-colors">ยืนยันแล้ว (Confirmed)</span>
+                                <span class="text-xs font-medium text-slate-700 group-hover:text-blue-600 transition-colors" data-i18n="statusConfirmed">ยืนยันแล้ว</span>
                             </label>
                             <label class="flex items-center gap-3 cursor-pointer group">
                                 <input type="checkbox" class="h-4 w-4 rounded accent-amber-500 cursor-pointer" checked data-status-filter="edit" id="d-chk-edit">
-                                <span class="text-xs font-medium text-slate-700 group-hover:text-amber-600 transition-colors">แก้ไขบิล (Edit)</span>
+                                <span class="text-xs font-medium text-slate-700 group-hover:text-amber-600 transition-colors" data-i18n="statusEdited">แก้ไขบิล</span>
                             </label>
                             <label class="flex items-center gap-3 cursor-pointer group">
-                                <input type="checkbox" class="h-4 w-4 rounded accent-emerald-600 cursor-pointer" checked data-status-filter="ship" id="d-chk-ship">
-                                <span class="text-xs font-medium text-slate-700 group-hover:text-emerald-600 transition-colors">เสร็จสิ้น (Shipment)</span>
+                                <input type="checkbox" class="h-4 w-4 rounded accent-brand-green cursor-pointer" checked data-status-filter="ship" id="d-chk-ship">
+                                <span class="text-xs font-medium text-slate-700 group-hover:text-brand-green transition-colors" data-i18n="statusShipped">เสร็จสิ้น</span>
                             </label>
                         </div>
                     </div>
@@ -457,9 +464,9 @@
 
                 <!-- Pill 3: Branch Search -->
                 <div class="pill-filter flex items-center justify-between">
-                    <div class="flex items-center gap-1.5 text-xs w-full">
-                        <span class="text-slate-400 font-medium whitespace-nowrap">Branch:</span>
-                        <input type="text" id="search-desktop" data-sync-filter="desktop" placeholder="All (พิมพ์ชื่อสาขา เช่น ภูเก็ต)" class="w-full font-semibold text-slate-800 placeholder-slate-400 bg-transparent outline-none">
+                    <div class="flex items-center gap-2 text-xs w-full">
+                        <span class="text-slate-400 font-medium whitespace-nowrap" data-i18n="filterBranchLabel">สาขา:</span>
+                        <input type="text" id="search-desktop" data-sync-filter="desktop" data-i18n-placeholder="searchPlaceholderDesktop" placeholder="ค้นหาชื่อสาขา เช่น ภูเก็ต" class="w-full font-semibold text-slate-800 placeholder-slate-400 bg-transparent outline-none">
                     </div>
                     <i class="fas fa-search text-slate-400 text-xs ml-2"></i>
                 </div>
@@ -469,16 +476,16 @@
             <div id="d-page-tracking" class="desktop-page block">
                 <div class="glass-card overflow-hidden min-h-[420px] relative z-0">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-50/70 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-100 select-none">
+                        <thead class="bg-slate-50/70 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-100 select-none">
                             <tr>
-                                <th data-action="sort-column" data-column="queue" role="button" tabindex="0" class="p-4 font-semibold w-[6%] text-center cursor-pointer sortable group">ลำดับ <i id="icon-queue" class="fas fa-sort text-slate-300 ml-1 group-hover:text-blue-600"></i></th>
-                                <th data-action="sort-column" data-column="timestamp" role="button" tabindex="0" class="p-4 font-semibold w-[14%] cursor-pointer sortable group">Timestamp <i id="icon-timestamp" class="fas fa-sort text-slate-300 ml-1 group-hover:text-blue-600"></i></th>
-                                <th data-action="sort-column" data-column="branch" role="button" tabindex="0" class="p-4 font-semibold w-[12%] text-center cursor-pointer sortable group">สาขา <i id="icon-branch" class="fas fa-sort text-slate-300 ml-1 group-hover:text-blue-600"></i></th>
-                                <th data-action="sort-column" data-column="deliveryDate" role="button" tabindex="0" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group">วันที่ส่งสินค้า <i id="icon-deliveryDate" class="fas fa-sort text-slate-300 ml-1 group-hover:text-blue-600"></i></th>
-                                <th data-action="sort-column" data-column="status" role="button" tabindex="0" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group">สถานะ <i id="icon-status" class="fas fa-sort text-slate-300 ml-1 group-hover:text-blue-600"></i></th>
-                                <th class="p-4 font-semibold w-[28%] text-center">Timeline</th>
-                                <th data-action="sort-column" data-column="amount" role="button" tabindex="0" class="p-4 text-right font-semibold w-[10%] cursor-pointer sortable group">จำนวน DO <i id="icon-amount" class="fas fa-sort text-slate-300 ml-1 group-hover:text-blue-600"></i></th>
-                                <th data-action="sort-column" data-column="shipment" role="button" tabindex="0" class="p-4 text-right font-semibold w-[10%] text-blue-600 cursor-pointer sortable group">Shipment <i id="icon-shipment" class="fas fa-sort text-slate-300 ml-1 group-hover:text-blue-600"></i></th>
+                                <th data-action="sort-column" data-column="queue" role="button" tabindex="0" class="p-4 font-semibold w-[6%] text-center cursor-pointer sortable group"><span data-i18n="colQueue">ลำดับ</span> <i id="icon-queue" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="timestamp" role="button" tabindex="0" class="p-4 font-semibold w-[14%] cursor-pointer sortable group"><span data-i18n="colTimestamp">วันเวลาแจ้งงาน</span> <i id="icon-timestamp" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="branch" role="button" tabindex="0" class="p-4 font-semibold w-[12%] text-center cursor-pointer sortable group"><span data-i18n="colBranch">สาขา</span> <i id="icon-branch" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="deliveryDate" role="button" tabindex="0" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group"><span data-i18n="colDeliveryDate">วันที่ส่งสินค้า</span> <i id="icon-deliveryDate" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="status" role="button" tabindex="0" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group"><span data-i18n="colStatus">สถานะ</span> <i id="icon-status" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th class="p-4 font-semibold w-[28%] text-center" data-i18n="colTimeline">สถานะขั้นตอน</th>
+                                <th data-action="sort-column" data-column="amount" role="button" tabindex="0" class="p-4 text-right font-semibold w-[10%] cursor-pointer sortable group"><span data-i18n="colDoAmount">จำนวน DO</span> <i id="icon-amount" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="shipment" role="button" tabindex="0" class="p-4 text-right font-semibold w-[10%] text-brand-green cursor-pointer sortable group"><span data-i18n="colShipment">จำนวนจัดส่ง</span> <i id="icon-shipment" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
                             </tr>
                         </thead>
                         <tbody id="d-table-body" class="text-sm divide-y divide-slate-100"></tbody>
@@ -495,80 +502,80 @@
                         <div class="stat-card p-5 flex flex-col justify-between">
                             <div>
                                 <div class="flex items-center justify-between">
-                                    <h3 class="text-slate-500 text-xs font-medium">งานทั้งหมด (Total Orders)</h3>
-                                    <i class="fas fa-info-circle text-slate-300 text-xs"></i>
+                                    <h3 class="text-slate-500 text-xs font-medium" data-i18n="statTotal">งานทั้งหมด</h3>
+                                    <i class="fas fa-layer-group text-brand-green text-xs opacity-60"></i>
                                 </div>
                                 <p class="text-3xl font-bold text-slate-900 mt-3" id="d-dash-total">-</p>
                             </div>
                             <svg class="w-full h-9 mt-3 overflow-visible" viewBox="0 0 140 32" fill="none">
                                 <defs>
                                     <linearGradient id="spark1" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#2563EB" stop-opacity="0.18"/>
-                                        <stop offset="100%" stop-color="#2563EB" stop-opacity="0.0"/>
+                                        <stop offset="0%" stop-color="#007947" stop-opacity="0.18"/>
+                                        <stop offset="100%" stop-color="#007947" stop-opacity="0.0"/>
                                     </linearGradient>
                                 </defs>
                                 <path d="M2 24 C22 22, 36 12, 56 18 C76 24, 94 8, 114 13 C126 16, 132 6, 138 5 L138 32 L2 32 Z" fill="url(#spark1)"/>
-                                <path d="M2 24 C22 22, 36 12, 56 18 C76 24, 94 8, 114 13 C126 16, 132 6, 138 5" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M2 24 C22 22, 36 12, 56 18 C76 24, 94 8, 114 13 C126 16, 132 6, 138 5" stroke="#007947" stroke-width="2" stroke-linecap="round"/>
                             </svg>
                         </div>
 
                         <div class="stat-card p-5 flex flex-col justify-between">
                             <div>
                                 <div class="flex items-center justify-between">
-                                    <h3 class="text-slate-500 text-xs font-medium">งานใหม่ (New Orders)</h3>
-                                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                                    <h3 class="text-slate-500 text-xs font-medium" data-i18n="statNew">งานใหม่</h3>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-brand-red"></span>
                                 </div>
                                 <p class="text-3xl font-bold text-slate-900 mt-3" id="d-dash-new">-</p>
                             </div>
                             <svg class="w-full h-9 mt-3 overflow-visible" viewBox="0 0 140 32" fill="none">
                                 <defs>
                                     <linearGradient id="spark2" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.18"/>
-                                        <stop offset="100%" stop-color="#F59E0B" stop-opacity="0.0"/>
+                                        <stop offset="0%" stop-color="#f00000" stop-opacity="0.16"/>
+                                        <stop offset="100%" stop-color="#f00000" stop-opacity="0.0"/>
                                     </linearGradient>
                                 </defs>
                                 <path d="M2 25 C25 19, 42 24, 62 15 C82 8, 100 18, 118 11 C128 8, 133 9, 138 6 L138 32 L2 32 Z" fill="url(#spark2)"/>
-                                <path d="M2 25 C25 19, 42 24, 62 15 C82 8, 100 18, 118 11 C128 8, 133 9, 138 6" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M2 25 C25 19, 42 24, 62 15 C82 8, 100 18, 118 11 C128 8, 133 9, 138 6" stroke="#f00000" stroke-width="2" stroke-linecap="round"/>
                             </svg>
                         </div>
 
                         <div class="stat-card p-5 flex flex-col justify-between">
                             <div>
                                 <div class="flex items-center justify-between">
-                                    <h3 class="text-slate-500 text-xs font-medium">ยืนยันแล้ว (Confirmed)</h3>
-                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    <h3 class="text-slate-500 text-xs font-medium" data-i18n="statConfirmed">ยืนยันแล้ว</h3>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                                 </div>
                                 <p class="text-3xl font-bold text-slate-900 mt-3" id="d-dash-conf">-</p>
                             </div>
                             <svg class="w-full h-9 mt-3 overflow-visible" viewBox="0 0 140 32" fill="none">
                                 <defs>
                                     <linearGradient id="spark3" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.18"/>
-                                        <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.0"/>
+                                        <stop offset="0%" stop-color="#2563EB" stop-opacity="0.16"/>
+                                        <stop offset="100%" stop-color="#2563EB" stop-opacity="0.0"/>
                                     </linearGradient>
                                 </defs>
                                 <path d="M2 23 C20 25, 38 14, 58 19 C78 24, 96 10, 116 14 C126 16, 132 7, 138 5 L138 32 L2 32 Z" fill="url(#spark3)"/>
-                                <path d="M2 23 C20 25, 38 14, 58 19 C78 24, 96 10, 116 14 C126 16, 132 7, 138 5" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M2 23 C20 25, 38 14, 58 19 C78 24, 96 10, 116 14 C126 16, 132 7, 138 5" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
                             </svg>
                         </div>
 
                         <div class="stat-card p-5 flex flex-col justify-between">
                             <div>
                                 <div class="flex items-center justify-between">
-                                    <h3 class="text-slate-500 text-xs font-medium">เสร็จสิ้น (Completed)</h3>
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    <h3 class="text-slate-500 text-xs font-medium" data-i18n="statCompleted">เสร็จสิ้น</h3>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-brand-green"></span>
                                 </div>
                                 <p class="text-3xl font-bold text-slate-900 mt-3" id="d-dash-shipped">-</p>
                             </div>
                             <svg class="w-full h-9 mt-3 overflow-visible" viewBox="0 0 140 32" fill="none">
                                 <defs>
                                     <linearGradient id="spark4" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#10B981" stop-opacity="0.18"/>
-                                        <stop offset="100%" stop-color="#10B981" stop-opacity="0.0"/>
+                                        <stop offset="0%" stop-color="#007947" stop-opacity="0.22"/>
+                                        <stop offset="100%" stop-color="#007947" stop-opacity="0.0"/>
                                     </linearGradient>
                                 </defs>
                                 <path d="M2 26 C22 20, 40 16, 60 20 C80 23, 98 9, 116 12 C126 14, 133 5, 138 4 L138 32 L2 32 Z" fill="url(#spark4)"/>
-                                <path d="M2 26 C22 20, 40 16, 60 20 C80 23, 98 9, 116 12 C126 14, 133 5, 138 4" stroke="#10B981" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M2 26 C22 20, 40 16, 60 20 C80 23, 98 9, 116 12 C126 14, 133 5, 138 4" stroke="#007947" stroke-width="2" stroke-linecap="round"/>
                             </svg>
                         </div>
                     </div>
@@ -576,8 +583,8 @@
                     <!-- Right Activity Chart Card -->
                     <div class="lg:col-span-7 glass-card p-6 flex flex-col justify-between">
                         <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
-                            <h3 class="text-xs font-semibold text-slate-500">ความถี่การแจ้งงานประจำวัน (Activity)</h3>
-                            <span class="text-xs font-semibold text-slate-700 cursor-default">Time Slots <i class="fas fa-chevron-down text-[10px] ml-1 text-slate-400"></i></span>
+                            <h3 class="text-xs font-semibold text-slate-600" data-i18n="chartTitleDesktop">ความถี่การแจ้งงานประจำวัน</h3>
+                            <span class="text-xs font-semibold text-brand-green bg-brand-green-soft px-3 py-1 rounded-full" data-i18n="chartSubtitleDesktop">แบ่งตามช่วงเวลา</span>
                         </div>
                         <div class="h-64"><canvas id="d-freq-chart"></canvas></div>
                     </div>
@@ -587,22 +594,22 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
                     <div class="glass-card p-6">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xs font-semibold text-slate-500">สถานะรายสาขา (Branch Status &amp; Progress)</h3>
-                            <span class="text-[11px] text-slate-400">Real-time</span>
+                            <h3 class="text-xs font-semibold text-slate-600" data-i18n="branchStatusTitleDesktop">สถานะรายสาขา</h3>
+                            <span class="text-[11px] font-semibold text-brand-green bg-brand-green-soft px-2.5 py-0.5 rounded-full" data-i18n="branchStatusBadge">อัปเดตอัตโนมัติ</span>
                         </div>
                         <div id="d-branch-status-container" class="space-y-2.5 h-[310px] overflow-y-auto pr-2"></div>
                     </div>
 
                     <div class="glass-card p-6 overflow-hidden">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xs font-semibold text-slate-500">ตารางความถี่ย้อนหลัง (Frequency Log)</h3>
-                            <span class="text-[11px] text-slate-400">10 วันล่าสุด</span>
+                            <h3 class="text-xs font-semibold text-slate-600" data-i18n="freqTitleDesktop">ตารางความถี่ย้อนหลัง</h3>
+                            <span class="text-[11px] text-slate-400" data-i18n="freqLast10Days">10 วันล่าสุด</span>
                         </div>
                         <div class="overflow-x-auto h-[310px]">
                             <table class="w-full text-xs text-center border-collapse">
                                 <thead class="bg-slate-50 text-slate-500 border-b border-slate-100 sticky top-0">
                                     <tr>
-                                        <th class="p-2.5 text-left font-semibold">วันที่</th>
+                                        <th class="p-2.5 text-left font-semibold" data-i18n="freqDateCol">วันที่</th>
                                         <th class="p-2.5 font-semibold">&lt;16:00</th>
                                         <th class="p-2.5 font-semibold">16-17</th>
                                         <th class="p-2.5 font-semibold">17-17:30</th>
@@ -621,15 +628,15 @@
                 <div class="glass-card p-6">
                     <div class="flex flex-wrap justify-between items-center gap-3 mb-3">
                         <div>
-                            <h3 class="text-xs font-semibold text-slate-500"><i class="fas fa-map-marked-alt text-blue-600 mr-2"></i>แผนที่พื้นที่สาขาภาคใต้ (Branch Coverage Map)</h3>
-                            <p class="text-[11px] text-slate-400 mt-0.5">คลิกที่ปุ่มชื่อสาขาด้านล่าง หรือคลิกบนพื้นที่แผนที่เพื่อดูรายละเอียดจำนวนงานรายสาขา</p>
+                            <h3 class="text-xs font-semibold text-slate-600"><i class="fas fa-map-marked-alt text-brand-green mr-2"></i><span data-i18n="mapTitleDesktop">แผนที่พื้นที่สาขาภาคใต้</span></h3>
+                            <p class="text-[11px] text-slate-400 mt-0.5" data-i18n="mapHint">คลิกที่ปุ่มชื่อสาขาด้านล่าง หรือคลิกบนพื้นที่แผนที่เพื่อดูรายละเอียดจำนวนงานรายสาขา</p>
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" data-action="switch-map-style" class="map-style-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200 transition" data-style="light">แผนที่สีอ่อน</button>
-                            <button type="button" data-action="switch-map-style" class="map-style-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 transition" data-style="street">แผนที่ถนน/อำเภอ</button>
-                            <button type="button" data-action="switch-map-style" class="map-style-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 transition" data-style="none">โหมดไร้พื้นหลัง</button>
-                            <button type="button" data-action="toggle-map-labels" id="btn-toggle-labels" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 transition"><i class="fas fa-tag mr-1"></i>ชื่อสาขา</button>
-                            <button type="button" data-action="reset-map-view" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"><i class="fas fa-compress-arrows-alt mr-1"></i>รีเซ็ตมุมมอง</button>
+                            <button type="button" data-action="switch-map-style" class="map-style-btn active-map-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition" data-style="light" data-i18n="mapStyleLight">แผนที่สีอ่อน</button>
+                            <button type="button" data-action="switch-map-style" class="map-style-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition" data-style="street" data-i18n="mapStyleStreet">แผนที่ถนนและอำเภอ</button>
+                            <button type="button" data-action="switch-map-style" class="map-style-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition" data-style="none" data-i18n="mapStyleNone">โหมดไร้พื้นหลัง</button>
+                            <button type="button" data-action="toggle-map-labels" id="btn-toggle-labels" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-green text-white border border-brand-green transition"><i class="fas fa-tag mr-1"></i><span data-i18n="mapToggleLabels">ชื่อสาขา</span></button>
+                            <button type="button" data-action="reset-map-view" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:text-brand-green transition"><i class="fas fa-compress-arrows-alt mr-1"></i><span data-i18n="mapResetView">รีเซ็ตมุมมอง</span></button>
                         </div>
                     </div>
                     <!-- Quick Jump Branch Chips -->
@@ -641,32 +648,27 @@
             <!-- Desktop Report -->
             <div id="d-page-report" class="desktop-page hidden">
                 <div class="glass-card p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xs font-semibold text-slate-500">เลือกรูปแบบรายงาน (Report Type)</h3>
-                        <button type="button" data-action="open-export" class="btn-excel-solid flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold">
-                            <i class="fas fa-file-excel"></i> <span>Export Excel</span>
-                        </button>
-                    </div>
+                    <h3 class="text-xs font-semibold text-slate-600 mb-4" data-i18n="reportTypeTitle">เลือกรูปแบบรายงาน</h3>
                     <div class="grid grid-cols-2 gap-4">
                         <button type="button" data-action="switch-report-type" data-report-type="daily" id="d-btn-daily" class="report-btn active p-4 rounded-xl font-medium transition flex items-center justify-center gap-3">
-                            <i class="fas fa-calendar-day text-lg"></i><span>รายงานรายวัน (Daily Report)</span>
+                            <i class="fas fa-calendar-day text-lg"></i><span data-i18n="reportDaily">รายงานรายวัน</span>
                         </button>
                         <button type="button" data-action="switch-report-type" data-report-type="monthly" id="d-btn-monthly" class="report-btn p-4 rounded-xl font-medium transition flex items-center justify-center gap-3">
-                            <i class="fas fa-calendar-alt text-lg"></i><span>รายงานสรุปรายเดือน (Monthly Summary)</span>
+                            <i class="fas fa-calendar-alt text-lg"></i><span data-i18n="reportMonthly">รายงานสรุปรายเดือน</span>
                         </button>
                     </div>
                 </div>
                 <div id="d-daily-report" class="space-y-6">
                     <div class="glass-card p-6">
-                        <h3 class="text-xs font-semibold text-slate-500 mb-3">เลือกวันที่ตรวจสอบ</h3>
+                        <h3 class="text-xs font-semibold text-slate-600 mb-3" data-i18n="reportPickDate">เลือกวันที่ตรวจสอบ</h3>
                         <input type="date" id="d-report-date" data-change-action="daily-report" data-source="desktop" class="w-full max-w-xs pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none">
                     </div>
                     <div class="glass-card p-6 overflow-hidden">
-                        <h3 class="text-xs font-semibold text-slate-500 mb-4">รายงานรายละเอียด (Detail Report)</h3>
+                        <h3 class="text-xs font-semibold text-slate-600 mb-4" data-i18n="reportDetailTitle">รายงานรายละเอียด</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left border-collapse">
                                 <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-100">
-                                    <tr><th class="p-3.5 font-semibold">สาขา</th><th class="p-3.5 font-semibold">วันที่แจ้ง</th><th class="p-3.5 font-semibold">วันที่ส่ง</th><th class="p-3.5 text-center font-semibold">เวลาแจ้ง</th><th class="p-3.5 text-center font-semibold">เวลายืนยัน</th><th class="p-3.5 text-center font-semibold">เวลาออก Shipment</th><th class="p-3.5 text-right font-semibold">จำนวน Shipment</th><th class="p-3.5 text-center font-semibold">ดำเนินการ (นาที)</th></tr>
+                                    <tr><th class="p-3.5 font-semibold" data-i18n="rColBranch">สาขา</th><th class="p-3.5 font-semibold" data-i18n="rColNotiDate">วันที่แจ้ง</th><th class="p-3.5 font-semibold" data-i18n="rColDelivDate">วันที่ส่ง</th><th class="p-3.5 text-center font-semibold" data-i18n="rColNotiTime">เวลาแจ้ง</th><th class="p-3.5 text-center font-semibold" data-i18n="rColConfTime">เวลายืนยัน</th><th class="p-3.5 text-center font-semibold" data-i18n="rColShipTime">เวลาออกใบจัดส่ง</th><th class="p-3.5 text-right font-semibold" data-i18n="rColShipAmt">จำนวนจัดส่ง</th><th class="p-3.5 text-center font-semibold" data-i18n="rColProcMin">ดำเนินการ นาที</th></tr>
                                 </thead>
                                 <tbody id="d-detail-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
                             </table>
@@ -677,28 +679,28 @@
                     <div class="glass-card p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <h3 class="text-xs font-semibold text-slate-500 mb-3">เลือกเดือนและปี</h3>
+                                <h3 class="text-xs font-semibold text-slate-600 mb-3" data-i18n="reportPickMonthYear">เลือกเดือนและปี</h3>
                                 <div class="grid grid-cols-2 gap-3">
                                     <select id="d-report-month" data-change-action="monthly-report" data-source="desktop" class="pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none">
-                                        <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option><option value="3">มีนาคม</option>
-                                        <option value="4">เมษายน</option><option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
-                                        <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option><option value="9">กันยายน</option>
-                                        <option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+                                        <option value="1" data-i18n="month1">มกราคม</option><option value="2" data-i18n="month2">กุมภาพันธ์</option><option value="3" data-i18n="month3">มีนาคม</option>
+                                        <option value="4" data-i18n="month4">เมษายน</option><option value="5" data-i18n="month5">พฤษภาคม</option><option value="6" data-i18n="month6">มิถุนายน</option>
+                                        <option value="7" data-i18n="month7">กรกฎาคม</option><option value="8" data-i18n="month8">สิงหาคม</option><option value="9" data-i18n="month9">กันยายน</option>
+                                        <option value="10" data-i18n="month10">ตุลาคม</option><option value="11" data-i18n="month11">พฤศจิกายน</option><option value="12" data-i18n="month12">ธันวาคม</option>
                                     </select>
-                                    <input type="number" id="d-report-year" data-change-action="monthly-report" data-source="desktop" class="pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none" placeholder="ปี (ค.ศ.)" min="2020" max="2030">
+                                    <input type="number" id="d-report-year" data-change-action="monthly-report" data-source="desktop" data-i18n-placeholder="reportYearPlaceholder" class="pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none" placeholder="ปี ค.ศ." min="2020" max="2030">
                                 </div>
                             </div>
                             <div>
-                                <h3 class="text-xs font-semibold text-slate-500 mb-3">กรองตามสาขา</h3>
-                                <select id="d-branch-filter" data-change-action="monthly-report" data-source="desktop" class="w-full pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none"><option value="">ทุกสาขา</option></select>
+                                <h3 class="text-xs font-semibold text-slate-600 mb-3" data-i18n="reportFilterBranch">กรองตามสาขา</h3>
+                                <select id="d-branch-filter" data-change-action="monthly-report" data-source="desktop" class="w-full pill-filter rounded-xl p-2.5 text-sm text-slate-700 outline-none"><option value="" data-i18n="reportAllBranches">ทุกสาขา</option></select>
                             </div>
                         </div>
                     </div>
                     <div class="glass-card p-6 overflow-hidden">
-                        <h3 class="text-xs font-semibold text-slate-500 mb-4">สรุปรายเดือน</h3>
+                        <h3 class="text-xs font-semibold text-slate-600 mb-4" data-i18n="reportMonthlyTitle">สรุปรายเดือน</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left border-collapse">
-                                <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-100"><tr><th class="p-3.5 font-semibold">สาขา</th><th class="p-3.5 text-center font-semibold">เวลาแจ้งเฉลี่ย</th><th class="p-3.5 text-center font-semibold">จำนวน DO</th><th class="p-3.5 text-center font-semibold">จำนวน SH</th><th class="p-3.5 text-center font-semibold">เวลาดำเนินการ</th></tr></thead>
+                                <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-100"><tr><th class="p-3.5 font-semibold" data-i18n="rColBranch">สาขา</th><th class="p-3.5 text-center font-semibold" data-i18n="rColAvgTime">เวลาแจ้งเฉลี่ย</th><th class="p-3.5 text-center font-semibold" data-i18n="rColDoCount">จำนวน DO</th><th class="p-3.5 text-center font-semibold" data-i18n="rColShCount">จำนวนจัดส่ง</th><th class="p-3.5 text-center font-semibold" data-i18n="rColProcTime">เวลาดำเนินการ</th></tr></thead>
                                 <tbody id="d-monthly-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
                             </table>
                         </div>
@@ -709,22 +711,37 @@
             <!-- Desktop Help -->
             <div id="d-page-help" class="desktop-page hidden">
                 <div class="glass-card p-8 max-w-4xl mx-auto">
-                    <h2 class="text-lg font-bold text-slate-900 mb-6 flex items-center border-b border-slate-100 pb-4"><i class="fas fa-lightbulb text-blue-600 mr-3"></i>ช่วยเหลือการใช้งาน &amp; FAQ</h2>
+                    <h2 class="text-lg font-bold text-slate-900 mb-6 flex items-center border-b border-slate-100 pb-4"><i class="fas fa-lightbulb text-brand-green mr-3"></i><span data-i18n="helpTitle">ช่วยเหลือและคำถามที่พบบ่อย</span></h2>
                     <div class="space-y-3">
-                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0"><div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800">Q: ตัวเลขและสีใน Dashboard หมายถึงอะไร?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div><div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600 space-y-2"><p>Dashboard จะสรุปสถานะงานทั้งหมดของวันปัจจุบัน</p><ul class="list-disc list-inside ml-4 space-y-1"><li><span class="font-semibold text-slate-700">งานทั้งหมด:</span> จำนวนออเดอร์ทั้งหมด</li><li><span class="font-semibold text-amber-500">งานใหม่:</span> ออเดอร์ที่รอการตรวจสอบ</li><li><span class="font-semibold text-blue-600">ยืนยันแล้ว:</span> ออเดอร์ที่กำลังดำเนินการ</li><li><span class="font-semibold text-emerald-600">เสร็จสิ้น:</span> ออเดอร์ที่ออก Shipment แล้ว</li></ul></div></div></div>
-                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0"><div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800">Q: วิธีการ Export ข้อมูลและรูปกราฟทำอย่างไร?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div><div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600"><ol class="list-decimal list-inside space-y-2"><li>กดปุ่ม <strong>&quot;Download&quot;</strong> มุมขวาบน หรือ <strong>&quot;Export Excel&quot;</strong></li><li>เลือก <strong>&quot;วันที่เริ่มต้น&quot;</strong> และ <strong>&quot;วันที่สิ้นสุด&quot;</strong></li><li>หากต้องการรูปกราฟ ให้ติ๊กถูก <strong>&quot;บันทึกรูปกราฟด้วย&quot;</strong></li><li>กดปุ่ม <strong>&quot;ดาวน์โหลด&quot;</strong></li></ol></div></div></div>
-                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0"><div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800">Q: ระบบอัปเดตข้อมูลอัตโนมัติหรือไม่?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div><div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600"><p>ใช่ ระบบจะ Auto-refresh <strong>ทุกๆ 20 วินาที</strong> หรือกดปุ่ม <i class="fas fa-sync-alt text-slate-400"></i> ได้ตลอดเวลา</p></div></div></div>
-                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0"><div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800">Q: กราฟความถี่คืออะไร?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div><div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600"><p>แสดงปริมาณงานในช่วงเวลาต่างๆ เพื่อดู Peak Hours วางแผนการทำงาน</p></div></div></div>
-                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0"><div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800">Q: การจัดลำดับคิว (Queue) ทำงานอย่างไร?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div><div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600"><p>ใช้หลัก <strong>First Come First Serve</strong> เรียงตามเวลาที่แจ้งงาน คิวรีเซ็ตทุกวัน เริ่มนับใหม่ที่ #01</p></div></div></div>
+                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0">
+                            <div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800" data-i18n="faq1Q">ตัวเลขและสีในหน้าแดชบอร์ดหมายถึงอะไร?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div>
+                            <div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600 space-y-2"><p data-i18n="faq1AIntro">หน้าแดชบอร์ดจะสรุปสถานะงานทั้งหมดของวันที่เลือก</p><ul class="list-disc list-inside ml-4 space-y-1"><li><span class="font-semibold text-slate-700" data-i18n="statTotal">งานทั้งหมด</span>: <span data-i18n="faq1ATotal">จำนวนคำสั่งซื้อทั้งหมด</span></li><li><span class="font-semibold text-brand-red" data-i18n="statNew">งานใหม่</span>: <span data-i18n="faq1ANew">คำสั่งซื้อที่รอการตรวจสอบ</span></li><li><span class="font-semibold text-blue-600" data-i18n="statConfirmed">ยืนยันแล้ว</span>: <span data-i18n="faq1AConf">คำสั่งซื้อที่กำลังดำเนินการ</span></li><li><span class="font-semibold text-brand-green" data-i18n="statCompleted">เสร็จสิ้น</span>: <span data-i18n="faq1AShip">คำสั่งซื้อที่ออกใบจัดส่งเรียบร้อยแล้ว</span></li></ul></div></div>
+                        </div>
+                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0">
+                            <div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800" data-i18n="faq2Q">วิธีการส่งออกข้อมูลและรูปกราฟทำอย่างไร?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div>
+                            <div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600"><ol class="list-decimal list-inside space-y-2"><li data-i18n="faq2S1">กดปุ่มส่งออกข้อมูลที่มุมขวาบน</li><li data-i18n="faq2S2">เลือกวันที่เริ่มต้นและวันที่สิ้นสุด</li><li data-i18n="faq2S3">หากต้องการรูปกราฟ ให้ติ๊กถูกที่ช่องบันทึกรูปกราฟความถี่ด้วย</li><li data-i18n="faq2S4">กดปุ่มดาวน์โหลด</li></ol></div></div>
+                        </div>
+                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0">
+                            <div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800" data-i18n="faq3Q">ระบบอัปเดตข้อมูลอัตโนมัติหรือไม่?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div>
+                            <div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600"><p data-i18n="faq3A">ระบบจะอัปเดตข้อมูลอัตโนมัติทุกๆ 20 วินาที หรือกดปุ่มรีเฟรชเพื่อดึงข้อมูลล่าสุดได้ทันที</p></div></div>
+                        </div>
+                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0">
+                            <div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800" data-i18n="faq4Q">กราฟความถี่แสดงข้อมูลอะไร?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div>
+                            <div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600"><p data-i18n="faq4A">แสดงปริมาณงานในแต่ละช่วงเวลาของวันที่เลือก เพื่อช่วยวางแผนการทำงานในช่วงเวลาหนาแน่น</p></div></div>
+                        </div>
+                        <div class="accordion-item border border-slate-100 rounded-xl overflow-hidden" data-action="toggle-accordion" role="button" tabindex="0">
+                            <div class="bg-slate-50/70 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100/70 transition"><h3 class="font-semibold text-sm text-slate-800" data-i18n="faq5Q">การจัดลำดับคิวทำงานอย่างไร?</h3><i class="fas fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i></div>
+                            <div class="accordion-content bg-white px-4"><div class="py-4 text-sm text-slate-600"><p data-i18n="faq5A">ใช้หลักมาก่อนได้ก่อน เรียงตามเวลาที่แจ้งงาน คิวจะเริ่มนับใหม่ที่ #01 ทุกวัน</p></div></div>
+                        </div>
                     </div>
                 </div>
                 <div class="glass-card p-8 max-w-4xl mx-auto mt-6">
-                    <h2 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-100 pb-3">สถานะ Timeline</h2>
+                    <h2 class="font-bold text-sm text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-100 pb-3" data-i18n="helpTimelineTitle">คำอธิบายสถานะขั้นตอน</h2>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div class="flex items-center gap-3"><div class="w-4 h-4 rounded-full bg-slate-200"></div><span class="text-slate-600">งานใหม่ (รอตรวจสอบ)</span></div>
-                        <div class="flex items-center gap-3"><div class="w-4 h-4 rounded-full bg-blue-600"></div><span class="text-slate-700 font-semibold">ยืนยันแล้ว (รับเรื่อง)</span></div>
-                        <div class="flex items-center gap-3"><div class="w-4 h-4 rounded-full bg-amber-500"></div><span class="text-slate-700 font-semibold">แก้ไขบิล (มีปรับปรุง)</span></div>
-                        <div class="flex items-center gap-3"><div class="w-4 h-4 rounded-full bg-emerald-500"></div><span class="text-slate-700 font-semibold">เสร็จสิ้น (Shipment)</span></div>
+                        <div class="flex items-center gap-3"><div class="w-4 h-4 rounded-full bg-brand-red"></div><span class="text-slate-700 font-semibold" data-i18n="statusNewDesc">งานใหม่ รอตรวจสอบ</span></div>
+                        <div class="flex items-center gap-3"><div class="w-4 h-4 rounded-full bg-blue-600"></div><span class="text-slate-700 font-semibold" data-i18n="statusConfirmedDesc">ยืนยันแล้ว รับเรื่อง</span></div>
+                        <div class="flex items-center gap-3"><div class="w-4 h-4 rounded-full bg-amber-500"></div><span class="text-slate-700 font-semibold" data-i18n="statusEditedDesc">แก้ไขบิล มีการปรับปรุง</span></div>
+                        <div class="flex items-center gap-3"><div class="w-4 h-4 rounded-full bg-brand-green"></div><span class="text-slate-700 font-semibold" data-i18n="statusShippedDesc">เสร็จสิ้น ออกใบจัดส่งแล้ว</span></div>
                     </div>
                 </div>
             </div>
@@ -735,17 +752,17 @@
     <div id="export-modal" class="fixed inset-0 bg-slate-900/40 z-[70] hidden flex items-center justify-center p-4 modal-backdrop">
         <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl border border-slate-100 modal-content entering" id="export-modal-content">
             <div class="flex justify-between items-center mb-5">
-                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2.5"><i class="fas fa-download text-blue-600"></i> ส่งออกข้อมูล (Export Excel)</h3>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2.5"><i class="fas fa-download text-brand-green"></i> <span data-i18n="exportModalTitle">ส่งออกข้อมูลเป็นไฟล์ตาราง</span></h3>
                 <button type="button" data-action="close-export" class="text-slate-400 hover:text-slate-600 transition" aria-label="Close export modal"><i class="fas fa-times text-lg"></i></button>
             </div>
             <div class="space-y-4">
-                <div><label class="block text-xs font-semibold text-slate-500 mb-1.5">วันที่เริ่มต้น (Start Date)</label><input type="date" id="export-start" class="w-full pill-filter rounded-xl p-2.5 outline-none transition"></div>
-                <div><label class="block text-xs font-semibold text-slate-500 mb-1.5">วันที่สิ้นสุด (End Date)</label><input type="date" id="export-end" class="w-full pill-filter rounded-xl p-2.5 outline-none transition"></div>
-                <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-slate-100/70 transition"><input type="checkbox" id="export-include-chart" class="w-4 h-4 accent-blue-600 rounded"><span class="text-xs font-medium text-slate-700">บันทึกรูปกราฟความถี่ด้วย (Download Chart PNG)</span></label>
+                <div><label class="block text-xs font-semibold text-slate-500 mb-1.5" data-i18n="exportStartLabel">วันที่เริ่มต้น</label><input type="date" id="export-start" class="w-full pill-filter rounded-xl p-2.5 outline-none transition"></div>
+                <div><label class="block text-xs font-semibold text-slate-500 mb-1.5" data-i18n="exportEndLabel">วันที่สิ้นสุด</label><input type="date" id="export-end" class="w-full pill-filter rounded-xl p-2.5 outline-none transition"></div>
+                <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-slate-100/70 transition"><input type="checkbox" id="export-include-chart" class="w-4 h-4 accent-brand-green rounded"><span class="text-xs font-medium text-slate-700" data-i18n="exportIncludeChart">บันทึกรูปกราฟความถี่ด้วย</span></label>
             </div>
             <div class="mt-6 flex gap-3">
-                <button type="button" data-action="close-export" class="flex-1 bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition">ยกเลิก</button>
-                <button type="button" data-action="confirm-export" class="flex-1 btn-primary py-2.5 rounded-xl text-sm font-semibold flex justify-center items-center gap-2"><i class="fas fa-download"></i> ดาวน์โหลด</button>
+                <button type="button" data-action="close-export" class="flex-1 bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition" data-i18n="btnCancel">ยกเลิก</button>
+                <button type="button" data-action="confirm-export" class="flex-1 btn-primary py-2.5 rounded-xl text-sm font-semibold flex justify-center items-center gap-2"><i class="fas fa-download"></i> <span data-i18n="btnDownload">ดาวน์โหลด</span></button>
             </div>
         </div>
     </div>
@@ -753,6 +770,7 @@
     <!-- Scripts -->
     <script src="security.js"></script>
     <script src="config.js"></script>
+    <script src="i18n.js"></script>
     <script src="data.js"></script>
     <script src="ui.js"></script>
     <script src="dashboard.js"></script>
