@@ -667,7 +667,6 @@ function cancelOrderFromWeb(body) {
 
     sheet.deleteRow(deletedRowNumber);
     recalculateDailySequence(sheet, orderDayStr);
-    SpreadsheetApp.flush();
 
     logSystem(
       'SUCCESS',
@@ -1028,34 +1027,62 @@ function formatDuration(startStr, endStr) {
   return `${h}:${m.toString().padStart(2, '0')}:00`;
 }
 
+function toBangkokParts(dateObj) {
+  const shifted = new Date(dateObj.getTime() + 7 * 60 * 60 * 1000);
+  const fullYear = shifted.getUTCFullYear();
+  return {
+    dd: String(shifted.getUTCDate()).padStart(2, '0'),
+    mm: String(shifted.getUTCMonth() + 1).padStart(2, '0'),
+    yyyy: String(fullYear),
+    yy: String(fullYear % 100).padStart(2, '0'),
+    HH: String(shifted.getUTCHours()).padStart(2, '0'),
+    MI: String(shifted.getUTCMinutes()).padStart(2, '0')
+  };
+}
+
 function formatTimeOnly(v) {
   if (!v) return '-';
-  if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Bangkok', 'HH:mm');
+  if (v instanceof Date) {
+    const p = toBangkokParts(v);
+    return `${p.HH}:${p.MI}`;
+  }
   return v.toString().substring(0, 5);
 }
 
 function formatTimeForWeb(v) {
   if (!v) return '';
-  if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Bangkok', 'HH:mm');
+  if (v instanceof Date) {
+    const p = toBangkokParts(v);
+    return `${p.HH}:${p.MI}`;
+  }
   const s = v.toString().trim();
   if (!s || s === '-') return '';
   return s.substring(0, 5);
 }
 
 function formatDateForComparison(v) {
-  if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Bangkok', 'dd/MM/yy');
+  if (v instanceof Date) {
+    const p = toBangkokParts(v);
+    return `${p.dd}/${p.mm}/${p.yy}`;
+  }
   return String(v || '').trim();
 }
 
 function formatDateFullYear(v) {
   if (!v) return '-';
-  if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Bangkok', 'dd/MM/yyyy');
+  if (v instanceof Date) {
+    const p = toBangkokParts(v);
+    return `${p.dd}/${p.mm}/${p.yyyy}`;
+  }
   return v.toString().split(' ')[0];
 }
 
 function getThaiDateTime(d) {
   const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-  return `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543} ${Utilities.formatDate(d, 'Asia/Bangkok', 'HH:mm')} น.`;
+  const shifted = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  const HH = String(shifted.getUTCHours()).padStart(2, '0');
+  const MI = String(shifted.getUTCMinutes()).padStart(2, '0');
+  return `${shifted.getUTCDate()} ${thaiMonths[shifted.getUTCMonth()]} ${shifted.getUTCFullYear() + 543} ${HH}:${MI} น.`;
 }
 
 function replyText(replyToken, message, ss) {
@@ -1142,7 +1169,10 @@ function getDataFromSheet() {
 
 function formatDateFull(val) {
   if (!val) return '-';
-  if (val instanceof Date) return Utilities.formatDate(val, 'Asia/Bangkok', 'dd/MM/yy HH:mm');
+  if (val instanceof Date) {
+    const p = toBangkokParts(val);
+    return `${p.dd}/${p.mm}/${p.yy} ${p.HH}:${p.MI}`;
+  }
   return val.toString();
 }
 
