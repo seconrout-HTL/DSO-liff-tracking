@@ -76,6 +76,56 @@ async function fetchData(isSilent = false) {
     }
 }
 
+function normalizeTimeField(val) {
+    const cleaned = sanitizeText(val, '', 32);
+    return cleaned === '-' ? '' : cleaned;
+}
+
+async function submitCancelOrder(orderItem) {
+    if (!orderItem || typeof isCancelingOrder !== 'undefined' && isCancelingOrder) return;
+    if (calculateProgress(orderItem) >= 4) {
+        showToast(t('toastCancelAlreadyShipped'), 'error');
+        closeCancelOrderModal(true);
+        return;
+    }
+
+    setCancelModalBusy(true);
+    try {
+        const json = await secureApiRequest('cancelOrder', {
+            rowIndex: orderItem.rowIndex,
+            branch: orderItem.rawBranch,
+            targetDate: orderItem.deliveryDate,
+            timestamp: orderItem.rawTimestampStr,
+            actorName: currentUserName || 'Web User'
+        }, { usePostAuth: true });
+
+        if (json && json.status === 'success') {
+            closeCancelOrderModal(true);
+            showToast(t('toastCancelSuccess', { branch: formatBranchName(orderItem.branch) }), 'info');
+            await fetchData(true);
+            return;
+        }
+
+        const code = json && json.code ? String(json.code) : '';
+        if (code === 'ALREADY_SHIPPED') {
+            closeCancelOrderModal(true);
+            showToast(t('toastCancelAlreadyShipped'), 'error');
+            await fetchData(true);
+        } else if (code === 'NOT_FOUND') {
+            closeCancelOrderModal(true);
+            showToast(t('toastCancelNotFound'), 'error');
+            await fetchData(true);
+        } else {
+            showToast(t('toastCancelError'), 'error');
+        }
+    } catch (error) {
+        console.error('Cancel Order Error:', error && error.message ? error.message : error);
+        showToast(t('toastCancelError'), 'error');
+    } finally {
+        setCancelModalBusy(false);
+    }
+}
+
 function mapRoutingOrderData(item, index) {
     const rawTs = sanitizeText(item.timestamp, '', 64);
     const dObj = parseDateObject(rawTs);
@@ -96,17 +146,21 @@ function mapRoutingOrderData(item, index) {
     const mappedName = (isSafeDictKey(rawBranch) && branchNames[rawBranch]) ? branchNames[rawBranch] : rawBranch;
     const branchName = getCanonicalBranch(mappedName);
     const parsedEditCount = parseInt(item.editCount, 10);
+    const parsedRowIndex = parseInt(item.rowIndex, 10);
 
     return {
+        rowIndex: Number.isFinite(parsedRowIndex) && parsedRowIndex >= 2 ? parsedRowIndex : 0,
+        rawBranch,
+        rawTimestampStr: rawTs,
         timestamp: displayDate,
         isoDate,
         rawTimestamp,
         originalIndex: Number.isInteger(index) ? index : 0,
         branch: branchName,
         deliveryDate: sanitizeText(item.targetDate, '-', 64),
-        bill: { time: sanitizeText(item.timeBill, '', 32), by: '-' },
-        conf: { time: sanitizeText(item.timeConf, '', 32), by: '-' },
-        ship: { time: sanitizeText(item.timeShip, '', 32), by: '-' },
+        bill: { time: normalizeTimeField(item.timeBill), by: '-' },
+        conf: { time: normalizeTimeField(item.timeConf), by: '-' },
+        ship: { time: normalizeTimeField(item.timeShip), by: '-' },
         amount: sanitizeText(item.currentAmount, '-', 32),
         shipmentAmount: sanitizeText(item.Amt_Ship || item.shipmentAmount, '-', 32),
         editCount: Number.isFinite(parsedEditCount) && parsedEditCount > 0 ? parsedEditCount : 0,

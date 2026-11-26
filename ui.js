@@ -88,6 +88,16 @@ function renderMobileList(data) {
         const safeShipment = escapeHtml(item.shipmentAmount);
         const safeNote = item.note ? escapeHtml(item.note) : '';
 
+        const canCancel = p < 4;
+        const cancelBtnMobile = canCancel
+            ? `<div class="mobile-card-actions">
+                <button type="button" data-action="open-cancel-order" data-item-index="${item.originalIndex}" class="btn-cancel-order">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>${escapeHtml(t('btnCancelOrder'))}</span>
+                </button>
+            </div>`
+            : '';
+
         return `
         <div class="order-card rounded-2xl p-4 mb-3 animate-fade-in stagger-${(idx % 4) + 1}">
             <div class="flex justify-between mb-3">
@@ -126,6 +136,7 @@ function renderMobileList(data) {
                 </div>
             </div>
             ${safeNote ? `<div class="mt-2.5 text-[11px] text-amber-800 bg-amber-50/70 p-2 rounded-xl border border-amber-100"><i class="far fa-comment-dots mr-1"></i>${safeNote}</div>` : ''}
+            ${cancelBtnMobile}
         </div>`;
     }).join('');
 }
@@ -152,7 +163,7 @@ function renderDesktopTable(data) {
     const tbody = document.getElementById('d-table-body');
     if (!tbody) return;
     if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-slate-400"><i class="fas fa-inbox text-3xl mb-2 block text-slate-300"></i>${escapeHtml(t('emptySearch'))}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="p-12 text-center text-slate-400"><i class="fas fa-inbox text-3xl mb-2 block text-slate-300"></i>${escapeHtml(t('emptySearch'))}</td></tr>`;
         return;
     }
     tbody.innerHTML = data.map(item => {
@@ -169,6 +180,13 @@ function renderDesktopTable(data) {
         const safeDelivery = escapeHtml(item.deliveryDate);
         const safeAmount = escapeHtml(item.amount);
         const safeShipment = escapeHtml(item.shipmentAmount);
+        const canCancel = p < 4;
+        const actionCell = canCancel
+            ? `<button type="button" data-action="open-cancel-order" data-item-index="${item.originalIndex}" class="btn-cancel-order" title="${escapeHtml(t('btnCancelOrder'))}">
+                <i class="fas fa-trash-alt"></i>
+                <span>${escapeHtml(t('btnCancel'))}</span>
+            </button>`
+            : '<span class="text-slate-300 text-xs">-</span>';
 
         return `
         <tr class="hover:bg-slate-50/80 transition border-b border-slate-100 last:border-0 group">
@@ -191,6 +209,7 @@ function renderDesktopTable(data) {
             </td>
             <td class="p-4 align-middle text-right font-bold text-slate-900 text-base">${safeAmount}</td>
             <td class="p-4 align-middle text-right font-bold text-brand-green text-base">${safeShipment}</td>
+            <td class="p-4 align-middle text-center">${actionCell}</td>
         </tr>`;
     }).join('');
 }
@@ -330,4 +349,92 @@ function closeExportModal() {
 function manualRefresh() {
     toggleLoading(true);
     fetchData(false);
+}
+
+// ============================================
+// 🗑️ CANCEL ORDER MODAL
+// ============================================
+
+let pendingCancelOrder = null;
+let isCancelingOrder = false;
+
+function getOrderStatusLabel(item) {
+    const code = getStatusCode(item);
+    if (code === 'ship') return t('statusShipped');
+    if (code === 'edit') return t('statusEdited');
+    if (code === 'conf') return t('statusConfirmed');
+    return t('statusNew');
+}
+
+function populateCancelModalSummary(item) {
+    if (!item) return;
+    const branchEl = document.getElementById('cancel-summary-branch');
+    const queueEl = document.getElementById('cancel-summary-queue');
+    const deliveryEl = document.getElementById('cancel-summary-delivery');
+    const doEl = document.getElementById('cancel-summary-do');
+    const statusEl = document.getElementById('cancel-summary-status');
+
+    if (branchEl) branchEl.textContent = formatBranchName(item.branch);
+    if (queueEl) queueEl.textContent = item.queueNo || '-';
+    if (deliveryEl) deliveryEl.textContent = item.deliveryDate || '-';
+    if (doEl) doEl.textContent = item.amount || '-';
+    if (statusEl) statusEl.textContent = getOrderStatusLabel(item);
+}
+
+function openCancelOrderModalByIndex(originalIndex) {
+    const item = globalData.find(x => x && x.originalIndex === originalIndex);
+    if (!item || calculateProgress(item) >= 4) return;
+    openCancelOrderModal(item);
+}
+
+function openCancelOrderModal(item) {
+    const modal = document.getElementById('cancel-order-modal');
+    const content = document.getElementById('cancel-order-modal-content');
+    if (!modal || !content || !item) return;
+
+    pendingCancelOrder = item;
+    populateCancelModalSummary(item);
+    setCancelModalBusy(false);
+
+    modal.classList.remove('hidden');
+    content.classList.add('entering');
+    setTimeout(() => {
+        content.classList.remove('entering');
+        content.classList.add('entered');
+    }, 10);
+}
+
+function closeCancelOrderModal(force = false) {
+    if (isCancelingOrder && !force) return;
+    const modal = document.getElementById('cancel-order-modal');
+    const content = document.getElementById('cancel-order-modal-content');
+    if (!modal || modal.classList.contains('hidden')) {
+        pendingCancelOrder = null;
+        return;
+    }
+    pendingCancelOrder = null;
+    if (content) {
+        content.classList.remove('entered');
+        content.classList.add('entering');
+    }
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 200);
+}
+
+function setCancelModalBusy(busy) {
+    isCancelingOrder = Boolean(busy);
+    const confirmBtn = document.getElementById('cancel-modal-confirm-btn');
+    const closeBtns = document.querySelectorAll('[data-action="close-cancel-order"]');
+    const labelEl = document.getElementById('cancel-modal-confirm-label');
+    const iconEl = document.getElementById('cancel-modal-confirm-icon');
+
+    if (confirmBtn) confirmBtn.disabled = isCancelingOrder;
+    closeBtns.forEach(btn => { btn.disabled = isCancelingOrder; });
+    if (labelEl) {
+        labelEl.textContent = isCancelingOrder ? t('cancelModalProcessing') : t('cancelModalConfirm');
+    }
+    if (iconEl) {
+        iconEl.className = isCancelingOrder ? 'fas fa-spinner spin-slow' : 'fas fa-trash-alt';
+    }
 }
