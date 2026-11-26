@@ -478,14 +478,15 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-slate-50/70 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-100 select-none">
                             <tr>
-                                <th data-action="sort-column" data-column="queue" role="button" tabindex="0" class="p-4 font-semibold w-[6%] text-center cursor-pointer sortable group"><span data-i18n="colQueue">ลำดับ</span> <i id="icon-queue" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
-                                <th data-action="sort-column" data-column="timestamp" role="button" tabindex="0" class="p-4 font-semibold w-[14%] cursor-pointer sortable group"><span data-i18n="colTimestamp">วันเวลาแจ้งงาน</span> <i id="icon-timestamp" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
-                                <th data-action="sort-column" data-column="branch" role="button" tabindex="0" class="p-4 font-semibold w-[12%] text-center cursor-pointer sortable group"><span data-i18n="colBranch">สาขา</span> <i id="icon-branch" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
-                                <th data-action="sort-column" data-column="deliveryDate" role="button" tabindex="0" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group"><span data-i18n="colDeliveryDate">วันที่ส่งสินค้า</span> <i id="icon-deliveryDate" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
-                                <th data-action="sort-column" data-column="status" role="button" tabindex="0" class="p-4 font-semibold w-[10%] text-center cursor-pointer sortable group"><span data-i18n="colStatus">สถานะ</span> <i id="icon-status" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
-                                <th class="p-4 font-semibold w-[28%] text-center" data-i18n="colTimeline">สถานะขั้นตอน</th>
-                                <th data-action="sort-column" data-column="amount" role="button" tabindex="0" class="p-4 text-right font-semibold w-[10%] cursor-pointer sortable group"><span data-i18n="colDoAmount">จำนวน DO</span> <i id="icon-amount" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
-                                <th data-action="sort-column" data-column="shipment" role="button" tabindex="0" class="p-4 text-right font-semibold w-[10%] text-brand-green cursor-pointer sortable group"><span data-i18n="colShipment">จำนวนจัดส่ง</span> <i id="icon-shipment" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="queue" role="button" tabindex="0" class="p-4 font-semibold col-w-queue text-center cursor-pointer sortable group"><span data-i18n="colQueue">ลำดับ</span> <i id="icon-queue" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="timestamp" role="button" tabindex="0" class="p-4 font-semibold col-w-timestamp cursor-pointer sortable group"><span data-i18n="colTimestamp">วันเวลาแจ้งงาน</span> <i id="icon-timestamp" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="branch" role="button" tabindex="0" class="p-4 font-semibold col-w-branch text-center cursor-pointer sortable group"><span data-i18n="colBranch">สาขา</span> <i id="icon-branch" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="deliveryDate" role="button" tabindex="0" class="p-4 font-semibold col-w-delivery text-center cursor-pointer sortable group"><span data-i18n="colDeliveryDate">วันที่ส่งสินค้า</span> <i id="icon-deliveryDate" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="status" role="button" tabindex="0" class="p-4 font-semibold col-w-status text-center cursor-pointer sortable group"><span data-i18n="colStatus">สถานะ</span> <i id="icon-status" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th class="p-4 font-semibold col-w-timeline text-center" data-i18n="colTimeline">สถานะขั้นตอน</th>
+                                <th data-action="sort-column" data-column="amount" role="button" tabindex="0" class="p-4 text-right font-semibold col-w-do cursor-pointer sortable group"><span data-i18n="colDoAmount">จำนวน DO</span> <i id="icon-amount" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th data-action="sort-column" data-column="shipment" role="button" tabindex="0" class="p-4 text-right font-semibold col-w-shipment text-brand-green cursor-pointer sortable group"><span data-i18n="colShipment">จำนวนจัดส่ง</span> <i id="icon-shipment" class="fas fa-sort text-slate-300 ml-1 group-hover:text-brand-green"></i></th>
+                                <th class="p-4 font-semibold col-w-action text-center" data-i18n="colAction">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody id="d-table-body" class="text-sm divide-y divide-slate-100"></tbody>
@@ -763,6 +764,54 @@
             <div class="mt-6 flex gap-3">
                 <button type="button" data-action="close-export" class="flex-1 bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition" data-i18n="btnCancel">ยกเลิก</button>
                 <button type="button" data-action="confirm-export" class="flex-1 btn-primary py-2.5 rounded-xl text-sm font-semibold flex justify-center items-center gap-2"><i class="fas fa-download"></i> <span data-i18n="btnDownload">ดาวน์โหลด</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Order Confirmation Modal -->
+    <div id="cancel-order-modal" class="fixed inset-0 bg-slate-900/40 cancel-modal-backdrop hidden flex items-center justify-center p-4 modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancel-order-modal-title">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl border border-slate-100 modal-content entering" id="cancel-order-modal-content">
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="cancel-modal-icon">
+                        <i class="fas fa-exclamation-triangle text-lg"></i>
+                    </div>
+                    <h3 id="cancel-order-modal-title" class="text-base font-bold text-slate-900" data-i18n="cancelModalTitle">ยืนยันการยกเลิกรายการ</h3>
+                </div>
+                <button type="button" data-action="close-cancel-order" class="text-slate-400 hover:text-slate-600 transition" aria-label="Close cancel modal"><i class="fas fa-times text-lg"></i></button>
+            </div>
+
+            <div class="cancel-summary-box mb-4">
+                <div class="cancel-summary-row">
+                    <span class="text-slate-500" data-i18n="cancelSummaryBranch">สาขา</span>
+                    <span id="cancel-summary-branch" class="font-bold text-slate-800">-</span>
+                </div>
+                <div class="cancel-summary-row">
+                    <span class="text-slate-500" data-i18n="cancelSummaryQueue">ลำดับคิว</span>
+                    <span id="cancel-summary-queue" class="font-semibold text-brand-green">-</span>
+                </div>
+                <div class="cancel-summary-row">
+                    <span class="text-slate-500" data-i18n="cancelSummaryDelivery">วันที่ส่งสินค้า</span>
+                    <span id="cancel-summary-delivery" class="font-semibold text-slate-700">-</span>
+                </div>
+                <div class="cancel-summary-row">
+                    <span class="text-slate-500" data-i18n="cancelSummaryDo">จำนวน DO</span>
+                    <span id="cancel-summary-do" class="font-bold text-slate-900">-</span>
+                </div>
+                <div class="cancel-summary-row">
+                    <span class="text-slate-500" data-i18n="cancelSummaryStatus">สถานะปัจจุบัน</span>
+                    <span id="cancel-summary-status" class="font-semibold text-slate-700">-</span>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-500 leading-relaxed mb-5" data-i18n="cancelModalWarning">รายการนี้จะถูกลบออกจากชีท Log ทันที และระบบจะจัดลำดับคิวของวันนั้นใหม่ (ไม่สามารถกู้คืนได้)</p>
+
+            <div class="flex gap-3">
+                <button type="button" data-action="close-cancel-order" class="flex-1 bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition" data-i18n="cancelModalClose">ปิด</button>
+                <button type="button" id="cancel-modal-confirm-btn" data-action="confirm-cancel-order" class="flex-1 btn-danger py-2.5 rounded-xl text-sm font-semibold flex justify-center items-center gap-2">
+                    <i id="cancel-modal-confirm-icon" class="fas fa-trash-alt"></i>
+                    <span id="cancel-modal-confirm-label" data-i18n="cancelModalConfirm">ยืนยันยกเลิก</span>
+                </button>
             </div>
         </div>
     </div>

@@ -122,6 +122,22 @@ const I18N_MESSAGES = Object.freeze({
         colTimeline: 'สถานะขั้นตอน',
         colDoAmount: 'จำนวน DO',
         colShipment: 'จำนวนจัดส่ง',
+        colAction: 'จัดการ',
+        btnCancelOrder: 'ยกเลิกรายการ',
+        cancelModalTitle: 'ยืนยันการยกเลิกรายการ',
+        cancelModalWarning: 'รายการนี้จะถูกลบออกจากชีท Log ทันที และระบบจะจัดลำดับคิวของวันนั้นใหม่ (ไม่สามารถกู้คืนได้)',
+        cancelModalClose: 'ปิด',
+        cancelModalConfirm: 'ยืนยันยกเลิก',
+        cancelModalProcessing: 'กำลังยกเลิก...',
+        cancelSummaryBranch: 'สาขา',
+        cancelSummaryQueue: 'ลำดับคิว',
+        cancelSummaryDelivery: 'วันที่ส่งสินค้า',
+        cancelSummaryDo: 'จำนวน DO',
+        cancelSummaryStatus: 'สถานะปัจจุบัน',
+        toastCancelSuccess: 'ยกเลิกรายการ {branch} เรียบร้อยแล้ว',
+        toastCancelAlreadyShipped: 'งานนี้ปิด Shipment ไปแล้ว ไม่สามารถยกเลิกได้',
+        toastCancelNotFound: 'ไม่พบรายการนี้ หรืออาจถูกยกเลิกไปแล้ว',
+        toastCancelError: 'ยกเลิกรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
         cardDoLabel: 'จำนวน DO',
         cardDeliverLabel: 'วันที่ส่ง:',
         cardShipmentLabel: 'จัดส่ง',
@@ -306,6 +322,22 @@ const I18N_MESSAGES = Object.freeze({
         colTimeline: 'Timeline',
         colDoAmount: 'DO Amount',
         colShipment: 'Shipment',
+        colAction: 'Action',
+        btnCancelOrder: 'Cancel Order',
+        cancelModalTitle: 'Confirm Order Cancellation',
+        cancelModalWarning: 'This order will be permanently deleted from the Log sheet and daily queue numbers will be recalculated.',
+        cancelModalClose: 'Close',
+        cancelModalConfirm: 'Confirm Cancel',
+        cancelModalProcessing: 'Canceling...',
+        cancelSummaryBranch: 'Branch',
+        cancelSummaryQueue: 'Queue',
+        cancelSummaryDelivery: 'Delivery Date',
+        cancelSummaryDo: 'DO Amount',
+        cancelSummaryStatus: 'Current Status',
+        toastCancelSuccess: 'Order for {branch} has been canceled',
+        toastCancelAlreadyShipped: 'This order is already shipped and cannot be canceled',
+        toastCancelNotFound: 'Order not found or may already be canceled',
+        toastCancelError: 'Failed to cancel order. Please try again.',
         cardDoLabel: 'DO Amount',
         cardDeliverLabel: 'Delivery:',
         cardShipmentLabel: 'Shipment',
@@ -572,5 +604,8 @@ function setLanguage(lang, skipReRender = false) {
         if (typeof updateDailyReport === 'function') updateDailyReport();
         if (typeof updateMonthlyReport === 'function') updateMonthlyReport();
         if (typeof refreshMapLanguage === 'function') refreshMapLanguage();
+        if (typeof populateCancelModalSummary === 'function' && typeof pendingCancelOrder !== 'undefined' && pendingCancelOrder) {
+            populateCancelModalSummary(pendingCancelOrder);
+        }
     }
 }

@@ -154,6 +154,17 @@ function handleDelegatedAction(actionEl, event) {
         case 'liff-login':
             handleLiffLoginAction();
             break;
+        case 'open-cancel-order': {
+            const idx = parseInt(actionEl.getAttribute('data-item-index'), 10);
+            if (!isNaN(idx)) openCancelOrderModalByIndex(idx);
+            break;
+        }
+        case 'close-cancel-order':
+            closeCancelOrderModal();
+            break;
+        case 'confirm-cancel-order':
+            if (pendingCancelOrder) submitCancelOrder(pendingCancelOrder);
+            break;
         default:
             break;
     }
@@ -168,14 +179,25 @@ function initEventListeners() {
             dropdown.classList.add('hidden');
         }
 
+        // Close cancel modal when clicking backdrop
+        const cancelModal = document.getElementById('cancel-order-modal');
+        if (cancelModal && event.target === cancelModal) {
+            closeCancelOrderModal();
+            return;
+        }
+
         const actionEl = event.target.closest('[data-action]');
         if (actionEl) {
             handleDelegatedAction(actionEl, event);
         }
     });
 
-    // Keyboard activation for clickable non-button elements
+    // Keyboard activation for clickable non-button elements + Escape closes cancel modal
     document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeCancelOrderModal();
+            return;
+        }
         if (event.key !== 'Enter' && event.key !== ' ') return;
         const actionEl = event.target.closest('[role="button"][data-action]');
         if (actionEl) {
