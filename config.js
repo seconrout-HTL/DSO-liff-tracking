@@ -4,7 +4,7 @@
 
 // 🔒 Encoded configuration (Base64)
 const _c = [
-    'aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J3MDJEejdFc1VkTjJOWm42d2R2dGpiS05UejVfVEpmWnFTSDdRWDBqb2dtVGdYbi1xdWktSElxeUhTTjB5dl9LZmkvZXhlYw==',
+    'aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J3cEdibTFZT0k3X0NKNWZRWXdzWk12T01jbEpoSkwtcVNSbWt3NWczaGI5TnNYOGJBZzFULTlJQVhRaVNndmlmV0MvZXhlYw==',
     'MjAwODk4MzgyNy1aYlpJMllXdQ=='
 ];
 const GAS_API_URL = atob(_c[0]);
