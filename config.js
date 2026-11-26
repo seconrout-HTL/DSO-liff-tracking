@@ -16,7 +16,7 @@ const LIFF_ID     = atob(_c[1]);
 const SECURITY_CONFIG = Object.freeze({
     REQUIRE_LIFF_LOGIN: false,
     USE_POST_AUTH: false,
-    API_TIMEOUT_MS: 15000,
+    API_TIMEOUT_MS: 45000,
     MAX_BRANCH_LEN: 100,
     MAX_NOTE_LEN: 500
 });

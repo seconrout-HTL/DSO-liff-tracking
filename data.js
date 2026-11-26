@@ -42,7 +42,13 @@ async function fetchCurrentUser() {
     }
 }
 
+let isFetchingData = false;
+
 async function fetchData(isSilent = false) {
+    if (isSilent && (isFetchingData || (typeof isCancelingOrder !== 'undefined' && isCancelingOrder))) {
+        return;
+    }
+    isFetchingData = true;
     if (!isSilent) toggleLoading(true);
     try {
         const json = await secureApiRequest('getTrackingData', { t: String(Date.now()) });
@@ -69,8 +75,9 @@ async function fetchData(isSilent = false) {
             updateMonthlyReport();
         }
     } catch (error) {
-        console.error('Fetch Error:', error.message || error);
+        console.error('Fetch Error:', error && error.message ? error.message : error);
     } finally {
+        isFetchingData = false;
         if (!isSilent) toggleLoading(false);
         isFirstLoad = false;
     }
@@ -82,7 +89,7 @@ function normalizeTimeField(val) {
 }
 
 async function submitCancelOrder(orderItem) {
-    if (!orderItem || typeof isCancelingOrder !== 'undefined' && isCancelingOrder) return;
+    if (!orderItem || (typeof isCancelingOrder !== 'undefined' && isCancelingOrder)) return;
     if (calculateProgress(orderItem) >= 4) {
         showToast(t('toastCancelAlreadyShipped'), 'error');
         closeCancelOrderModal(true);
@@ -97,7 +104,7 @@ async function submitCancelOrder(orderItem) {
             targetDate: orderItem.deliveryDate,
             timestamp: orderItem.rawTimestampStr,
             actorName: currentUserName || 'Web User'
-        }, { usePostAuth: true });
+        }, { usePostAuth: true, timeoutMs: 45000 });
 
         if (json && json.status === 'success' && json.deleted) {
             closeCancelOrderModal(true);
@@ -126,6 +133,11 @@ async function submitCancelOrder(orderItem) {
     } catch (error) {
         console.error('Cancel Order Error:', error && error.message ? error.message : error);
         showToast(t('toastCancelError'), 'error');
+        // Refresh in case the server completed the deletion right after client timeout
+        if (error && error.name === 'AbortError') {
+            closeCancelOrderModal(true);
+            fetchData(true);
+        }
     } finally {
         setCancelModalBusy(false);
     }
