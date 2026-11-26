@@ -324,7 +324,7 @@ function processCommand(ss, replyToken, rawText, userId) {
 
     logSystem('SUCCESS', 'TRANSACTION_OK', 'บันทึกลงชีท Log สำเร็จ', `Action: ${actionType}, Branch: ${branchCode}, Amount: ${amountVal}`, ss);
 
-    if (actionType === 'BILL' && !result.isUpdate) {
+    if (actionType === 'BILL' && result.queueData) {
       const replyMessage = `ลำดับการแจ้ง: ${result.queueData.sequence}\n` +
                            `สาขาที่กำลังจัด: ${result.queueData.processingList}\n` +
                            `สาขาที่รอคิว: ${result.queueData.waitingList}`;
@@ -471,24 +471,16 @@ function updateLogTransaction(ss, action, branch, dateStr, user, amount) {
     if (action === 'BILL') {
       const cleanAmt = parseCleanInt(amount);
 
-      if (isExistingRecord) {
-        // Keep original DO_Num (col 4), update Amt_Bill (col 7), increment Edit Count (col 17)
-        sheet.getRange(targetRow, 7).setValue(cleanAmt);
-        sheet.getRange(targetRow, 17).setValue(currentEditCount + 1);
-        if (historyData.confTime && historyData.confTime !== '-') {
-          sheet.getRange(targetRow, 8, 1, 4).clearContent();
-        }
-        SpreadsheetApp.flush();
-        return { status: 'success', isUpdate: true, currentTotal: cleanAmt };
-      }
-
       // Compute daily queue & processing/waiting lists from already-loaded `data` (single read)
       const dailyRecords = [];
       for (let k = 0; k < data.length; k++) {
         if (formatDateForComparison(data[k][0]) === todayStr) {
           const rowTime = data[k][0] instanceof Date ? data[k][0].getTime() : k;
           const bCode = String(data[k][1] || '').trim();
-          const isConfirmed = Boolean(data[k][8] && data[k][8].toString().trim() !== '');
+          const isUpdatingThisRow = isExistingRecord && (k + 2 === targetRow);
+          const isConfirmed = isUpdatingThisRow
+            ? false
+            : Boolean(data[k][8] && data[k][8].toString().trim() !== '');
           const isShipped = Boolean(data[k][12] && data[k][12].toString().trim() !== '');
           dailyRecords.push({ time: rowTime, branch: bCode, isConfirmed: isConfirmed, isShipped: isShipped });
         }
@@ -507,8 +499,31 @@ function updateLogTransaction(ss, action, branch, dateStr, user, amount) {
           }
         }
       });
-      waitingBranches.push(branch);
 
+      if (isExistingRecord) {
+        // Keep original DO_Num (col 4), update Amt_Bill (col 7), increment Edit Count (col 17)
+        sheet.getRange(targetRow, 7).setValue(cleanAmt);
+        sheet.getRange(targetRow, 17).setValue(currentEditCount + 1);
+        if (historyData.confTime && historyData.confTime !== '-') {
+          sheet.getRange(targetRow, 8, 1, 4).clearContent();
+        }
+        SpreadsheetApp.flush();
+
+        const existingSeq = parseCleanInt(data[targetRow - 2][15]) || dailyRecords.length;
+        return {
+          status: 'success',
+          isUpdate: true,
+          currentTimeStr: getThaiDateTime(timestamp),
+          queueData: {
+            sequence: existingSeq,
+            processingList: processingBranches.length > 0 ? processingBranches.join(',') : '-',
+            waitingList: waitingBranches.length > 0 ? waitingBranches.join(',') : '-'
+          },
+          currentTotal: cleanAmt
+        };
+      }
+
+      waitingBranches.push(branch);
       const newSeq = dailyRecords.length + 1;
       sheet.appendRow([timestamp, branch, dateStr, cleanAmt, user, timeStr, cleanAmt, '', '', '', '', '', '', '', '', newSeq, 0, '']);
       SpreadsheetApp.flush();
@@ -635,12 +650,14 @@ function cancelOrderFromWeb(body) {
     }
 
     if (matchedIndex === -1) {
+      logSystem('WARNING', 'WEB_CANCEL_FAIL', `ไม่พบรายการสำหรับยกเลิกสาขา ${reqBranch}`, `Row: ${reqRowIndex}, Date: ${reqTargetDate}, TS: ${reqTimestamp}`, ss);
       return { status: 'error', code: 'NOT_FOUND', message: 'ไม่พบรายการนี้ หรือรายการอาจถูกยกเลิกไปแล้ว' };
     }
 
     const matchedRow = data[matchedIndex];
     const isShipped = Boolean(matchedRow[12] && matchedRow[12].toString().trim() !== '');
     if (isShipped) {
+      logSystem('WARNING', 'WEB_CANCEL_FAIL', `ไม่สามารถยกเลิกสาขา ${reqBranch} เพราะปิด Shipment แล้ว`, `Row: ${matchedIndex + 2}, Date: ${reqTargetDate}`, ss);
       return { status: 'error', code: 'ALREADY_SHIPPED', message: 'งานนี้ปิด Shipment ไปแล้ว ไม่สามารถยกเลิกได้' };
     }
 

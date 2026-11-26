@@ -99,10 +99,15 @@ async function submitCancelOrder(orderItem) {
             actorName: currentUserName || 'Web User'
         }, { usePostAuth: true });
 
-        if (json && json.status === 'success') {
+        if (json && json.status === 'success' && json.deleted) {
             closeCancelOrderModal(true);
             showToast(t('toastCancelSuccess', { branch: formatBranchName(orderItem.branch) }), 'info');
             await fetchData(true);
+            return;
+        }
+
+        if (json && json.status === 'success' && !json.deleted) {
+            showToast(t('toastCancelOldBackend'), 'error');
             return;
         }
 
